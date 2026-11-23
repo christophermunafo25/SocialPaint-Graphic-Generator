@@ -75,6 +75,7 @@ export interface LayerNode {
   strokeWeight?: number;
   strokeAlign?: string;
   strokeDashes?: number[];
+  individualStrokeWeights?: { top: number; right: number; bottom: number; left: number };
   effects?: Array<{ type: string; visible?: boolean }>;
   isMask?: boolean;
   /** Vector fill paths (geometry=paths); pruned trees carry presence only. */
@@ -480,6 +481,7 @@ export function pruneTree(node: LayerNode): LayerNode {
   if (node.strokeWeight !== undefined) out.strokeWeight = node.strokeWeight;
   if (node.strokeAlign !== undefined) out.strokeAlign = node.strokeAlign;
   if (node.strokeDashes) out.strokeDashes = node.strokeDashes;
+  if (node.individualStrokeWeights) out.individualStrokeWeights = node.individualStrokeWeights;
   if (node.effects) out.effects = node.effects;
   if (node.isMask !== undefined) out.isMask = node.isMask;
   if (node.fillGeometry?.length || node.hasFillGeometry) out.hasFillGeometry = true;

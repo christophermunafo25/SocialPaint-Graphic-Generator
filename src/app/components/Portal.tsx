@@ -1,5 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { PRIVACY_URL, TERMS_URL } from "@/lib/legalLinks";
+import React, { useMemo } from "react";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -15,14 +14,15 @@ import {
 import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { useRouter } from "../router";
-import { Page, PageHeader } from "./layout/Page";
+import { Page } from "./layout/Page";
 import { ErrorState } from "./ErrorState";
-import { Button } from "./primitives";
+import { Button, PageHeader } from "./primitives";
 import { LibrarySearch } from "./templates/LibrarySearch";
 import { PlatformFilter } from "./templates/PlatformFilter";
 import { PlatformShelf } from "./templates/PlatformShelf";
 import { TemplateCard } from "./templates/TemplateCard";
 import { LibraryShelfSkeleton } from "./templates/TemplateSkeleton";
+import { AREA_ICON } from "./areas";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -125,25 +125,9 @@ export function Portal() {
 
   const browsing = !query && !platform;
 
-  /** The generation entry point: TemplateUsePage fills the template in and
-   *  downloads the graphic. */
-  // A card opens the fill page: filling in by hand is the default, and the
-  // page offers "Use AI to assist", the template chat, where Generate is
-  // configured.
+  /** A card opens the fill page (TemplateUsePage), which is form only: the
+   *  template filled in by hand, then downloaded (new brand decision 9). */
   const openTemplate = (t: CatalogTemplate) => navigate({ name: "template", templateId: t.id });
-
-  // ── Sticky pin ──────────────────────────────────────────────────────────
-  const sentinel = useRef<HTMLDivElement>(null);
-  const [pinned, setPinned] = useState(false);
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([entry]) => setPinned(!entry.isIntersecting), {
-      threshold: 1,
-    });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
 
   const announcement = browsing
     ? ""
@@ -153,8 +137,7 @@ export function Portal() {
 
   if (templatesState.status === "error") {
     return (
-      <Page bleed>
-        <PageHeader title="Brand Templates" />
+      <Page bleed header={<PageHeader icon={AREA_ICON.brandTemplates} title="Brand Templates" />}>
         <ErrorState
           title="We couldn't load your templates."
           detail="Check your connection and try again."
@@ -165,17 +148,12 @@ export function Portal() {
   }
 
   return (
-    <Page bleed>
-      {/* The Generate action and the workspace eyebrow left this header
-          (2026-09 frames + CJ, 2026-09-15); the description came back with
-          the Figma "Navigation" page (2026-09-25). */}
-      <PageHeader title="Brand Templates" />
-
-      <div ref={sentinel} aria-hidden className="sp-lib-sentinel" />
-      <div className="sp-lib-filterbar" data-pinned={pinned || undefined}>
+    <Page bleed header={<PageHeader icon={AREA_ICON.brandTemplates} title="Brand Templates" />}>
+      <div className="sp-lib-filterbar">
         <LibrarySearch value={query} onChange={(q) => setState({ q }, true)} />
         {catalog.length > 0 && (
           <PlatformFilter
+            allLabel="All templates"
             facets={chipFacets}
             selected={platform?.id ?? null}
             onSelect={(next) => setState({ platform: next })}
@@ -198,8 +176,8 @@ export function Portal() {
           </>
         ) : catalog.length === 0 ? (
           <div className="sp-lib-empty">
-            <p className="t-title-panel">Publish your first template</p>
-            <p className="t-body-s sp-lib-empty__body">
+            <p className="t-title-card">Publish your first template</p>
+            <p className="t-body-m sp-lib-empty__body">
               Published templates appear here for everyone on your team.
             </p>
           </div>
@@ -218,19 +196,15 @@ export function Portal() {
         ) : (
           <>
             <div className="sp-lib-resultline">
-              <p className="sp-lib-eyebrow">{announcement}</p>
-              <Button
-                kind="neutralOnPage"
-                size="sm"
-                onClick={() => setState({ platform: null, q: "" })}
-              >
+              <p className="t-mono-eyebrow sp-lib-eyebrow">{announcement}</p>
+              <Button kind="neutral" size="sm" onClick={() => setState({ platform: null, q: "" })}>
                 Clear
               </Button>
             </div>
 
             {results.length === 0 ? (
               <div className="sp-lib-empty">
-                <p className="t-title-panel">
+                <p className="t-title-card">
                   {query ? `No templates match “${query}”.` : "That set is empty."}
                 </p>
                 <div className="sp-lib-empty__actions">
@@ -240,7 +214,7 @@ export function Portal() {
                     </Button>
                   )}
                   {query && platform && (
-                    <Button kind="neutralOnPage" onClick={() => setState({ platform: null })}>
+                    <Button kind="neutral" onClick={() => setState({ platform: null })}>
                       Search all platforms
                     </Button>
                   )}
@@ -252,56 +226,37 @@ export function Portal() {
                 </div>
               </div>
             ) : (
-              resultGroups.map((g) => (
-                <ResultGroup key={g.id} group={g} showTags={Boolean(query)} onOpen={openTemplate} />
-              ))
+              resultGroups.map((g) => <ResultGroup key={g.id} group={g} onOpen={openTemplate} />)
             )}
           </>
         )}
       </div>
-
-      <p className="sp-lib-legal t-caption-s">
-        <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">
-          Terms of Service
-        </a>
-        <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">
-          Privacy Policy
-        </a>
-      </p>
     </Page>
   );
 }
 
-/** One group of the results (13:6310, 13:6511): its label and count over a
- *  three-column grid of cards, each group in its own frame ratio. */
+/** One group of the results (2308:538, 2308:739): its label and count over
+ *  a three-column grid of cards, each group in its own frame ratio. */
 function ResultGroup({
   group,
-  showTags,
   onOpen,
 }: {
   group: TemplateGroup;
-  showTags: boolean;
   onOpen(template: CatalogTemplate): void;
 }) {
   return (
     <section className="sp-lib-group" aria-labelledby={`group-${group.id}`}>
       <div className="sp-lib-group__header">
-        <h2 className="t-title-panel" id={`group-${group.id}`}>
+        <h2 className="t-label-xs" id={`group-${group.id}`}>
           {group.label}
         </h2>
-        <span className="t-body-s sp-lib-group__count">
+        <span className="t-label-xs sp-lib-group__count">
           {plural(group.templates.length, "template")}
         </span>
       </div>
       <div className="sp-lib-grid">
         {group.templates.map((t) => (
-          <TemplateCard
-            key={t.id}
-            template={t}
-            frame={group.frame}
-            showTags={showTags}
-            onOpen={onOpen}
-          />
+          <TemplateCard key={t.id} template={t} frame={group.frame} onOpen={onOpen} />
         ))}
       </div>
     </section>

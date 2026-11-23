@@ -1,68 +1,90 @@
-import React from "react";
+import React, { useLayoutEffect, useRef } from "react";
+import { routeToUrl, useRouter } from "../../router";
+import { FooterLinks } from "../primitives/PageHeader";
+import { cx } from "../primitives/cx";
+import { useFrameKeys } from "./useFrameKeys";
 
-/** THE content column — every page renders inside this, and none defines its
- * own container. At >= 1024 (the rail shell) it is horizontally centred in
- * the region right of the sidebar, a --page-pad gutter each side (48px at
- * >= 1280, 32px at 1024-1279); below 1024 the shell is the mobile top bar
- * and the nav-to-content relationship is vertical instead — 24px under the
- * 56px header, with a 24px (16px under 768) side gutter. The width cap and
- * gutters are tokens (--page-max / --page-pad on .sp-page) — one knob, no
- * per-page overrides. The rail gutter and the window gutter stay equal in
- * both sidebar states, and both equal --page-pad exactly until the region
- * outgrows --page-max (1720px; viewport > 1984px expanded, > 1812px
- * collapsed), where margin-inline: auto grows the two together. `narrow`
- * caps the inner content (People 900) and centres it inside the column.
- * `layout` is for a page that lays its children out itself (the Generate
- * chat, a flex column in each of its states): its class and data-state go
- * on the column, and the children sit directly in it rather than in the
- * inner wrapper, so the column's own layout reaches them. The gutters,
- * cap and top padding are unchanged. */
+/** How a page sits in Main:
+ * - "scroll", most pages: the header row, the content and the footer links
+ *   scroll inside Main as one page. Nothing sticks (CJ, 2026-11-16).
+ * - "self", the Generate thread and History: the content is a column as
+ *   tall as Main allows, and the page scrolls its own region inside it.
+ * - "bare", the builder editor: it fills Main, with no gutters, header row
+ *   or footer (its frames draw none). */
+export type PageKind = "scroll" | "self" | "bare";
+
+/** Main, holding one page (Brand Templates 6010:2066 and every product
+ * frame of the ElevenLabs file; RULES.md section 10). At 1024 and wider the
+ * header row (64 tall, a border/subtle hairline under it, the 36 Page
+ * Header centred in it) sits at the top, the content under it and the
+ * footer links at the foot, each the full width of Main with a 32 gutter
+ * inside, and the three scroll together inside the frame. Below 1024 the
+ * document scrolls, the page keeps its earlier gutters (--page-pad) and
+ * the links follow the content.
+ *
+ * The content is `.sp-page` with the page's own layout class and state, so
+ * every page rule written against `.sp-page.sp-x` still matches. The
+ * frame carries [data-frame-scroll] for the screenshot tool. It returns to
+ * the top when the route's path changes (a new page or section); a filter
+ * in the address keeps the scroll. */
 export function Page({
-  narrow,
+  header,
+  kind = "scroll",
+  footer = true,
   bleed,
   layout,
   children,
 }: {
-  narrow?: 760 | 900;
+  /** The page's header: the PageHeader primitive, in the header row. */
+  header?: React.ReactNode;
+  kind?: PageKind;
+  /** Terms of Service and Privacy Policy at Main's foot (4015:750). Off
+   * where the page sets them itself: the fill page puts them under its
+   * stage, as the public link page needs them too. */
+  footer?: boolean;
   /** Mobile gutter model (2026-09): below 768 the page drops its horizontal
    *  padding so rails bleed to the screen edge, and the 16px gutter moves
    *  onto the children (see .sp-page--bleed). Brand Templates only. */
   bleed?: boolean;
-  /** The column's own layout class and state (never with `narrow`). */
+  /** The page's own column class and state, set on the content. */
   layout?: { className: string; state?: string };
   children: React.ReactNode;
 }) {
-  const className = ["sp-page", bleed && "sp-page--bleed", layout?.className]
-    .filter(Boolean)
-    .join(" ");
-  if (layout) {
-    return (
-      <div className={className} data-state={layout.state}>
-        {children}
-      </div>
-    );
-  }
-  return (
-    <div className={className}>
-      <div style={narrow ? { maxWidth: narrow, marginInline: "auto" } : undefined}>{children}</div>
-    </div>
-  );
-}
+  const frameRef = useRef<HTMLDivElement>(null);
+  const { route } = useRouter();
+  const path = routeToUrl(route).split("?")[0];
+  const scrolls = kind === "scroll";
+  const headed = Boolean(header) && kind !== "bare";
+  const footed = footer && kind !== "bare";
 
-/** The page header (new look): the title alone, with the page's actions on
- * the right (RULES §9: no eyebrow, no helper line). 36 tall, 24 above the
- * page's first content, as every screen draws it. */
-export function PageHeader({
-  title,
-  actions,
-}: {
-  title: React.ReactNode;
-  actions?: React.ReactNode;
-}) {
+  useLayoutEffect(() => {
+    if (scrolls && frameRef.current) frameRef.current.scrollTop = 0;
+  }, [path, scrolls]);
+  useFrameKeys(frameRef, scrolls);
+
   return (
-    <header className="sp-shell-pagehead">
-      <h1 className="t-title-page">{title}</h1>
-      {actions && <div className="sp-shell-pagehead__actions">{actions}</div>}
-    </header>
+    <div
+      ref={frameRef}
+      className="sp-frame"
+      data-kind={kind}
+      data-head={headed || undefined}
+      data-foot={footed || undefined}
+      data-frame-scroll=""
+    >
+      {headed && <div className="sp-frame__head">{header}</div>}
+      <div className="sp-frame__body">
+        <div
+          className={cx("sp-page", bleed && "sp-page--bleed", layout?.className)}
+          data-state={layout?.state}
+        >
+          {children}
+        </div>
+      </div>
+      {footed && (
+        <footer className="sp-frame__foot">
+          <FooterLinks />
+        </footer>
+      )}
+    </div>
   );
 }

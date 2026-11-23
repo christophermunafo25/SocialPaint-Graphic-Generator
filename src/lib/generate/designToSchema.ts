@@ -38,6 +38,12 @@ export function designToSchema(
     canvasHeight: design.canvasHeight,
     backgroundUrl: "",
     backgroundColor: design.backgroundColor,
+    // Absent stays absent, so a design saved before these existed rebuilds
+    // exactly as it did.
+    ...(design.backgroundGradient && { backgroundGradient: design.backgroundGradient }),
+    ...(design.canvasEffects && design.canvasEffects.length > 0
+      ? { canvasEffects: design.canvasEffects }
+      : {}),
     fields: design.fields,
     captionTemplate: design.captionTemplate,
     autobuildMeta,

@@ -26,10 +26,10 @@ export function PreAppShell({
     <div className="sp-auth" data-theme="light" data-width={width}>
       <div className="sp-auth__column">
         <header className="sp-auth__header">
-          <BrandLockup height={26} scheme="light" />
+          <BrandLockup height={24} scheme="light" />
         </header>
         <main className="sp-auth__form">{children}</main>
-        <footer className="sp-auth__footer t-caption-s">
+        <footer className="sp-auth__footer t-caption-m">
           <a className="sp-auth__legal" href={TERMS.href}>
             {TERMS.label}
           </a>

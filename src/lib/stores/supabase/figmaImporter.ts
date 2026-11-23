@@ -53,23 +53,61 @@ export class FigmaImporter implements DesignImportProvider {
     if (error) throw new Error(`Figma connect failed: ${error.message}`);
   }
 
-  async importFromUrl(companyId: string, url: string): Promise<DesignImportResult> {
-    const { data, error } = await supabase().functions.invoke("figma-import", {
-      body: { companyId, url },
+  /** One Figma import. template-autobuild runs it and asks the model for
+   * what the layer names leave open. When that function can't answer (no
+   * model key, not deployed yet, a server error), figma-import runs the
+   * same import without the model, so an import never depends on it. A
+   * refusal (a bad link, Figma not connected) is final: the fallback would
+   * only say it again. */
+  private async figmaImport<T>(
+    companyId: string,
+    url: string,
+    mode: "template" | "elements",
+    shaped: (data: unknown) => data is T,
+    failure: string,
+  ): Promise<T> {
+    const first = await supabase().functions.invoke("template-autobuild", {
+      body: { companyId, source: { kind: "figma", url }, mode },
     });
-    if (error) throw new Error(`Figma import failed: ${error.message}`);
-    return data as DesignImportResult;
+    if (!first.error && shaped(first.data)) return first.data;
+    if (first.error) {
+      const status = (first.error as { context?: Response }).context?.status;
+      if (status !== undefined && status >= 400 && status < 500 && status !== 404) {
+        throw new Error(
+          (await readErrorMessage(first.error)) ?? `${failure}: ${first.error.message}`,
+        );
+      }
+    }
+    const { data, error } = await supabase().functions.invoke("figma-import", {
+      body: { companyId, url, mode },
+    });
+    if (error) throw new Error((await readErrorMessage(error)) ?? `${failure}: ${error.message}`);
+    return data as T;
+  }
+
+  async importFromUrl(companyId: string, url: string): Promise<DesignImportResult> {
+    return this.figmaImport(
+      companyId,
+      url,
+      "template",
+      (d): d is DesignImportResult =>
+        Array.isArray((d as DesignImportResult | null)?.suggestedFields),
+      "Figma import failed",
+    );
   }
 
   async importElementsFromUrl(
     companyId: string,
     url: string,
   ): Promise<import("../../types").ElementImportResult> {
-    const { data, error } = await supabase().functions.invoke("figma-import", {
-      body: { companyId, url, mode: "elements" },
-    });
-    if (error) throw new Error(`Figma element import failed: ${error.message}`);
-    return data as import("../../types").ElementImportResult;
+    return this.figmaImport(
+      companyId,
+      url,
+      "elements",
+      (d): d is import("../../types").ElementImportResult =>
+        Array.isArray((d as { units?: unknown } | null)?.units),
+      "Figma element import failed",
+    );
   }
 
   async importStylesFromUrl(companyId: string, url: string): Promise<StyleImportResult> {
@@ -84,14 +122,14 @@ export class FigmaImporter implements DesignImportProvider {
     companyId: string,
     source: DesignSource,
     hint?: string,
-  ): Promise<AutoBuildResult> {
+  ): Promise<AutoBuildResult | DesignImportResult> {
     const { data, error } = await supabase().functions.invoke("template-autobuild", {
       body: { companyId, source, hint },
     });
     if (error) {
       throw new Error((await readErrorMessage(error)) ?? `Auto-build failed: ${error.message}`);
     }
-    return data as AutoBuildResult;
+    return data as AutoBuildResult | DesignImportResult;
   }
 
   async canvaStatus(companyId: string): Promise<{ enabled: boolean; connected: boolean }> {

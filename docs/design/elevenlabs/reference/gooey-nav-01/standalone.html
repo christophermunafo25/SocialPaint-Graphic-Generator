@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+  <head>
+<script>(function(){if(window.self!==window.top&&/[?&]thumbnail=true/.test(location.search)){window.__byqScrollGuard=1;(function(){var noop=function(){};try{HTMLElement.prototype.focus=noop;SVGElement.prototype.focus=noop;window.focus=noop;}catch(e){}try{Element.prototype.scrollIntoView=noop;if(Element.prototype.scrollIntoViewIfNeeded)Element.prototype.scrollIntoViewIfNeeded=noop;}catch(e){}document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('a[href^="#"]'):null;if(t)e.preventDefault();},true);})();document.documentElement.classList.add('w-mod-ix');document.documentElement.setAttribute('data-byq-thumbnail','');var mh=document.createElement('style');mh.textContent='html[data-byq-thumbnail] body,html[data-byq-thumbnail] body>*,html[data-byq-thumbnail] .section{min-height:0!important}';document.head.appendChild(mh);function triggerScroll(){try{var y=window.scrollY||window.pageYOffset||0;window.scrollTo(0,y+1);window.scrollTo(0,y);window.dispatchEvent(new Event('scroll'));window.dispatchEvent(new Event('resize'));if(window.ScrollTrigger&&window.ScrollTrigger.refresh)window.ScrollTrigger.refresh();}catch(e){}}window.addEventListener('load',function(){var ck=function(){var imgs=document.querySelectorAll('img');for(var i=0;i<imgs.length;i++){if(!imgs[i].complete){setTimeout(ck,50);return;}}var fn=function(){window.parent.postMessage({type:'thumbnail-ready'},'*');triggerScroll();setTimeout(triggerScroll,200);};if(document.fonts&&document.fonts.ready){document.fonts.ready.then(fn);}else{fn();}};ck();});window.addEventListener('message',function(e){if(e.data&&e.data.type==='play-animations'){var s=document.createElement('style');s.textContent='[data-w-id]{opacity:1!important;filter:none!important;-webkit-filter:none!important;transition:opacity 0.55s ease,filter 0.45s ease!important}';document.head.appendChild(s);var els=document.querySelectorAll('[data-w-id]');for(var i=0;i<els.length;i++){var el=els[i];if(!el.style.transform)continue;var cs=window.getComputedStyle(el);if(cs.animationName&&cs.animationName!=='none')continue;el.style.transition=(el.style.transition||'')+',transform 0.5s ease';el.style.transform='none';}triggerScroll();}});}})();</script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BYQ Gem — Gooey Nav Indicator</title>
+
+    <!-- Brand tokens (shared) + demo frame (demo-only) + this gem's scoped CSS.
+         Only byq-brand.css and style.css travel with the copy-paste snippet;
+         gem-frame.css just centres the demo on this page. -->
+    <style>
+/* ============================================================
+   BYQ Supply — Brand Tokens
+   Lifted from the BYQ.supply Figma design system
+   (byq.supply/app/globals.css + tailwind.config.cjs).
+
+   Every gem references these `--byq-*` variables instead of
+   hardcoding colors / fonts / radius, so the whole library
+   feels like one cohesive, on-brand collection.
+
+   Light is the default. Add `class="dark"` to <body> (or any
+   ancestor of the gem) to switch to the dark palette.
+   ============================================================ */
+
+:root {
+  /* Surfaces */
+  --byq-bg: #f0eeed; /* Background / Base Light */
+  --byq-fg: #040404; /* Background / Contrast Light */
+  --byq-card: #ffffff; /* Background / Lift Light */
+  --byq-depth: #e2dfdc; /* Background / Depth Light — borders, subtle hover */
+
+  /* Accents — use sparingly as the "pop" */
+  --byq-accent-solar: #ffcd33; /* Accent / Solar Note (primary accent) */
+  --byq-accent-lime: #c5ef57; /* Accent / Lime Signal (secondary accent) */
+  --byq-error: #c9372d; /* Status / Error */
+
+  /* Foreground that sits on a solar/lime accent fill */
+  --byq-on-accent: #040404;
+
+  /* Shape */
+  --byq-radius: 0.5rem;
+  --byq-radius-lg: 1rem;
+
+  /* Type — matches byq.supply: "Raveo Display" for headings, "Inter" for body
+     copy. Both fall back gracefully when the font isn't self-hosted, so copied
+     snippets never break. Put --byq-font-display on headings/large display
+     type, --byq-font-sans on body text. */
+  --byq-font-display: "Raveo Display", "Raveo", Georgia, serif;
+  --byq-font-sans: "Inter", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  --byq-font-mono: "Saans Mono", "Geist Mono", ui-monospace, "SF Mono",
+    Menlo, monospace;
+
+  /* Opacity tokens */
+  --byq-lift-opacity: rgba(255, 255, 255, 0.8);
+  --byq-tag-opacity: rgba(4, 4, 4, 0.08);
+}
+
+.dark {
+  --byq-bg: #070708; /* Background / Base Dark */
+  --byq-fg: #f6f3ec; /* Background / Contrast Dark */
+  --byq-card: #18191a; /* Background / Lift Dark */
+  --byq-depth: #2a2b2c; /* Background / Depth Dark */
+
+  --byq-on-accent: #040404; /* accents stay bright; text on them stays dark */
+
+  --byq-lift-opacity: rgba(24, 25, 26, 0.8);
+  --byq-tag-opacity: rgba(246, 243, 236, 0.08);
+}
+
+</style>
+    <style>
+/* ============================================================
+   gem-frame.css — minimal reset for a gem's DEMO page only.
+
+   This styles the standalone `index.html` demo wrapper (centers
+   the gem on a brand-coloured canvas). It is NOT part of the gem
+   itself and is never copied into a user's site — only
+   shared/byq-brand.css + the gem's own scoped CSS travel with the
+   copy-paste snippet.
+   ============================================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100dvh;
+}
+
+body {
+  background: var(--byq-bg);
+  color: var(--byq-fg);
+  font-family: var(--byq-font-sans);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6vmin;
+}
+
+/* Optional helper the demo can drop on <body> to pin a full-bleed,
+   non-scrolling effect (sphere, particles, etc.). */
+body.byq-demo--full {
+  padding: 0;
+  overflow: hidden;
+}
+
+</style>
+    <style>
+/* Gooey Nav Indicator — original.
+   A horizontal nav where a liquid pill indicator travels between links. The
+   pill and a trailing "drop" live inside a goo layer that runs an inline SVG
+   filter (feGaussianBlur → feColorMatrix), so the two shapes merge and the
+   indicator stretches with surface tension as it moves — then re-forms on the
+   hovered / focused / active link.
+   Every selector is scoped to .byq-gem--gooey-nav-01. */
+
+.byq-gem--gooey-nav-01 {
+  font-family: var(--byq-font-sans);
+  color: var(--byq-fg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(46rem, 100%);
+  padding: 0.5rem;
+}
+
+/* ---- Nav shell ------------------------------------------------------- */
+.byq-gem--gooey-nav-01__nav {
+  position: relative;
+  padding: 0.4rem;
+  border-radius: 999px;
+  background: var(--byq-card);
+  border: 1px solid var(--byq-depth);
+  box-shadow: 0 18px 40px -30px rgba(4, 4, 4, 0.55);
+  max-width: 100%;
+}
+
+/* The goo layer sits behind the links and carries the SVG filter that fuses
+   the pill + drop into one liquid mass. */
+.byq-gem--gooey-nav-01__goo {
+  position: absolute;
+  inset: 0.4rem;
+  z-index: 0;
+  pointer-events: none;
+  filter: url(#byq-gooey-nav-01-goo);
+}
+
+/* The main pill. JS sets --x (left offset) and --w (width) to match the
+   target link; the springy transition makes it flow into place. */
+.byq-gem--gooey-nav-01__blob {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--w, 5rem);
+  border-radius: 999px;
+  background: var(--byq-accent-lime);
+  transform: translateX(var(--x, 0px));
+  transition:
+    transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, width;
+}
+
+/* The trailing metaball. It chases the pill's centre a touch slower and with a
+   springier curve, so during travel a thin liquid bridge forms between them
+   (that's the goo). At rest it parks under the pill and collapses into it. */
+.byq-gem--gooey-nav-01__drop {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-top: -0.8rem;
+  margin-left: -0.8rem;
+  border-radius: 999px;
+  background: var(--byq-accent-lime);
+  transform: translateX(var(--dx, 0px)) scale(var(--ds, 0));
+  transition: transform 0.62s cubic-bezier(0.34, 1.4, 0.5, 1);
+  will-change: transform;
+}
+
+/* ---- Links ----------------------------------------------------------- */
+.byq-gem--gooey-nav-01__list {
+  position: relative;
+  z-index: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 0.15rem;
+}
+
+.byq-gem--gooey-nav-01__item {
+  display: flex;
+}
+
+.byq-gem--gooey-nav-01__link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.62rem 1.15rem;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--byq-fg);
+  outline: none;
+  transition: color 0.3s ease;
+}
+
+/* Whichever link the pill is resting under reads as text-on-accent (dark). */
+.byq-gem--gooey-nav-01__link.is-active {
+  color: var(--byq-on-accent);
+}
+
+.byq-gem--gooey-nav-01__link:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--byq-bg),
+    0 0 0 4px var(--byq-fg);
+}
+
+/* ---- The goo filter host is size-zero; keep it out of layout. -------- */
+.byq-gem--gooey-nav-01__filter {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ---- Reduced motion: snap instead of travel, drop stays hidden ------- */
+@media (prefers-reduced-motion: reduce) {
+  .byq-gem--gooey-nav-01__blob,
+  .byq-gem--gooey-nav-01__drop {
+    transition-duration: 0.001ms;
+  }
+}
+
+/* ---- Narrow screens -------------------------------------------------- */
+@media (max-width: 560px) {
+  .byq-gem--gooey-nav-01__nav {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  .byq-gem--gooey-nav-01__link {
+    padding: 0.55rem 0.85rem;
+    font-size: 0.85rem;
+  }
+}
+
+</style>
+  </head>
+  <body class="dark">
+    <!-- ===== GEM START — everything below is namespaced under .byq-gem--gooey-nav-01 ===== -->
+    <section class="byq-gem byq-gem--gooey-nav-01">
+      <nav class="byq-gem--gooey-nav-01__nav" aria-label="Sections">
+        <!-- Goo layer: the travelling pill + a metaball that trails it. The SVG
+             filter below merges them so the indicator stretches like liquid,
+             then re-forms with surface tension as it settles on a link. -->
+        <span class="byq-gem--gooey-nav-01__goo" aria-hidden="true">
+          <span class="byq-gem--gooey-nav-01__blob"></span>
+          <span class="byq-gem--gooey-nav-01__drop"></span>
+        </span>
+
+        <ul class="byq-gem--gooey-nav-01__list">
+          <li class="byq-gem--gooey-nav-01__item">
+            <a class="byq-gem--gooey-nav-01__link is-active" href="#" aria-current="page">Studio</a>
+          </li>
+          <li class="byq-gem--gooey-nav-01__item">
+            <a class="byq-gem--gooey-nav-01__link" href="#">Catalog</a>
+          </li>
+          <li class="byq-gem--gooey-nav-01__item">
+            <a class="byq-gem--gooey-nav-01__link" href="#">Gems</a>
+          </li>
+          <li class="byq-gem--gooey-nav-01__item">
+            <a class="byq-gem--gooey-nav-01__link" href="#">Journal</a>
+          </li>
+          <li class="byq-gem--gooey-nav-01__item">
+            <a class="byq-gem--gooey-nav-01__link" href="#">Contact</a>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- SVG goo filter. Blur everything, then crank the alpha contrast so the
+           blurred edges of the pill and its trailing drop fuse into one liquid
+           shape (the classic feGaussianBlur → feColorMatrix "metaball" trick). -->
+      <svg class="byq-gem--gooey-nav-01__filter" aria-hidden="true" focusable="false" width="0" height="0">
+        <defs>
+          <filter id="byq-gooey-nav-01-goo">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+            <feColorMatrix
+              in="blur"
+              mode="matrix"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10"
+            />
+          </filter>
+        </defs>
+      </svg>
+    </section>
+    <!-- ===== GEM END ===== -->
+
+    <script>
+// Gooey Nav Indicator — original.
+// The pill (.__blob) snaps to whichever link is hovered / focused / active,
+// while a trailing drop (.__drop) chases its centre. The SVG goo filter in the
+// markup fuses the two, so the indicator stretches like liquid while it travels
+// and re-forms once it settles. All state is driven through CSS custom props,
+// so the springy easing lives in the stylesheet. Scoped to root — no globals.
+window.addEventListener("DOMContentLoaded", () => {
+  const root = document.querySelector(".byq-gem--gooey-nav-01");
+  if (!root) return;
+
+  const goo = root.querySelector(".byq-gem--gooey-nav-01__goo");
+  const blob = root.querySelector(".byq-gem--gooey-nav-01__blob");
+  const drop = root.querySelector(".byq-gem--gooey-nav-01__drop");
+  const nav = root.querySelector(".byq-gem--gooey-nav-01__nav");
+  const links = [...root.querySelectorAll(".byq-gem--gooey-nav-01__link")];
+  if (!goo || !blob || !drop || !nav || !links.length) return;
+
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // The link that "owns" the pill when nothing is being pointed at.
+  let activeLink = links.find((l) => l.classList.contains("is-active")) || links[0];
+  let settleTimer = 0;
+
+  // Move the pill under `link`. `animate` = show the liquid stretch mid-travel.
+  function moveTo(link, animate) {
+    const gooRect = goo.getBoundingClientRect();
+    const rect = link.getBoundingClientRect();
+    const x = rect.left - gooRect.left;
+    const centre = x + rect.width / 2;
+
+    blob.style.setProperty("--x", `${x}px`);
+    blob.style.setProperty("--w", `${rect.width}px`);
+
+    // Tint the resting link dark so its text reads against the lime pill.
+    links.forEach((l) => l.classList.toggle("is-active", l === link));
+
+    clearTimeout(settleTimer);
+
+    if (animate && !reduced) {
+      // Pop the drop up at the pill's centre; its springy, slightly slower
+      // transition makes it lag, forming the goo bridge as the pill moves.
+      drop.style.setProperty("--dx", `${centre}px`);
+      drop.style.setProperty("--ds", "1");
+      // Once travel finishes, collapse the drop back into the pill.
+      settleTimer = window.setTimeout(() => {
+        drop.style.setProperty("--ds", "0");
+      }, 260);
+    } else {
+      drop.style.setProperty("--dx", `${centre}px`);
+      drop.style.setProperty("--ds", "0");
+    }
+  }
+
+  // Pointer + keyboard focus preview the target; leaving/blur returns home.
+  links.forEach((link) => {
+    link.addEventListener("mouseenter", () => moveTo(link, true));
+    link.addEventListener("focus", () => moveTo(link, true));
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      activeLink = link;
+      moveTo(link, true);
+    });
+  });
+
+  nav.addEventListener("mouseleave", () => moveTo(activeLink, true));
+
+  // Place the pill on first paint (no stretch), and re-place on resize since
+  // link geometry changes with the layout.
+  const settle = () => moveTo(activeLink, false);
+  requestAnimationFrame(settle);
+  window.addEventListener("resize", settle);
+});
+
+</script>
+  <script>
+(function() {
+  function sendHeight() {
+    var docEl = document.documentElement;
+    var body  = document.body;
+    if (!body) return;
+    var prevDocH    = docEl.style.height;
+    var prevDocMinH = docEl.style.minHeight;
+    var prevBodyH    = body.style.height;
+    var prevBodyMinH = body.style.minHeight;
+    docEl.style.height = '0px';
+    docEl.style.minHeight = '0px';
+    body.style.height  = '0px';
+    body.style.minHeight = '0px';
+    // Use body.scrollHeight only — documentElement.scrollHeight is
+    // viewport-biased and always returns at least the iframe viewport
+    // height (so short sections in a tall iframe report wrong values).
+    var raw = body.scrollHeight;
+    docEl.style.height = prevDocH;
+    docEl.style.minHeight = prevDocMinH;
+    body.style.height  = prevBodyH;
+    body.style.minHeight = prevBodyMinH;
+    var height = Math.min(raw, 20000);
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'iframeHeight', height: height, id: window.location.pathname }, '*');
+    }
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  if (document.body) {
+    new MutationObserver(sendHeight).observe(document.body, { childList: true, subtree: true });
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(sendHeight).observe(document.body);
+    }
+  }
+  window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'requestHeight') sendHeight();
+  });
+})();
+</script>
+</body>
+</html>

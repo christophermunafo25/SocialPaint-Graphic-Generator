@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  imagePosition,
+  withImagePosition,
   PALETTE_ITEMS,
   applyPaintOrder,
   paintOrder,
@@ -545,14 +547,76 @@ describe("fixedPatch", () => {
 
   it("making text editable keeps its copy as the placeholder when it has none", () => {
     const text: TemplateField = { ...base, type: "text", static: true, staticValue: "Now hiring" };
+    // No sizing of its own, so it shrinks as member input.
     expect(fixedPatch(text, false)).toEqual({
       static: undefined,
       staticValue: undefined,
+      textSizing: "shrink",
       placeholder: "Now hiring",
     });
-    expect(fixedPatch({ ...text, placeholder: "Role" }, false)).toEqual({
+    expect(fixedPatch({ ...text, placeholder: "Role", textSizing: "free" }, false)).toEqual({
       static: undefined,
       staticValue: undefined,
     });
+  });
+});
+
+describe("image position", () => {
+  it("reads an absent rect as the plain fit", () => {
+    expect(imagePosition(undefined)).toEqual({ zoom: 100, x: 0, y: 0 });
+  });
+
+  it("zooms about the centre and keeps an imported crop's proportions", () => {
+    const rect = { x: -0.1, y: 0, width: 1.2, height: 0.8 };
+    const next = withImagePosition(rect, { zoom: 240 });
+    expect(next.width).toBeCloseTo(2.4);
+    expect(next.height).toBeCloseTo(1.6);
+    expect(next.x + next.width / 2).toBeCloseTo(rect.x + rect.width / 2);
+    expect(next.y + next.height / 2).toBeCloseTo(rect.y + rect.height / 2);
+  });
+
+  it("never zooms or moves past the span the renderer draws", () => {
+    const tall = { x: 0, y: 0, width: 1, height: 2 };
+    const zoomed = withImagePosition(tall, { zoom: 1000 });
+    expect(Math.max(zoomed.width, zoomed.height)).toBeCloseTo(10);
+    expect(withImagePosition(undefined, { x: -5000 }).x).toBe(-10);
+  });
+
+  it("moves the top-left corner in percent of the box", () => {
+    expect(withImagePosition(undefined, { x: -25, y: 10 })).toEqual({
+      x: -0.25,
+      y: 0.1,
+      width: 1,
+      height: 1,
+    });
+  });
+});
+
+describe("fixedPatch on imported text", () => {
+  const imported = {
+    id: "t",
+    fieldKey: "headline",
+    label: "Headline",
+    type: "text",
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 40,
+    static: true,
+    staticValue: "Launch day",
+    sourceNodeId: "1:2",
+  } as const;
+
+  it("makes imported text shrink once members fill it", () => {
+    expect(fixedPatch(imported, false).textSizing).toBe("shrink");
+  });
+
+  it("still shrinks after a save, which drops the import's node id", () => {
+    expect(fixedPatch({ ...imported, sourceNodeId: undefined }, false).textSizing).toBe("shrink");
+  });
+
+  it("leaves a chosen sizing, and images, as they are", () => {
+    expect(fixedPatch({ ...imported, textSizing: "free" }, false).textSizing).toBeUndefined();
+    expect(fixedPatch({ ...imported, type: "image" }, false).textSizing).toBeUndefined();
   });
 });

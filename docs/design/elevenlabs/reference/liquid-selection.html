@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en" data-input="pointer">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Liquid selection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&display=swap"
+    />
+    <style>
+      /* Reference build of the liquid selection for SocialPaint's Segmented
+         Control (Figma 2211:213, Foundations › Interactions). The token
+         values are the ElevenLabs file's, copied from tokens.css so this page
+         runs on its own. In the app, read tokens.css and add only the rules
+         marked "liquid" to .ui-segmented in primitives.css. */
+      :root {
+        --space-2: 2px;
+        --space-4: 4px;
+        --space-6: 6px;
+        --space-8: 8px;
+        --space-12: 12px;
+        --space-16: 16px;
+        --space-24: 24px;
+        --space-32: 32px;
+        --space-48: 48px;
+        --radius-xs: 6px;
+        --radius-sm: 8px;
+        --radius-xl: 16px;
+        --radius-full: 999px;
+        --size-control-sm: 28px;
+        --stroke-hairline: 1px;
+        --stroke-focus: 2px;
+        --focus-offset: 2px;
+        --font-sans: "Inter Tight", system-ui, -apple-system, sans-serif;
+        --motion-duration-fast: 120ms;
+        --motion-duration-base: 200ms;
+        --motion-duration-slow: 320ms;
+        --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+        --type-label-s: 500 13px/18px var(--font-sans);
+        --type-label-m: 500 14px/20px var(--font-sans);
+        --type-caption-m: 400 12px/16px var(--font-sans);
+        --type-title-group: 500 20px/26px var(--font-sans);
+      }
+      /* tokens.css does this for every duration. */
+      @media (prefers-reduced-motion: reduce) {
+        :root {
+          --motion-duration-fast: 0ms;
+          --motion-duration-base: 0ms;
+          --motion-duration-slow: 0ms;
+        }
+      }
+      [data-theme="light"] {
+        --surface-page: #ffffff;
+        --border-subtle: #efefef;
+        --border-raised: #e8e8e8;
+        --border-focus: #0f0f0f;
+        --text-primary: #0f0f0f;
+        --text-secondary: #6b6b6b;
+        --text-disabled: #a3a3a3;
+        --control-track: #efefef;
+        --control-thumb: #ffffff;
+        --shadow-thumb: #0000001a;
+      }
+      [data-theme="dark"] {
+        --surface-page: #0a0a0a;
+        --border-subtle: #1f1f1f;
+        --border-raised: #262626;
+        --border-focus: #fafafa;
+        --text-primary: #fafafa;
+        --text-secondary: #a3a3a3;
+        --text-disabled: #6b6b6b;
+        --control-track: #1f1f1f;
+        --control-thumb: #333333;
+        --shadow-thumb: #0000004d;
+      }
+      [data-theme] {
+        --elevation-thumb: 0 1px 3px 0 var(--shadow-thumb);
+        background: var(--surface-page);
+        color: var(--text-primary);
+      }
+
+      /* Demo only: four times slower, for the feel-check. The timers read
+         the same tokens, so the choreography holds at any speed. */
+      .slow {
+        --motion-duration-fast: 480ms;
+        --motion-duration-base: 800ms;
+        --motion-duration-slow: 1280ms;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+      }
+      .demo {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 100dvh;
+      }
+      .panel {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-32);
+        padding: var(--space-48);
+      }
+      .panel[data-theme="light"] {
+        border-right: var(--stroke-hairline) solid var(--border-raised);
+      }
+      .panel__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-16);
+      }
+      .panel__head h2 {
+        margin: 0;
+        font: var(--type-title-group);
+      }
+      .switch {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-8);
+        font: var(--type-label-m);
+        color: var(--text-secondary);
+        cursor: pointer;
+      }
+      .example {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-12);
+      }
+      .example > p {
+        margin: 0;
+        font: var(--type-caption-m);
+        color: var(--text-secondary);
+      }
+
+      /* ── Segmented control (2211:213), as primitives.css builds it ── */
+      .ui-segmented {
+        position: relative; /* liquid */
+        isolation: isolate; /* liquid */
+        display: inline-flex;
+        align-self: flex-start;
+        padding: var(--space-4);
+        gap: var(--space-2);
+        border-radius: var(--radius-sm);
+        background: var(--control-track);
+      }
+      .ui-segment {
+        position: relative; /* liquid: labels sit above the thumb */
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: var(--size-control-sm);
+        padding: 0 var(--space-12);
+        border: 0;
+        border-radius: var(--radius-xs);
+        background: transparent;
+        color: var(--text-secondary);
+        font: var(--type-label-s);
+        cursor: pointer;
+        /* liquid: the label lifts as the thumb arrives, and hover eases the
+           same way, color only */
+        transition: color var(--motion-duration-fast) var(--motion-easing-standard);
+      }
+      .ui-segment[aria-checked="true"] {
+        color: var(--text-primary);
+      }
+      @media (hover: hover) and (pointer: fine) {
+        .ui-segment:not(:disabled):hover {
+          color: var(--text-primary);
+        }
+      }
+      .ui-segment:focus-visible {
+        z-index: 3;
+        outline: var(--stroke-focus) solid var(--border-focus);
+        outline-offset: var(--focus-offset);
+      }
+      /* Until the thumb is placed (first paint, no script), the selected
+         segment draws its own thumb, so nothing flashes or shifts. */
+      .ui-segmented:not([data-liquid]) .ui-segment[aria-checked="true"] {
+        background: var(--control-thumb);
+        box-shadow: var(--elevation-thumb);
+      }
+
+      /* ── liquid ──
+         The goo layer holds a blob that rides under the thumb and a drop
+         that trails it. The filter fuses them into one liquid shape and
+         casts Elevation/Thumb from it, so the strand between them has the
+         thumb's shadow too. The thumb on top is crisp and is what rests. */
+      .ui-segmented__goo,
+      .ui-segmented__thumb {
+        position: absolute;
+        pointer-events: none;
+      }
+      .ui-segmented__goo {
+        inset: var(--space-4);
+        z-index: 0;
+        filter: url(#sp-goo) drop-shadow(0 1px 3px var(--shadow-thumb));
+      }
+      .ui-segmented__blob,
+      .ui-segmented__thumb {
+        height: var(--size-control-sm);
+        width: var(--thumb-w, 0px);
+        translate: var(--thumb-x, 0px) 0;
+        border-radius: var(--radius-xs);
+        background: var(--control-thumb);
+        transition:
+          translate var(--motion-duration-base) var(--motion-easing-standard),
+          width var(--motion-duration-base) var(--motion-easing-standard);
+      }
+      .ui-segmented__blob {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+      .ui-segmented__thumb {
+        top: var(--space-4);
+        left: var(--space-4);
+        z-index: 1;
+      }
+      .ui-segmented__drop {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 18px; /* two thirds of the 28 thumb */
+        height: 18px;
+        margin: -9px 0 0 -9px;
+        border-radius: var(--radius-full);
+        background: var(--control-thumb);
+        translate: var(--drop-x, 0px) 0;
+        scale: var(--drop-s, 0);
+        /* The drop holds for half of fast (60ms) while the thumb pulls
+           away, then follows on the slower duration, so a strand stretches
+           between them. */
+        transition:
+          translate var(--motion-duration-slow) var(--motion-easing-standard)
+            calc(var(--motion-duration-fast) / 2),
+          scale var(--motion-duration-fast) var(--motion-easing-standard);
+      }
+      /* First paint, a resize, the keyboard and reduced motion place the
+         thumb with no travel. */
+      .ui-segmented[data-instant] :is(.ui-segmented__thumb, .ui-segmented__blob, .ui-segmented__drop) {
+        transition: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .ui-segmented__drop {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" aria-hidden="true" focusable="false" style="position: absolute">
+      <!-- One shared filter for every segmented control: blur the shapes,
+           then push the alpha so overlapping blurs read as one liquid
+           (the metaball trick from BYQ's gooey-nav-01). sRGB keeps the
+           fill exactly control/thumb, so no seam shows at the thumb. -->
+      <filter
+        id="sp-goo"
+        x="-20%"
+        y="-60%"
+        width="140%"
+        height="220%"
+        color-interpolation-filters="sRGB"
+      >
+        <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+        <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10" />
+      </filter>
+    </svg>
+
+    <main class="demo">
+      <section class="panel" data-theme="light" aria-labelledby="light-title">
+        <div class="panel__head">
+          <h2 id="light-title">Light</h2>
+          <label class="switch"><input type="checkbox" data-slow /> Slow motion</label>
+        </div>
+        <div class="example">
+          <div class="ui-segmented" role="radiogroup" aria-label="Variation">
+            <button type="button" class="ui-segment" role="radio" aria-checked="true">Variation 1</button>
+            <button type="button" class="ui-segment" role="radio" aria-checked="false">Variation 2</button>
+            <button type="button" class="ui-segment" role="radio" aria-checked="false">Variation 3</button>
+          </div>
+          <p>Variations bar</p>
+        </div>
+        <div class="example">
+          <div class="ui-segmented" role="radiogroup" aria-label="Mode">
+            <button type="button" class="ui-segment" role="radio" aria-checked="true">Edit</button>
+            <button type="button" class="ui-segment" role="radio" aria-checked="false">Preview</button>
+          </div>
+          <p>Edit and Preview</p>
+        </div>
+        <div class="example">
+          <div class="ui-segmented" role="radiogroup" aria-label="Theme">
+            <button type="button" class="ui-segment" role="radio" aria-checked="true">System</button>
+            <button type="button" class="ui-segment" role="radio" aria-checked="false">Light</button>
+            <button type="button" class="ui-segment" role="radio" aria-checked="false">Dark</button>
+          </div>
+          <p>Account theme</p>
+        </div>
+      </section>
+
+      <section class="panel" data-theme="dark" aria-labelledby="dark-title">
+        <div class="panel__head">
+          <h2 id="dark-title">Dark</h2>
+        </div>
+        <div class="example">
+          <div class="ui-segmented" role="radiogroup" aria-label="Variation">
+            <button type="button" class="ui-segment" role="radio" aria-checked="true">Variation 1</button>
+            <button type="button" class="ui-segment" role="radio" aria-checked="false">Variation 2</button>
+            <button type="button" class="ui-segment" role="radio" aria-checked="false">Variation 3</button>
+          </div>
+          <p>Variations bar</p>
+        </div>
+        <div class="example">
+          <div class="ui-segmented" role="radiogroup" aria-label="Mode">
+            <button type="button" class="ui-segment" role="radio" aria-checked="true">Edit</button>
+            <button type="button" class="ui-segment" role="radio" aria-checked="false">Preview</button>
+          </div>
+          <p>Edit and Preview</p>
+        </div>
+        <div class="example">
+          <div class="ui-segmented" role="radiogroup" aria-label="Theme">
+            <button type="button" class="ui-segment" role="radio" aria-checked="true">System</button>
+            <button type="button" class="ui-segment" role="radio" aria-checked="false">Light</button>
+            <button type="button" class="ui-segment" role="radio" aria-checked="false">Dark</button>
+          </div>
+          <p>Account theme</p>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // How the member last acted, as src/app/components/primitives/
+      // inputModality.ts marks it on <html>. A selection the keyboard makes
+      // never travels.
+      const root = document.documentElement;
+      addEventListener("keydown", () => (root.dataset.input = "keyboard"), true);
+      addEventListener("pointerdown", () => (root.dataset.input = "pointer"), true);
+
+      const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+      const token = (el, name) => parseFloat(getComputedStyle(el).getPropertyValue(name)) || 0;
+
+      function liquid(track) {
+        const segments = [...track.querySelectorAll(".ui-segment")];
+        const goo = document.createElement("span");
+        goo.className = "ui-segmented__goo";
+        goo.setAttribute("aria-hidden", "true");
+        goo.innerHTML = '<span class="ui-segmented__blob"></span><span class="ui-segmented__drop"></span>';
+        const thumb = document.createElement("span");
+        thumb.className = "ui-segmented__thumb";
+        thumb.setAttribute("aria-hidden", "true");
+        track.prepend(goo, thumb);
+
+        let timers = [];
+        const current = () => segments.find((s) => s.getAttribute("aria-checked") === "true") || segments[0];
+
+        // Write the thumb and the drop. `travel` is true only for a pointer
+        // selection with motion allowed.
+        function place(segment, travel) {
+          const pad = parseFloat(getComputedStyle(track).paddingLeft);
+          const x = segment.offsetLeft - pad;
+          const w = segment.offsetWidth;
+          timers.forEach(clearTimeout);
+          timers = [];
+          if (!travel) {
+            track.dataset.instant = "";
+            track.style.setProperty("--thumb-x", `${x}px`);
+            track.style.setProperty("--thumb-w", `${w}px`);
+            track.style.setProperty("--drop-x", `${x + w / 2}px`);
+            track.style.setProperty("--drop-s", "0");
+            track.getBoundingClientRect(); // commit before transitions return
+            requestAnimationFrame(() => delete track.dataset.instant);
+            return;
+          }
+          // The drop grows where the thumb was, holds while the thumb pulls
+          // away, follows on the slower curve, and shrinks into the thumb
+          // as it lands.
+          track.style.setProperty("--thumb-x", `${x}px`);
+          track.style.setProperty("--thumb-w", `${w}px`);
+          track.style.setProperty("--drop-x", `${x + w / 2}px`);
+          track.style.setProperty("--drop-s", "1");
+          timers.push(
+            setTimeout(() => track.style.setProperty("--drop-s", "0"), token(track, "--motion-duration-base")),
+          );
+        }
+
+        function select(segment, how) {
+          if (segment === current()) return;
+          segments.forEach((s) => {
+            const on = s === segment;
+            s.setAttribute("aria-checked", String(on));
+            s.tabIndex = on ? 0 : -1;
+          });
+          place(segment, how === "pointer" && !reduced.matches);
+        }
+
+        segments.forEach((s, i) => {
+          s.tabIndex = s === current() ? 0 : -1;
+          // detail is 0 when Space or Enter clicks the button.
+          s.addEventListener("click", (e) => select(s, e.detail === 0 ? "keyboard" : "pointer"));
+          s.addEventListener("keydown", (e) => {
+            const n = segments.length;
+            const at = segments.indexOf(current());
+            let next = null;
+            if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (at + 1) % n;
+            else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (at - 1 + n) % n;
+            else if (e.key === "Home") next = 0;
+            else if (e.key === "End") next = n - 1;
+            if (next === null) return;
+            e.preventDefault();
+            select(segments[next], "keyboard");
+            segments[next].focus();
+          });
+        });
+
+        place(current(), false);
+        track.dataset.liquid = "";
+        new ResizeObserver(() => place(current(), false)).observe(track);
+      }
+
+      document.fonts.ready.then(() => document.querySelectorAll(".ui-segmented").forEach(liquid));
+
+      document.querySelector("[data-slow]").addEventListener("change", (e) => {
+        document.body.classList.toggle("slow", e.target.checked);
+      });
+    </script>
+  </body>
+</html>

@@ -6,8 +6,16 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { publicLinkUrl } from "@/lib/publicLink/route";
 import { ErrorState } from "../../ErrorState";
-import { SkeletonRows } from "../../Skeleton";
-import { Button, Field, Input, RowMenu, SettingsCard, Status, Switch } from "../../primitives";
+import {
+  Badge,
+  Button,
+  Field,
+  Input,
+  RowMenu,
+  SettingsCard,
+  SkeletonRows,
+  Switch,
+} from "../../primitives";
 import { TemplateLinksDialog } from "../TemplateLinksDialog";
 import { ConfirmModal, TypedConfirmModal } from "./SettingsConfirm";
 import { DevBackendNotice, SwitchRow } from "./settingsShared";
@@ -204,7 +212,7 @@ export function SharingSection() {
             onRetry={state.retry}
           />
         ) : shown.length === 0 ? (
-          <p className="t-body-s sp-st-empty">
+          <p className="t-body-m sp-st-empty">
             {links.length === 0
               ? "Nothing is publicly reachable. Links are created from a template's Public links dialog."
               : "No active links. Turn on Show revoked and expired to see the others."}
@@ -233,20 +241,18 @@ export function SharingSection() {
                         <span className="sp-st-link">
                           <span className="sp-st-link__name">
                             <span className="t-label-m">{name}</span>
-                            <Status tone={st.live ? "active" : "neutral"} size="sm">
-                              {st.label}
-                            </Status>
+                            <Badge tone={st.live ? "active" : "neutral"}>{st.label}</Badge>
                           </span>
                           <span className="t-label-xs sp-st-meta">{link.templateName}</span>
                         </span>
                       </td>
-                      <td className="t-body-s">
+                      <td className="t-body-m">
                         {link.useCap ? `${link.useCount} of ${link.useCap}` : link.useCount}
                       </td>
-                      <td className="t-body-s">
+                      <td className="t-body-m">
                         {link.lastUsedAt ? shortDate(link.lastUsedAt) : "Never"}
                       </td>
-                      <td className="t-body-s">
+                      <td className="t-body-m">
                         {link.expiresAt ? shortDate(link.expiresAt) : "Never"}
                       </td>
                       <td>

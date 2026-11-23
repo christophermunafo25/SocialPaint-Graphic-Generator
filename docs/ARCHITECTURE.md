@@ -28,7 +28,7 @@ src/lib/stores/             Data layer — components import ONLY these interfac
   index.ts                    Factory: picks backend from env
 src/lib/auth/AuthContext.tsx  Auth boundary (dev switcher now, Supabase Auth later)
 src/lib/brand/BrandContext.tsx Active company's kit/assets/locations + theming
-src/lib/render/              Canvas math: data-URL pipeline, autofit, fonts, toPng export
+src/lib/render/              Canvas math: data-URL pipeline, autofit, fonts, PNG export
 src/lib/bulk/                Bulk fill: CSV parser, column mapping, row checks, run loop
                               (pure; the render step is injected)
 src/app/components/bulk/     Bulk fill page + the off-screen render stage
@@ -37,13 +37,26 @@ src/lib/generate/            Generate chat: thread model and reducer, the run,
                               stores and measurer injected)
 src/app/components/generate/ Generate chat page, History page, editor panel
 src/app/components/SchemaRenderer.tsx  THE renderer — every template goes through it
-src/app/components/builder/  Admin Template Builder — a guided wizard:
-                              source (PNG/Figma) → Name → Fields → Caption →
-                              Tags & details → Publish. The Fields step is an
-                              element palette (drag onto canvas) + canvas
-                              (multi-select, ⌘C/X/V/D + context menu) + field
-                              list (drag = member form order) + inspector
-                              (z-order via To front/back; image corner radius)
+src/app/components/builder/  Admin Template Builder. A template starts on the
+                              list (admin/AdminTemplates.tsx): New template,
+                              then Choose a size (SizeGallery) or an import's
+                              dialog (Figma, Auto build, Canva). The list hands
+                              the result over (startHandoff.ts, held in the
+                              module, never the URL) and the builder takes it
+                              as it opens on /template-builder/new; with
+                              nothing handed over it goes back to the list
+                              with New template open. The editor
+                              (TemplateBuilder) is a top bar (the trail, whose
+                              last crumb renames, the status and save state,
+                              Edit or Preview, Publish) over three cards: the
+                              Layers and Form rail (Add tiles, Layer Rows,
+                              Form Rows), the stage (the canvas with
+                              multi-select, ⌘C/X/V/D and a context menu; the
+                              variation capsule, the tools, size, zoom and the
+                              checks pill) and the inspector (Design and
+                              Field). Publish holds the name, caption and
+                              details; Preview is the fill page's Details
+                              panel beside the stage.
 src/app/components/onboarding/ Create account (OnboardingFlow) and its pieces
 supabase/migrations/         Schema + RLS (dev-active, real-ready)
 supabase/functions/          figma-status / figma-connect / figma-import /
@@ -60,8 +73,8 @@ from the platform in migration 0009.)
 - `brand_kits` (palette jsonb, `type_styles` jsonb — the brand rules engine's
   named roles, `guidelines` jsonb — accepted free-text rules, heading/body
   font refs (unread since migration 0042; the font roles live on the type
-  styles), primary logo) — one active per company. Unlimited colors, type
-  styles, and rules.
+  styles), primary logo, `system` jsonb — the brand's design system, migration
+  0052) — one active per company. Unlimited colors, type styles, and rules.
 - `brand_assets` (logo | font | image; Storage-backed)
 - `company_canvas_presets` — per-workspace canvas-size opt-outs, keyed by
   `SIZE_CATALOG` ids. No longer read or written: since the new look's Phase 3
@@ -247,16 +260,26 @@ isolation, the lifecycle, the cascades, and cap concurrency.
 
 ## App shell
 
-Navigation is a persistent left sidebar (`src/app/components/Sidebar.tsx`,
-layout from Figma `KFBFgZBs7Tl9LXovzNUaNP` node 13:28, surface treatment from
-the current design system — flat, no glass): a panel pinned to the left
-edge, rounded on its right corners, with logo + collapse toggle, six
-role-gated destinations (Brand Templates · Template Builder · Insights &
-Analytics · Brand Studio · People · Settings & Admin — members see only the
-first), and a user block pinned to the bottom (theme toggle, sign out, and —
-on the dev backend — the tenant/role switcher). Every sidebar color is a
-`--sb-*` token themed for light AND dark in `socialpaint.css`; tenant brand
-kits never re-color the shell.
+At 1024 and wider the window is the app frame (ElevenLabs, Phase E2; every product frame
+of `dQ8bQq3V7Bue5pvFrI2g9X`): `AppShell` lays the Sidebar flush against the window and Main
+beside it on surface/page, with no inset (`--layout-shell-inset`), stops above the local
+backend's banner, and the document does not scroll. The Sidebar
+(`src/app/components/Sidebar.tsx`, component `2218:679`) runs on surface/shell with a
+hairline on its right, 301 wide or a 76 rail, with CJ's lockup on `--logo-ink`, the theme
+toggle and Collapse, five role-gated destinations (members see the first two) and the
+account row, whose Settings button is the avatar when collapsed. Each area's icon comes
+from `areas.ts`, which the nav and the page headers share. Below 1024 a sticky mobile bar with a drop-down nav
+takes its place and the document scrolls.
+
+Main is `layout/Page.tsx`: the page's header in a 64 header row with a hairline under it
+(the `PageHeader` leads with the area's icon), the content under it and Footer Links at
+the foot, each with a 32 gutter. Most pages scroll inside Main as one
+page, header row and links included, with nothing sticky ("scroll"); the Generate thread and History scroll their own region
+("self"); the builder editor fills Main ("bare"). Page Up and Down from the sidebar or the
+page itself reach the content (`layout/useFrameKeys.ts`), and the content returns to the
+top when the route's path changes. The shell reads tokens and the two measures it
+defines itself in `src/styles/shell.css` (the page gutter `--page-pad` and the mobile
+bar's height `--chrome-top`); tenant brand kits never re-color it.
 
 ## Theming
 
@@ -268,25 +291,33 @@ expression lives in the template graphics. Fonts load via the Google Fonts css2 
 runtime `@font-face` with data URLs for uploads (export-safe — see
 `src/lib/render/fonts.ts`).
 
-Token values come from the Figma file "Master UX-UI". `design/tokens/master.tokens.json`
-is its export (made with the development plugin in `design/tokens/figma-export/`), and
+Token values come from the Figma file "Master UX-UI New Brand Eleven Labs Inspired"
+(`dQ8bQq3V7Bue5pvFrI2g9X`), which replaced "Master UX UI New Brand (Copy)" in the
+ElevenLabs program's Phase E1 (`docs/design/elevenlabs/`), itself the successor of
+"Master UX-UI" (`docs/design/new-brand/`). `design/tokens/master.tokens.json` is its export
+(made with the development plugin in `design/tokens/figma-export/`), and
 `npm run tokens` generates `src/styles/tokens.css` from it with `scripts/build-tokens.mjs`.
-Nobody edits either file by hand. While the new look moves page by page
-(`docs/design/new-look/`), `src/styles/legacy-bridge.css` points old token names at the
-Figma ones. `npm run tokens:check`, part of `npm run verify` and CI, fails when
+Nobody edits either file by hand. `src/styles/legacy-bridge.css` points older token
+names at the new ones while screens move phase by phase. It carries two generations of
+older names (the first stylesheet's and the earlier Figma file's) and the untrimmed
+`.tu-*` text classes, until that program's Phase 10 deletes it. `npm run tokens:check`, part of `npm run verify` and CI, fails when
 `tokens.css` is out of date or when a stylesheet redeclares a token it owns.
 
 Interface controls are the primitives in `src/app/components/primitives/`, one per
-component on the Figma file's Master UI Elements page, styled in
-`src/styles/primitives.css` with their interaction states built in and tested in the
-happy-dom Vitest project. In development, `/dev/ui` renders every primitive and the
-file's Interaction states table. Screens move onto the primitives in the phase that
-rebuilds them (`docs/design/new-look/PLAN.md`); the `.sp-btn`, `.sp-input` and
-`.sp-chat-*` classes stay until nothing uses them.
+core component on the six component type pages (Actions, Inputs, Selection, Labels and
+feedback, Navigation, Containers) of the Figma file "Master UX-UI New Brand Eleven Labs
+Inspired", styled in `src/styles/primitives.css` with their interaction states and their
+microinteractions built in (`docs/design/elevenlabs/PROMPT.md` section 7) and tested in
+the happy-dom Vitest project. In development, `/dev/ui` draws those six pages from
+`src/app/dev/boards.json`, one board a page and every component in every variant and
+state in its own Light and Dark panel, then a working sheet of live controls. Screens
+move onto the primitives in the phase that rebuilds them (`docs/design/elevenlabs/PLAN.md`); the
+`.sp-btn`, `.sp-input` and `.sp-chat-*` classes stay until nothing uses them.
 
 The shell is the sidebar (`src/app/components/Sidebar.tsx`: the Figma Sidebar component,
 expanded or collapsed, built on the primitives and styled in `src/styles/shell.css`) and
-the page header (`layout/Page.tsx`: a title and its actions). Settings opens from the
+Main (`layout/Page.tsx`), which places each page's `PageHeader` (the primitive: a title or
+a breadcrumb, with a status and actions) and the footer links. Settings opens from the
 account gear and holds People (`/people` and `/settings/team` redirect there), workspace
 switching (the Workspaces card) and sign out; on the local backend the dev role switch
 sits in `DevBackendBanner`. What each role reaches is `screenFor` (`src/app/router.tsx`)
@@ -311,20 +342,22 @@ lands in Phase 7b. Sharing's rows copy a link's address (its token is stored sin
 before 0033 need New address first.
 
 Brand Studio is on the new look (Phase 6; styles in `src/styles/brand-studio.css`, the
-`sp-bs-*` classes). Detail pages head themselves with `BreadcrumbHeader` (save status and
-Undo on the right); file rows and cards carry `RowMenu` / `RowContextMenu` (the same menu
+`sp-bs-*` classes). Detail pages head with `BrandDetailHeader` (the PageHeader primitive's
+breadcrumb kind, with the save status and Undo on the right), which `BrandStudio` places
+in the frame's header row; file rows and cards carry `RowMenu` / `RowContextMenu` (the same menu
 on right-click); preview cards use `PreviewOverlay decorative`. Escape on an in-place edit
 also drops that edit's undo steps (`brand.cancelTo`).
 
-Brand Templates is on the new look (Phase 4; styles in `src/styles/brand-templates.css`).
-The library's template card is one button that steps through its looks on hover. A page
-under the library (the fill page, the template chat) heads itself with
-`layout/Breadcrumb.tsx` in place of a title. The fill page (`TemplateFill`, shared with the
-public link page) is a step form, one field per step on the Field primitive (a photo on the
-Upload control, whose picking and cropping is `imagePick.tsx`, shared with Generate's
-editor), then a finish step with the look, the caption with Copy and the downloads, beside
-a live Preview card. Both chats' Edit details is `details/DetailsPanel.tsx`: every
-field in one panel, with Close and Discard; Generate's adds a size switch and its own stage.
+Brand Templates is on the new brand (Phase 4; styles in `src/styles/brand-templates.css`).
+The library's template card is one button that steps through its variations on hover. A
+page under the library (the fill page) heads itself with the breadcrumb kind of the
+`PageHeader` primitive in place of a title. The fill page (`TemplateFill`, shared with the
+public link page) is form only: the graphic on its stage, beside the Details panel
+(`details/DetailsPanel.tsx`) with every field at once (a photo on the Upload control, whose
+picking and cropping is `imagePick.tsx`, shared with Generate's editor), the caption with
+Copy, and Download PNG, then Download again and Post to LinkedIn. Generate's Edit details
+uses the same panel, with Close and Discard, a size switch and its own stage. The template
+chat is hidden: its addresses open the fill page.
 
 ## Insights
 
@@ -355,10 +388,43 @@ since PostgREST caps an unpaged read without saying so.
 the single export (`exportSchemaPng`, which adds delivery) and bulk fill both
 call it. It ports the proven technique from the original generators: dimensions from the schema (never hardcoded),
 all raster assets pre-converted to data URLs (html-to-image drops
-cross-origin images silently), a double `toPng` with 150 ms pause (Safari
-decode warm-up), `navigator.share` on mobile with download fallback. Custom
+cross-origin images silently), one html-to-image snapshot (`toSvg`) that the
+export loads and draws itself, twice with a 150 ms pause,
+`navigator.share` on mobile with download fallback. Custom
 uploaded fonts are embedded via `fontEmbedCSS`; Google fonts render from the
 document font cache.
+
+The first draw waits 50 ms after the snapshot image loads. Firefox suppresses
+painting for the first 5 ms of a new document's life, the snapshot image's
+included, and a draw made in that window leaves out everything clipped to
+text (a text gradient, grain on glyphs). Firefox then reuses that raster, so
+a later draw cannot repair it. html-to-image's own `toPng` draws one
+animation frame after the load, which on a busy page falls inside the
+window; that is why the export does not use it.
+
+WebKit decodes a large bitmap inside the snapshot off the main thread. It
+starts only when the snapshot is first drawn and paints nothing of the bitmap
+until the decode lands, so a draw that comes first exports the graphic
+without its photos. The export therefore sets `decoding="sync"` on every
+`<img>` in the snapshot before loading it (`withSyncDecodedImages`,
+src/lib/render/snapshotDecoding.ts), and WebKit decodes the image inside the
+draw that paints it, however slow the machine. If the edited snapshot does
+not load, the export logs it and loads the snapshot as html-to-image made it.
+
+Chromium and Firefox paint a snapshot's images in the draw either way and
+render the same pixels. WebKit's pixels change where an image is drawn
+smaller than it is: decoded in the draw it is decoded whole and scaled as it
+is drawn, where the decode off the main thread was made at the drawn size.
+Three WebKit fidelity baselines were recorded with the attribute in place and
+fail without it (test/fidelity/README.md).
+
+Two things still depend on the second draw coming 150 ms after the first. A
+CSS image has no such attribute, and the one large bitmap the renderer paints
+as a CSS image is an image field's alpha mask: until it is decoded WebKit
+paints nothing of the masked photo. (Grain tiles are CSS backgrounds too, but
+at 128 px square they are small enough that WebKit decodes them in the draw.)
+And before Safari 26 the snapshot's load does not wait for the images inside
+it to load, so an image can still arrive after the first draw.
 
 ## The way in: the gate and onboarding
 
@@ -466,11 +532,14 @@ look (Phase 5) is `docs/design/new-look/PHASE-5.md`.
 - **Components** in `src/app/components/generate/`: `GeneratePage` (Start
   and thread), `GenerateHistoryPage`, `EditorPanel`, and the hooks that hold
   the side effects (`useChatController`, `useThreadPersistence`,
-  `useDraftDownload`). The chat's pieces on the new look, shared with the
+  `useDraftDownload`). The chat's pieces on the new brand, shared with the
   template chat, are in `src/app/components/chat/`: `ChatComposer` (on
-  `useComposer`), `AttachMenu` (Upload, and Generate's Details), the
-  messages, `GenerateTurn` on the Result card primitive, `CaptionCard` and
-  `GenerateHeader`. Styles are `src/styles/generate.css`.
+  `useComposer`; the Details row holds the platform and the details as
+  tags), `AttachMenu` (Generate's Output with Platform, Upload, Generate's
+  Details, and Context), the messages, `GenerateTurn` (one Result Card a
+  turn, the primitive in `primitives/Previews.tsx`, with the switch between
+  its drafts and its own Download for all of them) and `GenerateHeader`.
+  Styles are `src/styles/generate.css`.
 - **Server**: `supabase/functions/template-generate/` (the function and its
   system prompt) and `_shared/generateValidate.ts` (every parser and
   validator, pure, so vitest runs the same code the function does).
@@ -827,6 +896,26 @@ migration are given roles as they load (`withFontRoles`), by the same rule
 the SQL runs. `brand_kits.heading_font` / `body_font` stay in the table,
 unread, until Phase 9 of the new look.
 
+**The brand system** (brand-system Phase 5, migration 0052,
+`src/lib/brand/system/`): `brand_kits.system` stores only what the admin
+decided (colour roles, the neutral temperature, enabled schemes, the type
+ratio and type roles); pure resolvers derive the rest at read time.
+`deriveColorRoles` maps the palette onto eight graphic roles (Ground, Soft,
+Deep, Accent, Card, Ink on light, Ink on dark, Emphasis): the admin's
+corrections first, then how the templates use each colour (`paletteUsage`),
+then the old Primary / Accent labels, then lightness and saturation, then a
+neutral ramp. `resolveScheme` turns the roles into the colours of one of five
+schemes (Light, Dark, Brand, Accent, Tonal) with contrast fixes: body ink at
+4.5:1 (one ink serves body and display), the accent and ink on the accent at
+3:1, fixed by swapping
+the ink or walking the tone (`contrast.ts`, shared with the starter
+materializer). `typeScale` gives each type role a size per canvas from a
+per-shape body size, its floor and the brand's headline ratio (at least 2.8).
+With off-palette colours turned off, `enforceFieldPalette` and
+`enforceBackground` (`resolveStyle.ts`) hold every colour a graphic paints
+(fills, gradients, strokes, plates, icon paths, the canvas) to the palette;
+the derived role colours pass untouched, and alpha is kept.
+
 **Design-system import** (file-based, not a live connector): a design-tokens
 JSON (e.g. a Claude Design `tokens.json` export — W3C or flat formats) fills
 the palette + type styles; a `guidelines.md` is mined for rule-like lines the
@@ -862,7 +951,8 @@ manually.
 
 ## Canva integration
 
-Auto-build only (there is no plain Canva import); off unless `CANVA_ENABLED`
+Auto-build only: New template's Import from Canva runs the auto build on a
+Canva link and shows Auto build's steps. Off unless `CANVA_ENABLED`
 and a Connect API client id are set. Client code talks ONLY to our Edge
 Functions:
 

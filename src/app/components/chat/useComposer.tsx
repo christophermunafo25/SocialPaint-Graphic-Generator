@@ -308,7 +308,7 @@ export function useComposer({
   // ── Auto-grow ───────────────────────────────────────────────────────────
   // Measured in script rather than with `field-sizing: content`, so the
   // box grows in every browser, and so the floor can change with the state
-  // (64 on an empty Start composer, one line otherwise; the CSS owns it).
+  // (one line, 36 with its padding; the CSS owns it).
   // The height collapses to auto for one read of the text's full height,
   // then takes that up to six lines; past it the box scrolls, and the
   // scroll position survives the collapse so typing at the end of a long
@@ -319,7 +319,11 @@ export function useComposer({
     if (!el) return;
     const scrollTop = el.scrollTop;
     el.style.height = "auto";
-    const cap = (parseFloat(getComputedStyle(el).lineHeight) || 24) * MAX_LINES;
+    const style = getComputedStyle(el);
+    const cap =
+      (parseFloat(style.lineHeight) || 24) * MAX_LINES +
+      (parseFloat(style.paddingTop) || 0) +
+      (parseFloat(style.paddingBottom) || 0);
     const full = el.scrollHeight;
     el.style.height = `${Math.min(full, cap)}px`;
     el.style.overflowY = full > cap ? "auto" : "hidden";

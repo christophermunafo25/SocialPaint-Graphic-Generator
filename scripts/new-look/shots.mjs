@@ -1,27 +1,48 @@
 #!/usr/bin/env node
 /* Screenshot loop for the new look. See docs/design/new-look/README.md.
  *
- *   node scripts/new-look/shots.mjs capture <dir> [--only a,b] [--themes light,dark] [--base URL] [--width 1440]
+ *   node scripts/new-look/shots.mjs capture <dir> [--only a,b] [--themes light,dark] [--widths 1440,1024,390] [--no-popups] [--collapsed] [--height N] [--base URL]
  *   node scripts/new-look/shots.mjs compare <beforeDir> <afterDir> [outDir]
  *   node scripts/new-look/shots.mjs compare-image <a.png> <b.png> <out.png>
+ *   node scripts/new-look/shots.mjs boards <dir> [--base URL]
  *   node scripts/new-look/shots.mjs props <file.json> [--names earlier.json] [--base URL]
  *   node scripts/new-look/shots.mjs props-compare <a.json> <b.json>
  *
  * capture and props start their own Vite dev server on the local backend
  * (Supabase env blanked, so .env is ignored) unless --base points at one,
  * seed it with fixtures/dev-workspace.json (its clock pinned), and drive Chromium through
- * Playwright. Every route is saved at 1440 wide (or --width), full page, in
- * both themes; "onboarding" is the first screen of a browser with no
- * workspace, and "dev-ui" is the primitives sheet, whose Interaction states
- * table is 3172 wide (capture it with --width 3172).
+ * Playwright. Every route is saved full page at 1440, 1024 and 390 wide (or
+ * --widths) in both themes, as <name>-<theme>-<width>.png (PHASE-9 §9 D9).
+ * "onboarding" is the first screen of a browser with no workspace, and
+ * "dev-ui" is the primitives sheet: the six component type pages, each 1600
+ * wide, then the working sheet.
+ *
+ * A route's options hold a page in a state: `stall` freezes local store
+ * calls in loading ("hang") or error ("fail") through src/lib/stores/local/
+ * devStall.ts, `seed` edits the fixture's database first (the empty states),
+ * `publicLink` answers the public page's Edge Function (a payload built from
+ * the fixture, or a 404 for the unavailable state), `devImport` has the
+ * dev backend stand in for a workspace with Figma and Canva connected,
+ * `widths` limits the route, and `act` opens a dialog before the shot. At the widest width each
+ * route also opens every menu, select and popover trigger it renders
+ * ([aria-haspopup]) one at a time and saves <name>--popup-<n>-<theme>-<width>.png
+ * (skip with --no-popups).
+ *
+ * At 1024 and wider the app frame scrolls Main's content, not the document,
+ * so before each shot the window grows by the height that content hides and
+ * the shot holds the whole page, the way a tall window shows it. A page that
+ * scrolls itself (the Generate thread, History, the builder) keeps the
+ * window's height. --collapsed starts every route with the sidebar
+ * collapsed. --height N holds the window at N tall and shoots only what it
+ * shows, the way a frame of the Figma file does (1053 for the shell gate).
  *
  * compare writes a heatmap per changed screen (changed pixels in magenta over
  * the dimmed new screen) and prints the share of pixels that moved. Both
  * compare the overlap of two images of different sizes, from the top left.
- * compare-image does it for any two images: the /dev/ui gate compares the
- * Interaction states table with docs/design/new-look/reference/
- * interaction-states.png, the Figma export (the reference is 4532 tall, so
- * the overlap is the table).
+ * compare-image does it for any two images. boards saves each component's
+ * Light and Dark panels on /dev/ui as <component>-light.png and
+ * <component>-dark.png, so the /dev/ui gate can compare each with its Figma
+ * export in docs/design/elevenlabs/reference/.
  * props snapshots every custom property at the root in both themes, so a
  * refactor can prove it changed no value.
  *
@@ -43,25 +64,51 @@ const firstTemplate = devDb.templates[0].id;
 // The fixture's Generate threads: a finished result, then a question.
 const resultThread = devDb.generateThreads[0].id;
 const questionThread = devDb.generateThreads[2].id;
-// The saved template chat (new look, Phase 4): its template and its draft.
-const templateChat = devDb.generateThreads.find((t) => t.templateId);
-const chatTemplate = templateChat.templateId;
-const chatDraft = templateChat.turns.at(-1).drafts[0].id;
+
+/** The Template Builder list's first card: open its row menu, choose. */
+async function openRowMenuItem(page, item) {
+  await page.locator(".sp-tbcard .ui-rowmenu").first().click();
+  await page.getByRole("menuitem", { name: item }).click();
+}
+
+/** The editor is open on the fixture's first template: select a layer by
+ * its name in the Layers list. */
+async function selectLayer(page, name) {
+  await page.getByRole("button", { name, exact: true }).first().click();
+}
+
+/** New template is open (the list, from /template-builder/new): choose a
+ * way to start. */
+async function chooseStartPath(page, label) {
+  await page.getByRole("button", { name: new RegExp(`^${label}`) }).click();
+}
 
 const ROUTES = [
   ["brand-templates", "/templates"],
   ["brand-templates-platform", "/templates?platform=instagram"],
   ["brand-templates-search", "/templates?q=launch"],
   ["template-fill", `/templates/${firstTemplate}`],
-  ["template-chat", `/templates/${chatTemplate}/chat`],
-  ["template-chat-result", `/templates/${chatTemplate}/chat/${templateChat.id}`],
+  // The Public links dialog over the fill page (ElevenLabs 6010:2777).
   [
-    "template-chat-edit",
-    `/templates/${chatTemplate}/chat/${templateChat.id}?edit=${encodeURIComponent(chatDraft)}`,
+    "template-fill-links",
+    `/templates/${firstTemplate}`,
+    { act: (page) => page.getByRole("button", { name: "Public link", exact: true }).click() },
   ],
+  // The template chat is hidden (new brand Phase 4): its addresses open the
+  // fill page, which "template-fill" already captures. Generate's editor
+  // (the shared Details panel) is captured instead, opened from the result.
   ["generate", "/generate"],
   ["generate-history", "/generate/history"],
   ["generate-thread", `/generate/c/${resultThread}`],
+  [
+    "generate-edit",
+    `/generate/c/${resultThread}`,
+    // The Result card's Edit (Ghost Small, top right), which opens the editor.
+    {
+      act: (page) =>
+        page.locator(".ui-result-card__tools button[aria-label^='Edit ']").first().click(),
+    },
+  ],
   ["generate-thread-question", `/generate/c/${questionThread}`],
   // The sign-in gate, rendered without Supabase (PHASE-8B §9 D8).
   ["auth-sign-in", "/dev/auth"],
@@ -96,6 +143,140 @@ const ROUTES = [
   ["settings-sharing", "/settings/sharing"],
   ["settings-account", "/settings/account"],
   ["settings-advanced", "/settings/advanced"],
+  // Loading, empty and error (PHASE-9 §9 D9): the stores held, or the
+  // fixture emptied.
+  ["brand-templates-loading", "/templates", { stall: { "templates.*": "hang" } }],
+  ["brand-templates-error", "/templates", { stall: { "templates.*": "fail" } }],
+  ["brand-templates-empty", "/templates", { seed: (db) => (db.templates = []) }],
+  ["template-fill-error", `/templates/${firstTemplate}`, { stall: { "templates.*": "fail" } }],
+  ["generate-history-loading", "/generate/history", { stall: { "generateThreads.*": "hang" } }],
+  ["generate-history-error", "/generate/history", { stall: { "generateThreads.*": "fail" } }],
+  ["generate-history-empty", "/generate/history", { seed: (db) => (db.generateThreads = []) }],
+  ["insights-loading", "/insights", { stall: { "usage.*": "hang" } }],
+  ["insights-error", "/insights", { stall: { "usage.*": "fail" } }],
+  ["insights-empty", "/insights", { seed: (db) => (db.usageEvents = []) }],
+  ["brand-studio-loading", "/brand-studio", { stall: { "brandAssets.*": "hang" } }],
+  ["settings-people-loading", "/settings/people", { stall: { "people.*": "hang" } }],
+  ["settings-people-error", "/settings/people", { stall: { "people.*": "fail" } }],
+  ["settings-usage-loading", "/settings/usage", { stall: { "usage.*": "hang" } }],
+  ["settings-usage-error", "/settings/usage", { stall: { "usage.*": "fail" } }],
+  ["settings-sharing-error", "/settings/sharing", { stall: { "publicLinks.*": "fail" } }],
+  // The surfaces with no frames, which still render here (PHASE-9 §4.1).
+  ["template-builder-loading", "/template-builder", { stall: { "templates.*": "hang" } }],
+  ["template-builder-error", "/template-builder", { stall: { "templates.*": "fail" } }],
+  ["template-builder-empty", "/template-builder", { seed: (db) => (db.templates = []) }],
+  [
+    "template-builder-delete",
+    "/template-builder",
+    { act: (page) => openRowMenuItem(page, "Delete") },
+  ],
+  // Make another size: Choose a size with the template's own size marked.
+  [
+    "template-builder-another-size",
+    "/template-builder",
+    { act: (page) => openRowMenuItem(page, "Make another size") },
+  ],
+  ["builder-editor", `/template-builder/${firstTemplate}`],
+  // The editor's states (new brand, Phase 6b): an element selected, on
+  // Design and on Field, an image, Preview, then Publish and Template
+  // published.
+  [
+    "builder-editor-text",
+    `/template-builder/${firstTemplate}`,
+    { act: (page) => selectLayer(page, "Headline") },
+  ],
+  [
+    "builder-editor-field",
+    `/template-builder/${firstTemplate}`,
+    {
+      act: async (page) => {
+        await selectLayer(page, "Headline");
+        await page.getByRole("tab", { name: "Field" }).click();
+      },
+    },
+  ],
+  [
+    "builder-editor-image",
+    `/template-builder/${firstTemplate}`,
+    { act: (page) => selectLayer(page, "Product image") },
+  ],
+  [
+    "builder-editor-preview",
+    `/template-builder/${firstTemplate}`,
+    { act: (page) => page.getByRole("radio", { name: "Preview" }).click() },
+  ],
+  [
+    "builder-editor-publish",
+    `/template-builder/${firstTemplate}`,
+    { act: (page) => page.getByRole("button", { name: "Publish", exact: true }).click() },
+  ],
+  [
+    "builder-editor-published",
+    `/template-builder/${firstTemplate}`,
+    {
+      act: async (page) => {
+        await page.getByRole("button", { name: "Publish", exact: true }).click();
+        await page
+          .getByRole("dialog", { name: "Publish template" })
+          .getByRole("button", { name: /^Publish/ })
+          .click();
+        await page.getByRole("dialog", { name: "Template published" }).waitFor();
+      },
+    },
+  ],
+  // New template and the dialogs after it (new brand, Phase 6a). The dev
+  // backend stands in for a workspace with Figma and Canva connected, so
+  // the dialogs draw what their frames show. /template-builder/new with
+  // nothing handed over opens the list with New template.
+  ["builder-picker", "/template-builder/new", { devImport: "connected" }],
+  [
+    "builder-size-gallery",
+    "/template-builder/new",
+    { devImport: "connected", act: (page) => chooseStartPath(page, "Start blank") },
+  ],
+  [
+    "builder-import-figma",
+    "/template-builder/new",
+    { devImport: "connected", act: (page) => chooseStartPath(page, "Import from Figma") },
+  ],
+  [
+    "builder-import-canva",
+    "/template-builder/new",
+    { devImport: "connected", act: (page) => chooseStartPath(page, "Import from Canva") },
+  ],
+  [
+    "builder-auto-build",
+    "/template-builder/new",
+    { devImport: "connected", act: (page) => chooseStartPath(page, "Auto build") },
+  ],
+  [
+    "builder-auto-build-building",
+    "/template-builder/new",
+    {
+      devImport: "connected",
+      stall: { "designImport.autoBuild": "hang" },
+      act: async (page) => {
+        await chooseStartPath(page, "Auto build");
+        await page
+          .getByLabel("Design link")
+          .fill("https://www.figma.com/design/acme/Brand?node-id=1-2");
+        await page.getByRole("button", { name: "Build template" }).click();
+      },
+    },
+  ],
+  ["bulk-fill", `/templates/${firstTemplate}/bulk`],
+  ["bulk-fill-error", `/templates/${firstTemplate}/bulk`, { stall: { "templates.*": "fail" } }],
+  ["public-link", "/l/shots-link", { publicLink: "template" }],
+  ["public-link-unavailable", "/l/shots-missing", { publicLink: "missing" }],
+  // The narrow layout's navigation drawer.
+  [
+    "nav-drawer",
+    "/templates",
+    {
+      widths: [390],
+      act: (page) => page.getByRole("button", { name: "Open navigation" }).click(),
+    },
+  ],
   ["onboarding", "/templates", { fresh: true }],
   // Onboarding's steps on stand-in services (PHASE-8B §9 D8).
   ["onboarding-01-about-you", "/dev/onboarding?step=about"],
@@ -115,7 +296,7 @@ const ROUTES = [
 const [mode, ...rest] = process.argv.slice(2);
 const flags = {};
 const positional = [];
-const BOOLEAN_FLAGS = new Set(["all"]);
+const BOOLEAN_FLAGS = new Set(["all", "no-popups", "collapsed"]);
 for (let i = 0; i < rest.length; i++) {
   const name = rest[i].startsWith("--") ? rest[i].slice(2) : null;
   if (name && BOOLEAN_FLAGS.has(name)) flags[name] = true;
@@ -162,29 +343,82 @@ async function withServer(fn) {
 const launch = () =>
   chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 
-async function newContext(browser, theme, { fresh = false } = {}) {
-  const width = Number(flags.width ?? 1440);
-  const context = await browser.newContext({ viewport: { width, height: 900 } });
+// The public page's Edge Function answer: the fixture's first template and
+// kit as the database rows the function returns, as one look (a link pinned
+// to a colourway).
+const snake = (o) =>
+  Object.fromEntries(
+    Object.entries(o).map(([k, v]) => [k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`), v]),
+  );
+function publicPayload() {
+  const { fields, ...template } = devDb.templates[0];
+  return {
+    template: {
+      ...snake(template),
+      background_storage_path: null,
+      variants: null,
+      template_fields: fields.map((f, i) => ({ ...snake(f), sort_order: i })),
+    },
+    brandKit: snake(devDb.brandKits[0]),
+    fontAssets: [],
+    allowUploads: true,
+    assetTtlSeconds: 300,
+  };
+}
+
+async function newContext(
+  browser,
+  theme,
+  { fresh = false, stall, seed: edit, publicLink, devImport } = {},
+  width = 1440,
+) {
+  const context = await browser.newContext({
+    viewport: { width, height: flags.height ? Number(flags.height) : width < 768 ? 844 : 900 },
+  });
+  if (publicLink) {
+    await context.route("**/functions/v1/**", (route) =>
+      publicLink === "template" && route.request().url().endsWith("/public-template")
+        ? route.fulfill({ contentType: "application/json", body: JSON.stringify(publicPayload()) })
+        : route.fulfill({ status: publicLink === "template" ? 204 : 404, body: "" }),
+    );
+  }
   // The fixture's pinned "now" (seed-insights.mjs): Date stands still at it,
   // timers keep running, so Insights' rolling windows match between runs.
   if (fixture.pinnedClock) await context.clock.setFixedTime(new Date(fixture.pinnedClock));
-  const seed = fresh ? {} : fixture.localStorage;
+  let seed = fresh ? {} : fixture.localStorage;
+  if (edit) {
+    const db = structuredClone(devDb);
+    edit(db);
+    seed = { ...seed, "brand-portal-dev-db": db };
+  }
   const entries = Object.entries(seed).map(([k, v]) => [
     k,
     typeof v === "string" ? v : JSON.stringify(v),
   ]);
   await context.addInitScript(
-    ({ entries, theme }) => {
+    ({ entries, theme, stall, devImport, collapsed }) => {
       try {
+        if (stall) sessionStorage.setItem("sp-dev-stall", JSON.stringify(stall));
+        // The dev backend's stand-in for connected imports
+        // (src/lib/stores/local/localStores.ts, devImportConnected).
+        if (devImport) sessionStorage.setItem("sp-dev-design-import", devImport);
         if (sessionStorage.getItem("shots-seeded")) return;
         sessionStorage.setItem("shots-seeded", "1");
         for (const [k, v] of entries) localStorage.setItem(k, v);
         localStorage.setItem("sp-color-scheme", theme);
+        // The sidebar's collapsed preference (layout/ChromeContext.tsx).
+        if (collapsed) localStorage.setItem("sp-sidebar-collapsed", "1");
       } catch {
         /* a frame without storage */
       }
     },
-    { entries, theme },
+    {
+      entries,
+      theme,
+      stall: stall ?? null,
+      devImport: devImport ?? null,
+      collapsed: Boolean(flags.collapsed),
+    },
   );
   return context;
 }
@@ -203,33 +437,152 @@ async function settle(page) {
   });
 }
 
+/** The app frame (layout/Page.tsx) scrolls the page inside the window
+ * at 1024 and wider, so a full-page shot would stop at the window's foot.
+ * Grow the window by what the content hides, until it hides nothing: the
+ * frame then holds the whole page, as a window that tall would. The content
+ * carries [data-frame-scroll]; it scrolls only in the frame's "scroll" kind
+ * at desktop width, so narrow layouts, pages that scroll themselves and
+ * pages outside the frame keep the window as it is. Sizes inside the
+ * content tied to the window's height (the fill page's art and bulk fill's
+ * preview cap themselves at a share of 100vh) are held first at what the
+ * capture's own window gives them, so they don't grow with it. */
+async function growToFrame(page) {
+  if (flags.height) return;
+  for (let pass = 0; pass < 4; pass++) {
+    const hidden = await page.evaluate(() => {
+      const el = document.querySelector("[data-frame-scroll]");
+      if (!el) return 0;
+      const { overflowY } = getComputedStyle(el);
+      if (overflowY !== "auto" && overflowY !== "scroll") return 0;
+      return Math.max(0, el.scrollHeight - el.clientHeight);
+    });
+    if (hidden <= 0) return;
+    if (pass === 0) await holdWindowSizes(page);
+    const { width, height } = page.viewportSize();
+    await page.setViewportSize({ width, height: height + hidden });
+    await page.waitForTimeout(400);
+  }
+}
+
+/** Pins each size inside Main's content that a stylesheet rule or an inline
+ * style writes in vh units (vh, dvh, svh, lvh, vmin, vmax) at its value
+ * now, before growToFrame grows the window. */
+async function holdWindowSizes(page) {
+  await page.evaluate(() => {
+    const content = document.querySelector("[data-frame-scroll]");
+    if (!content) return;
+    const props = ["width", "height", "min-width", "min-height", "max-width", "max-height"];
+    const tied = /\d(?:[dsl]?vh|vmin|vmax)\b/;
+    const hold = (el, prop) =>
+      el.style.setProperty(prop, getComputedStyle(el).getPropertyValue(prop), "important");
+    const walk = (rules) => {
+      for (const rule of rules) {
+        if (rule instanceof CSSStyleRule) {
+          const held = props.filter((p) => tied.test(rule.style.getPropertyValue(p)));
+          if (held.length === 0) continue;
+          let els = [];
+          try {
+            els = content.querySelectorAll(rule.selectorText);
+          } catch {
+            continue;
+          }
+          for (const el of els) for (const p of held) hold(el, p);
+        } else if (rule.cssRules) {
+          if (rule.media && !matchMedia(rule.media.mediaText).matches) continue;
+          walk(rule.cssRules);
+        }
+      }
+    };
+    for (const sheet of document.styleSheets) {
+      try {
+        walk(sheet.cssRules);
+      } catch {
+        // A stylesheet from another origin can't be read.
+      }
+    }
+    for (const el of content.querySelectorAll("[style]")) {
+      for (const p of props) if (tied.test(el.style.getPropertyValue(p))) hold(el, p);
+    }
+  });
+}
+
 // ---------------------------------------------------------------- capture
 async function capture(dir) {
   const only = flags.only ? flags.only.split(",") : null;
   const themes = (flags.themes ?? "light,dark").split(",");
+  const widths = (flags.widths ?? flags.width ?? "1440,1024,390").split(",").map(Number);
+  const popups = !("no-popups" in flags);
   await mkdir(dir, { recursive: true });
+  const shoot = (page, file) =>
+    page.screenshot({
+      path: path.join(dir, file),
+      fullPage: !flags.height,
+      animations: "disabled",
+      caret: "hide",
+    });
   await withServer(async (base) => {
     const browser = await launch();
     for (const theme of themes) {
-      for (const [name, route, opts] of ROUTES) {
+      for (const [name, route, opts = {}] of ROUTES) {
         if (only && !only.includes(name)) continue;
-        const context = await newContext(browser, theme, opts);
-        const page = await context.newPage();
-        await page.goto(base + route, { waitUntil: "domcontentloaded" });
-        await settle(page);
-        const file = path.join(dir, `${name}-${theme}.png`);
-        await page.screenshot({
-          path: file,
-          fullPage: true,
-          animations: "disabled",
-          caret: "hide",
-        });
-        console.log(`${name}-${theme}  ${new URL(page.url()).pathname}`);
-        await context.close();
+        const routeWidths = opts.widths ? widths.filter((w) => opts.widths.includes(w)) : widths;
+        for (const width of routeWidths) {
+          const context = await newContext(browser, theme, opts, width);
+          const page = await context.newPage();
+          await page.goto(base + route, { waitUntil: "domcontentloaded" });
+          await settle(page);
+          if (opts.act) {
+            // A layout that doesn't offer the control (the builder below
+            // desktop width) keeps its plain shot, with a note.
+            page.setDefaultTimeout(5000);
+            await opts.act(page).catch(() => console.log(`  ${name}: nothing to open at ${width}`));
+            await settle(page);
+          }
+          await growToFrame(page);
+          await shoot(page, `${name}-${theme}-${width}.png`);
+          console.log(`${name}-${theme}-${width}  ${new URL(page.url()).pathname}`);
+          if (popups && !opts.act && width === Math.max(...widths)) {
+            await capturePopups(page, (n) =>
+              shoot(page, `${name}--popup-${n}-${theme}-${width}.png`),
+            );
+          }
+          await context.close();
+        }
       }
     }
     await browser.close();
   });
+}
+
+/** Opens each visible [aria-haspopup] trigger in turn, shoots it open, and
+ * closes it with Escape. A trigger that leaves the page (or can't be clicked)
+ * is skipped, and the page is reloaded so the next one starts clean. */
+async function capturePopups(page, shoot) {
+  const url = page.url();
+  // The boards of /dev/ui draw each control once per state. Their triggers
+  // are pictures of states; the working sheet under them has the live ones.
+  const triggers = () => page.locator("[aria-haspopup]:visible:not(.dev-board *)");
+  const count = await triggers().count();
+  let n = 0;
+  for (let i = 0; i < count; i++) {
+    const trigger = triggers().nth(i);
+    try {
+      await trigger.click({ timeout: 2000 });
+    } catch {
+      continue;
+    }
+    await page.waitForTimeout(400);
+    if (page.url() !== url) {
+      await page.goto(url, { waitUntil: "domcontentloaded" });
+      await settle(page);
+      continue;
+    }
+    await shoot(++n);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(250);
+  }
+  if (n) console.log(`  ${n} popups`);
 }
 
 // ---------------------------------------------------------------- compare
@@ -330,6 +683,35 @@ async function compare(beforeDir, afterDir, outDir = path.join(afterDir, "diff")
   await writeFile(path.join(outDir, "report.json"), JSON.stringify(rows, null, 2));
 }
 
+// ----------------------------------------------------------------- boards
+/** Saves each component's Light and Dark panels on /dev/ui as
+ * <component>-light.png and <component>-dark.png, to compare with the
+ * same panels exported from the Figma file into
+ * docs/design/elevenlabs/reference/. Each board pins its own themes, so
+ * one pass covers both. */
+async function boards(dir) {
+  await mkdir(dir, { recursive: true });
+  await withServer(async (base) => {
+    const browser = await launch();
+    const context = await newContext(browser, "light", {}, 1680);
+    const page = await context.newPage();
+    await page.goto(base + "/dev/ui", { waitUntil: "domcontentloaded" });
+    await settle(page);
+    for (const block of await page.locator(".dev-board__block[data-component]").all()) {
+      const name = await block.getAttribute("data-component");
+      for (const panel of ["light", "dark"]) {
+        await block.locator(`[data-panel="${panel}"]`).screenshot({
+          path: path.join(dir, `${name}-${panel}.png`),
+          animations: "disabled",
+          caret: "hide",
+        });
+      }
+      console.log(name);
+    }
+    await browser.close();
+  });
+}
+
 // ---------------------------------------------------------- compare-image
 async function compareImage(a, b, out) {
   const tmp = await mkdtemp(path.join(os.tmpdir(), "shots-"));
@@ -425,6 +807,7 @@ async function propsCompare(fileA, fileB) {
 if (mode === "capture" && positional[0]) await capture(positional[0]);
 else if (mode === "compare" && positional[1]) await compare(...positional);
 else if (mode === "compare-image" && positional[2]) await compareImage(...positional);
+else if (mode === "boards" && positional[0]) await boards(positional[0]);
 else if (mode === "props" && positional[0]) await props(positional[0]);
 else if (mode === "props-compare" && positional[1]) await propsCompare(...positional);
 else usage();

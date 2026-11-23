@@ -6,6 +6,7 @@ import { Pencil } from "lucide-react";
 import type { BrandColor } from "@/lib/types";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { useMotionTokens } from "@/lib/motionTokens";
+import { Input } from "./primitives";
 
 interface ColorControlProps {
   value: string | undefined; // #RRGGBB
@@ -106,21 +107,16 @@ export function ColorControl({
   const label = ariaLabel ?? "Color";
 
   const hexInput = (
-    <input
-      type="text"
+    <Input
+      size="sm"
       value={draft}
       placeholder="#RRGGBB"
       spellCheck={false}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commitDraft}
       onKeyDown={(e) => e.key === "Enter" && commitDraft()}
-      className="sp-input"
-      style={{
-        width: 88,
-        fontFamily: "var(--font-mono)",
-        fontSize: "var(--type-caption-size)",
-        padding: "5px 8px",
-      }}
+      className="tu-mono-s"
+      style={{ width: 88 }}
       aria-label={`${label} hex value`}
     />
   );

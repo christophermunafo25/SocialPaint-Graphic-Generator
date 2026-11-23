@@ -1,348 +1,345 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Figma, RefreshCw, Sparkles, Upload, X } from "lucide-react";
-import type { AutoBuildResult, DesignSource } from "@/lib/types";
+import { PencilRuler } from "lucide-react";
+import type { AutoBuildResult, DesignImportResult, DesignSource } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { useFileDrop } from "@/lib/useFileDrop";
+import { useRouter } from "../../router";
+import {
+  Button,
+  Field,
+  Input,
+  Modal,
+  ModalActions,
+  Progress,
+  SegmentedControl,
+  TextArea,
+  Upload,
+} from "../primitives";
+import { notConnectedLine } from "./NotConnected";
+import { focusLost, useStillOpen } from "./useStillOpen";
 
 type Tab = "figma" | "canva" | "image";
 
-interface AutoBuildDialogProps {
-  onClose(): void;
-  onBuilt(result: AutoBuildResult): void;
-  /** Which source tab opens first. The start screen's Canva card lands on
-   * the Canva tab; every other opener leaves it at Figma. */
-  initialTab?: Tab;
+/** What a build is doing, in the engine's own order: it reads the design,
+ * decides what members edit, then names the fields and writes the caption.
+ * The call runs 15 to 40 seconds and reports nothing until it ends, so the
+ * steps move on a timer; their names are the engine's. */
+export const BUILD_STAGES = [
+  "Reading the design",
+  "Choosing what to edit",
+  "Writing labels and the caption",
+];
+const STAGE_MS = 9000;
+
+/** The step a build is on, while it runs. Back to the first between runs,
+ * so a second build never opens on the last one's step. */
+export function useBuildStage(busy: boolean): number {
+  const [stage, setStage] = useState(0);
+  useEffect(() => {
+    if (!busy) {
+      setStage(0);
+      return;
+    }
+    const id = window.setInterval(
+      () => setStage((s) => Math.min(s + 1, BUILD_STAGES.length - 1)),
+      STAGE_MS,
+    );
+    return () => window.clearInterval(id);
+  }, [busy]);
+  return stage;
 }
 
-/** The call runs 15–40 seconds; a bare spinner reads as broken. These mirror
- * the engine's real stages: extract → decide → write. */
-const STAGES = [
-  "Reading the design…",
-  "Deciding what should be editable…",
-  "Writing labels and the caption…",
-];
+/** A build in progress (329:4286): the Progress steps across the dialog,
+ * "2 of 3 · Choosing what to edit", then Cancel alone. Cancel closes the
+ * dialog and the result is dropped when it lands. The steps sit in a
+ * status region, so each new step is read out, and Cancel takes the focus
+ * from the button that started the build, which is gone. */
+export function BuildProgress({ stage, onCancel }: { stage: number; onCancel(): void }) {
+  const cancel = useRef<HTMLButtonElement>(null);
+  useEffect(() => cancel.current?.focus(), []);
+  return (
+    <div className="sp-tb-dialog__form">
+      <div role="status" aria-live="polite">
+        <Progress
+          value={(stage + 1) / BUILD_STAGES.length}
+          label={`${stage + 1} of ${BUILD_STAGES.length} · ${BUILD_STAGES[stage]}`}
+        />
+      </div>
+      <ModalActions>
+        <Button ref={cancel} kind="neutral" onClick={onCancel}>
+          Cancel
+        </Button>
+      </ModalActions>
+    </div>
+  );
+}
 
-const MANUAL_PATHS_NOTE =
-  "The plain Figma import and the blank canvas are unaffected. You can always build this one manually.";
+const readImageSize = (url: string) =>
+  new Promise<{ width: number; height: number }>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => reject(new Error("We couldn't read that image."));
+    img.src = url;
+  });
 
-/** Auto-build with Claude: paste a Figma or Canva link, or upload a flat
- * image, and Claude proposes the whole template — Fixed marks, labels,
- * guardrails, brand bindings, metadata, caption. The proposal lands on the
- * canvas as real fields; there is no confirmation screen (the admin corrects
- * in the inspector, in context). Modeled on FigmaImportDialog's shell. */
-export function AutoBuildDialog({ onClose, onBuilt, initialTab }: AutoBuildDialogProps) {
+interface AutoBuildDialogProps {
+  onClose(): void;
+  onBuilt(result: AutoBuildResult | DesignImportResult): void | Promise<void>;
+  /** Where focus goes when it closes (New template's opener). */
+  returnFocus?: React.RefObject<HTMLElement | null>;
+}
+
+/** Auto build (329:3981): a Figma or Canva link, or a flat image, and
+ * Claude proposes the whole template: what stays fixed, labels, limits,
+ * brand bindings, details and the caption. It lands on the canvas as real
+ * fields, corrected in the inspector; there is no review screen. The
+ * source is a Segmented Control across the dialog, then the design's link
+ * (or the image), the optional note, and Cancel and Build template. */
+export function AutoBuildDialog({ onClose, onBuilt, returnFocus }: AutoBuildDialogProps) {
   const { company } = useAuth();
-  const [tab, setTab] = useState<Tab>(initialTab ?? "figma");
+  const { navigate } = useRouter();
+  const [tab, setTab] = useState<Tab>("figma");
   const [figmaConnected, setFigmaConnected] = useState<boolean | null>(null);
   const [canva, setCanva] = useState<{ enabled: boolean; connected: boolean } | null>(null);
-  const [url, setUrl] = useState("");
+  const [links, setLinks] = useState<Record<"figma" | "canva", string>>({ figma: "", canva: "" });
+  const [image, setImage] = useState<{
+    file: File;
+    url: string;
+    width: number;
+    height: number;
+  } | null>(null);
   const [hint, setHint] = useState("");
   const [busy, setBusy] = useState(false);
-  const [stage, setStage] = useState(0);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const stageTimer = useRef<number | undefined>(undefined);
+  const stage = useBuildStage(busy);
+  const stillOpen = useStillOpen();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const firstControl = useRef<HTMLInputElement>(null);
+  const upload = useRef<HTMLButtonElement>(null);
+  const openSettings = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!company) return;
+    let cancelled = false;
     stores.designImport
       .isConnected(company.id)
-      .then(setFigmaConnected)
-      .catch(() => setFigmaConnected(false));
+      .then((c) => !cancelled && setFigmaConnected(c))
+      .catch(() => !cancelled && setFigmaConnected(false));
     stores.designImport
       .canvaStatus(company.id)
-      .then(setCanva)
-      .catch(() => setCanva({ enabled: false, connected: false }));
+      .then((s) => !cancelled && setCanva(s))
+      .catch(() => !cancelled && setCanva({ enabled: false, connected: false }));
+    return () => {
+      cancelled = true;
+    };
   }, [company]);
 
-  useEffect(() => () => window.clearInterval(stageTimer.current), []);
+  // The picked image's preview URL is released when it's replaced or the
+  // dialog closes.
+  useEffect(
+    () => () => {
+      if (image) URL.revokeObjectURL(image.url);
+    },
+    [image],
+  );
 
-  const run = async (source: DesignSource) => {
-    if (!company) return;
-    setBusy(true);
+  const pickImage = async (file: File) => {
     setError(null);
-    setStage(0);
-    stageTimer.current = window.setInterval(
-      () => setStage((s) => Math.min(s + 1, STAGES.length - 1)),
-      9000,
-    );
+    if (!/^image\/(png|jpeg)$/.test(file.type)) {
+      setError("Use a PNG or JPEG.");
+      return;
+    }
+    const url = URL.createObjectURL(file);
     try {
+      const size = await readImageSize(url);
+      setImage({ file, url, ...size });
+    } catch (e) {
+      URL.revokeObjectURL(url);
+      setError(e instanceof Error ? e.message : "We couldn't read that image.");
+    }
+  };
+
+  // A workspace whose plan has no Canva gets no Canva link, as New
+  // template shows no Import from Canva; one with Canva that hasn't
+  // connected it is told so here.
+  const canvaOffered = canva?.enabled !== false;
+  const notConnected =
+    tab === "figma"
+      ? figmaConnected === false
+      : tab === "canva"
+        ? canva !== null && !canva.connected
+        : false;
+  const checking = tab === "figma" ? figmaConnected === null : tab === "canva" && canva === null;
+  const ready = tab === "image" ? image !== null : links[tab].trim() !== "" && !checking;
+
+  // The plan turned out to have no Canva while its tab was open.
+  useEffect(() => {
+    if (!canvaOffered && tab === "canva") setTab("figma");
+  }, [canvaOffered, tab]);
+
+  // The check came back "not connected" while the link field had focus:
+  // Open settings, which replaced it, takes it.
+  useEffect(() => {
+    if (notConnected && focusLost()) openSettings.current?.focus();
+  }, [notConnected]);
+
+  // A failed build brings the form back with the error under its control;
+  // focus goes there, so the error is read with it.
+  useEffect(() => {
+    if (!error) return;
+    if (tab === "image") upload.current?.focus();
+    else firstControl.current?.focus();
+  }, [error, tab]);
+
+  const run = async () => {
+    if (!company || busy || !ready) return;
+    setError(null);
+    setBusy(true);
+    try {
+      let source: DesignSource;
+      if (tab === "image") {
+        if (!image) return;
+        const backgroundUrl = await stores.templates.uploadBackground(
+          company.id,
+          image.file,
+          image.file.name,
+        );
+        // The canvas is exactly the image.
+        source = {
+          kind: "image",
+          backgroundUrl,
+          canvasWidth: image.width,
+          canvasHeight: image.height,
+        };
+      } else {
+        source = { kind: tab, url: links[tab].trim() };
+      }
       const result = await stores.designImport.autoBuild(
         company.id,
         source,
         hint.trim() || undefined,
       );
-      onBuilt(result);
+      if (!stillOpen.current) return;
+      await onBuilt(result);
     } catch (e) {
-      setError(`${e instanceof Error ? e.message : "Auto-build failed."} ${MANUAL_PATHS_NOTE}`);
+      if (stillOpen.current)
+        setError(e instanceof Error ? e.message : "That design didn't build. Try again.");
     } finally {
-      window.clearInterval(stageTimer.current);
-      setBusy(false);
+      if (stillOpen.current) setBusy(false);
     }
   };
 
-  const runImage = async (file: File) => {
-    if (!company) return;
-    if (!/^image\/(png|jpeg)$/.test(file.type)) {
-      setError("Upload a PNG or JPEG.");
-      return;
-    }
-    setUploadingImage(true);
-    setError(null);
-    try {
-      const backgroundUrl = await stores.templates.uploadBackground(company.id, file, file.name);
-      // Natural dimensions read client-side — the canvas is exactly the image.
-      const dims = await new Promise<{ w: number; h: number }>((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-        img.onerror = () => reject(new Error("Couldn't read the image."));
-        img.src = URL.createObjectURL(file);
-      });
-      setUploadingImage(false);
-      await run({ kind: "image", backgroundUrl, canvasWidth: dims.w, canvasHeight: dims.h });
-    } catch (e) {
-      setUploadingImage(false);
-      setError(`${e instanceof Error ? e.message : "Upload failed."} ${MANUAL_PATHS_NOTE}`);
-    }
-  };
-
-  const drop = useFileDrop((files) => {
-    if (files[0]) void runImage(files[0]);
-  });
-
-  const tabButton = (key: Tab, label: string, disabled = false, title?: string) => (
-    <button
-      key={key}
-      onClick={() => !disabled && setTab(key)}
-      disabled={disabled}
-      title={title}
-      aria-pressed={tab === key}
-      className="sp-tabstrip__tab py-1.5"
-      style={{ fontSize: "var(--type-label-size)" }}
-    >
-      {label}
-    </button>
-  );
+  const service = tab === "figma" ? "Figma" : "Canva";
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+    <Modal
+      open
+      onOpenChange={(next) => !next && onClose()}
+      title="Auto build"
+      icon={PencilRuler}
+      className="sp-tb-dialog"
+      returnFocus={returnFocus}
+      onOpenAutoFocus={(e) => {
+        if (!firstControl.current) return;
+        e.preventDefault();
+        firstControl.current.focus();
+      }}
     >
-      <div
-        className="w-full max-w-lg p-6 space-y-4"
-        style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-card)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
-          <h2
-            className="flex items-center gap-2"
-            style={{
-              fontFamily: "var(--font-head)",
-              fontWeight: "var(--weight-head)",
-              fontSize: "var(--type-cardtitle-size)",
-              letterSpacing: "var(--track-head)",
-              color: "var(--text-primary)",
+      {busy ? (
+        <BuildProgress stage={stage} onCancel={onClose} />
+      ) : (
+        <form
+          className="sp-tb-dialog__form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void run();
+          }}
+        >
+          <SegmentedControl
+            aria-label="Design source"
+            options={[
+              { id: "figma", label: "Figma link" },
+              ...(canvaOffered ? [{ id: "canva", label: "Canva link" }] : []),
+              { id: "image", label: "Image" },
+            ]}
+            selectedId={tab}
+            onSelect={(id) => {
+              setTab(id as Tab);
+              setError(null);
             }}
-          >
-            <Sparkles className="w-5 h-5" style={{ color: "var(--state-primary)" }} />
-            Auto-build with Claude
-          </h2>
-          <button onClick={onClose} aria-label="Close">
-            <X className="w-5 h-5" style={{ color: "var(--muted-foreground)" }} />
-          </button>
-        </div>
-
-        {busy ? (
-          <div className="py-8 text-center space-y-3" role="status" aria-live="polite">
-            <RefreshCw
-              className="w-5 h-5 animate-spin mx-auto"
-              style={{ color: "var(--state-primary)" }}
-            />
-            <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
-              {STAGES[stage]}
-            </p>
-            <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
-              This takes 15–40 seconds. Everything lands editable-or-fixed on the canvas. Change
-              anything in the inspector.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="sp-tabstrip" data-stretch role="tablist" aria-label="Design source">
-              {tabButton("figma", "Figma link")}
-              {tabButton(
-                "canva",
-                "Canva link",
-                !canva?.enabled,
-                canva?.enabled ? undefined : "Coming soon",
-              )}
-              {tabButton("image", "Upload an image")}
-            </div>
-
-            {tab === "figma" && (
-              <div className="space-y-3">
-                {figmaConnected === false ? (
-                  <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                    Figma isn't connected yet. Connect it from the plain "Import from Figma" dialog
-                    first, then come back. {MANUAL_PATHS_NOTE}
-                  </p>
-                ) : (
-                  <>
-                    <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                      Paste a frame link. Claude reads the design, decides what members should edit,
-                      names every field, and writes the caption. You then correct anything in the
-                      inspector.
-                    </p>
-                    <input
-                      type="url"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      placeholder="https://www.figma.com/design/…?node-id=…"
-                      className="sp-input"
-                      aria-label="Figma frame link"
-                    />
-                  </>
-                )}
-              </div>
-            )}
-
-            {tab === "canva" && canva?.enabled && (
-              <div className="space-y-3">
-                {!canva.connected ? (
-                  <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                    Canva isn't connected yet. Connect it from Settings, Integrations, then come
-                    back. Each admin authorizes with their own Canva login; the tokens are stored
-                    server-side and never reach this browser. {MANUAL_PATHS_NOTE}
-                  </p>
-                ) : (
-                  <>
-                    <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                      Paste the design link from your browser's address bar. Canva shares a flat
-                      image of the design, so Claude proposes field boxes from the picture, as with
-                      an uploaded image. Expect to adjust them.
-                    </p>
-                    <p
-                      className="px-3 py-2"
-                      data-radius-control
-                      style={{
-                        fontSize: "var(--type-caption-size)",
-                        background: "var(--bg-hover)",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      The original text stays baked into the picture, so each editable text field
-                      gets a solid plate of the colour behind it. Where the backdrop is a photo or
-                      gradient, adjust or remove the plate in the inspector.
-                    </p>
-                    <input
-                      type="url"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      placeholder="https://www.canva.com/design/…"
-                      className="sp-input"
-                      aria-label="Canva design link"
-                    />
-                  </>
-                )}
-              </div>
-            )}
-
-            {tab === "image" && (
-              <div className="space-y-3">
-                <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-                  Upload a finished design as PNG or JPEG. With no layer data to read, Claude
-                  proposes conservative field boxes from the image alone. Expect to adjust them.
-                </p>
-                <label
-                  {...drop.bind}
-                  data-active={drop.active}
-                  className="sp-dropzone flex items-center justify-center gap-2 cursor-pointer py-6"
-                  style={{
-                    border: "1.5px dashed var(--border-strong)",
-                    borderRadius: "var(--radius-control)",
-                    fontSize: "var(--type-caption-size)",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  {uploadingImage ? (
-                    <RefreshCw
-                      className="w-4 h-4 animate-spin"
-                      style={{ color: "var(--state-primary)" }}
-                    />
-                  ) : (
-                    <Upload
-                      className="sp-dropzone__icon w-4 h-4"
-                      style={{ color: "var(--state-primary)" }}
-                    />
-                  )}
-                  {uploadingImage ? "Uploading…" : "Drop a PNG or JPEG, or click to browse"}
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) void runImage(f);
-                    }}
-                  />
-                </label>
-              </div>
-            )}
-
-            {tab !== "canva" && (
-              <div>
-                <label className="sp-eyebrow block mb-1" htmlFor="autobuild-hint">
-                  Anything Claude should know?{" "}
-                  <span style={{ textTransform: "none", color: "var(--text-muted)" }}>
-                    optional
-                  </span>
-                </label>
-                <input
-                  id="autobuild-hint"
-                  className="sp-input"
-                  value={hint}
-                  maxLength={500}
-                  onChange={(e) => setHint(e.target.value)}
-                  placeholder='e.g. "The date and location change weekly; the rest is fixed"'
-                />
-              </div>
-            )}
-
-            {tab === "canva" && canva?.enabled && canva.connected && (
-              <button
-                onClick={() => void run({ kind: "canva", url: url.trim() })}
-                disabled={!url.trim()}
-                className="sp-btn sp-btn-primary w-full"
+            className="sp-tb-dialog__source"
+          />
+          {notConnected ? (
+            <p className="t-body-m sp-tb-dialog__note">{notConnectedLine(service)}</p>
+          ) : tab === "image" ? (
+            <Field label="Image" error={error}>
+              <Upload
+                ref={upload}
+                placeholder="Add an image"
+                thumbnail={image?.url ?? null}
+                fileName={image?.file.name}
+                aria-label={image ? `Image: ${image.file.name}. Replace` : "Image: Add an image"}
+                onClick={() => fileInput.current?.click()}
+                onDropFile={(file) => void pickImage(file)}
+              />
+            </Field>
+          ) : (
+            <Field label="Design link" error={error}>
+              <Input
+                ref={firstControl}
+                type="url"
+                value={links[tab]}
+                onChange={(e) => setLinks((l) => ({ ...l, [tab]: e.target.value }))}
+                placeholder={tab === "figma" ? "figma.com/design/…" : "canva.com/design/…"}
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </Field>
+          )}
+          {!notConnected && (
+            <Field label="Anything to know about this design?" optional>
+              <TextArea
+                value={hint}
+                maxLength={500}
+                onChange={(e) => setHint(e.target.value)}
+                placeholder="The date and location change every week"
+              />
+            </Field>
+          )}
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/png,image/jpeg"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void pickImage(file);
+            }}
+          />
+          <ModalActions>
+            <Button kind="neutral" onClick={onClose}>
+              Cancel
+            </Button>
+            {notConnected ? (
+              <Button
+                ref={openSettings}
+                kind="primary"
+                onClick={() => {
+                  onClose();
+                  navigate({ name: "settings", section: "integrations" });
+                }}
               >
-                Auto-build from Canva
-              </button>
+                Open settings
+              </Button>
+            ) : (
+              <Button kind="primary" type="submit" disabled={!ready}>
+                Build template
+              </Button>
             )}
-
-            {tab === "figma" && figmaConnected !== false && (
-              <button
-                onClick={() => void run({ kind: "figma", url: url.trim() })}
-                disabled={!url.trim() || figmaConnected === null}
-                className="sp-btn sp-btn-primary w-full"
-              >
-                <Figma className="w-4 h-4" />
-                {figmaConnected === null ? "Checking connection…" : "Auto-build from Figma"}
-              </button>
-            )}
-          </>
-        )}
-
-        {error && (
-          <p
-            className="text-sm px-4 py-3"
-            data-radius-card
-            style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
-          >
-            {error}
-          </p>
-        )}
-      </div>
-    </div>
+          </ModalActions>
+        </form>
+      )}
+    </Modal>
   );
 }

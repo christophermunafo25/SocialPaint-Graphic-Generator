@@ -1,9 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Loader2 } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
-import { AttachButton, Button, SendButton } from "./Button";
+import { Button, SendButton } from "./Button";
 
 describe("Button", () => {
   it("is a type=button that runs its handler", async () => {
@@ -13,6 +13,13 @@ describe("Button", () => {
     expect(button).toHaveProperty("type", "button");
     await userEvent.click(button);
     expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("is Neutral at Medium unless told otherwise", () => {
+    render(<Button>Save</Button>);
+    const button = screen.getByRole("button", { name: "Save" });
+    expect(button.dataset.kind).toBe("neutral");
+    expect(button.dataset.size).toBe("md");
   });
 
   it("ignores clicks while disabled", async () => {
@@ -43,31 +50,38 @@ describe("Button", () => {
     expect(button.dataset.size).toBe("lg");
   });
 
-  it("draws its icon hidden from assistive tech, sized to the button", () => {
+  it("draws its icons at 16 in every size, hidden from assistive tech", () => {
     const { container } = render(
-      <Button icon={Loader2} size="sm">
+      <Button icon={Loader2} trailingIcon={ChevronDown} size="sm" kind="ghost">
         Saving
       </Button>,
     );
-    const svg = container.querySelector("svg");
-    expect(svg?.getAttribute("aria-hidden")).toBe("true");
-    expect(svg?.getAttribute("width")).toBe("14");
+    const svgs = [...container.querySelectorAll("svg")];
+    expect(svgs).toHaveLength(2);
+    for (const svg of svgs) {
+      expect(svg.getAttribute("aria-hidden")).toBe("true");
+      expect(svg.getAttribute("width")).toBe("16");
+    }
+    // The label sits between the leading icon's slot and the trailing icon.
+    const button = screen.getByRole("button", { name: "Saving" });
+    expect([...button.children].map((c) => c.tagName.toLowerCase())).toEqual([
+      "span",
+      "span",
+      "svg",
+    ]);
+    expect(button.firstElementChild?.classList.contains("ui-icon-slot")).toBe(true);
   });
 });
 
-describe("SendButton and AttachButton", () => {
-  it("name themselves from their label", () => {
+describe("SendButton", () => {
+  it("names itself from its label and shows its action", () => {
     render(
       <>
         <SendButton label="Send" />
         <SendButton label="Stop" action="stop" />
-        <AttachButton label="Attach" aria-haspopup="menu" aria-expanded={false} />
       </>,
     );
     expect(screen.getByRole("button", { name: "Send" }).dataset.action).toBe("send");
     expect(screen.getByRole("button", { name: "Stop" }).dataset.action).toBe("stop");
-    expect(screen.getByRole("button", { name: "Attach" }).getAttribute("aria-expanded")).toBe(
-      "false",
-    );
   });
 });

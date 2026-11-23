@@ -2,6 +2,7 @@ import React, {
   forwardRef,
   useCallback,
   useEffect,
+  useId,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -18,7 +19,11 @@ import {
   renderedText,
   type Rect,
 } from "@/lib/render/layout";
-import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
+import {
+  enforceBackground,
+  enforceFieldPalette,
+  resolveFieldStyle,
+} from "@/lib/brand/resolveStyle";
 import {
   ensureSchemaFontsLoaded,
   fontUsageLoaded,
@@ -38,6 +43,8 @@ import {
   readStrokeAlign,
 } from "@/lib/render/effects";
 import { NOISE_TILE_CELLS, noiseLayerCss, noiseTileDataUrl } from "@/lib/render/noise";
+import { readVector } from "@/lib/render/vector";
+import { imageRectStyle, readImageRect } from "@/lib/render/imageRect";
 import type { CornerRadius, FieldEffect } from "@/lib/types";
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -278,7 +285,7 @@ export const SchemaRenderer = forwardRef<SchemaRendererHandle, SchemaRendererPro
               // Its own stacking context, so canvas noise (and any field's
               // zIndex) stays under the builder and Generate overlays.
               isolation: "isolate",
-              background: schemaBackgroundCss(schema),
+              background: schemaBackgroundCss(schema, brandKit),
             }}
           >
             {schema.backgroundUrl && !backgroundDataUrl && (
@@ -423,8 +430,10 @@ export { gradientCss };
  * as an <img> above this) still wins visually. Shared with the builder's
  * edit canvas so every surface paints the same base. */
 export function schemaBackgroundCss(
-  schema: Pick<TemplateSchema, "backgroundColor" | "backgroundGradient">,
+  source: Pick<TemplateSchema, "backgroundColor" | "backgroundGradient">,
+  brandKit: BrandKit | null = null,
 ): string {
+  const schema = enforceBackground(source, brandKit);
   const g = schema.backgroundGradient;
   if (g?.stops.length) return gradientCss(g);
   return schema.backgroundColor || "#ffffff";
@@ -509,11 +518,23 @@ export function FieldBox({
  * parent sized to field.width × field.height. The builder hosts this inside
  * its screen-space interaction boxes so content moves with the box during
  * drags — no second source of truth, no catch-up jump on release. */
-export function FieldBoxContent({ field, value, brandKit, fontSize, text }: FieldBoxProps) {
+export function FieldBoxContent({
+  field: authored,
+  value,
+  brandKit,
+  fontSize,
+  text,
+}: FieldBoxProps) {
+  // Every colour the field paints held to the palette when the brand forbids
+  // off-palette colour; the field itself otherwise.
+  const field = useMemo(() => enforceFieldPalette(authored, brandKit), [authored, brandKit]);
   // Static elements carry their own fixed content — member values never apply.
   const effective = field.static ? field.staticValue : value;
   if (field.type === "shape") {
     return <ShapeFieldBox field={field} />;
+  }
+  if (field.type === "icon") {
+    return <IconFieldBox field={field} />;
   }
   if (field.type === "image") {
     // A member image field previews its designed artwork until a value
@@ -543,19 +564,45 @@ const overlayBase: React.CSSProperties = {
 };
 
 /** Inner shadows and noise drawn over a box-shaped element's content,
- * clipped to its corner radius. Null when there is neither. */
+ * clipped to its corner radius. Null when there is neither.
+ *
+ * An inner shadow's frame with no blur has no filter of its own, so it is
+ * a plain positioned layer, and Safari before 26 drew it whole, outside the
+ * box, when the element above it carried a drop shadow or a blur, as a rect
+ * shape does (WebKit bug 219520, the fault WRAPPED_IMAGE_BOX answers for a
+ * photo). An overlay that holds such a frame is its own stacking context,
+ * so the frame paints inside this layer, which clips. A blurred frame is
+ * clipped when its own filter is applied and needs nothing. */
 function BoxOverlay({ effects, radius }: { effects: FieldEffect[]; radius?: CornerRadius }) {
   const frames = innerShadowFrames(effects, radius);
   const noise = noiseLayerCss(noiseEffects(effects));
   if (!frames.length && !noise) return null;
   const r = radius ? `${radius.tl}px ${radius.tr}px ${radius.br}px ${radius.bl}px` : undefined;
+  const holdsPlainFrame = frames.some((frame) => frame.filter === undefined);
   return (
-    <div style={{ ...overlayBase, overflow: "hidden", borderRadius: r, ...(noise ?? {}) }}>
+    <div
+      style={{
+        ...overlayBase,
+        overflow: "hidden",
+        ...(holdsPlainFrame ? { isolation: "isolate" } : {}),
+        borderRadius: r,
+        ...(noise ?? {}),
+      }}
+    >
       {frames.map((frame, i) => (
         <div key={i} style={frame} />
       ))}
     </div>
   );
+}
+
+/** An id unique to this rendered element, for the defs an inline SVG
+ * references. The same template often renders several times on one page
+ * (the builder's look strip, gallery thumbnails); a url(#id) resolves to
+ * the first match in the document, so a per-field id would paint another
+ * look's gradient, or nothing when that copy is hidden. */
+function useSvgId(): string {
+  return useId().replace(/[^\w-]/g, "");
 }
 
 /** 5-point star, unit square. */
@@ -574,6 +621,7 @@ const STAR_POINTS = "50,0 61,35 98,35 68,57 79,91 50,70 21,91 32,57 2,35 39,35";
  * outside doubles it and masks the shape's interior away. Center and
  * outside paint beyond the box without moving it. */
 function ShapeFieldBox({ field }: { field: TemplateField }) {
+  const uid = useSvgId();
   const kind = field.shape ?? "rect";
   const stroke = field.strokeColor;
   const strokeW = stroke ? Math.max(1, field.strokeWidthPx ?? 1) : 0;
@@ -617,10 +665,10 @@ function ShapeFieldBox({ field }: { field: TemplateField }) {
     );
   }
 
-  const gradId = `sp-shape-grad-${field.id}`;
-  const clipId = `sp-shape-clip-${field.id}`;
-  const maskId = `sp-shape-mask-${field.id}`;
-  const noiseId = `sp-shape-noise-${field.id}`;
+  const gradId = `sp-shape-grad-${uid}`;
+  const clipId = `sp-shape-clip-${uid}`;
+  const maskId = `sp-shape-mask-${uid}`;
+  const noiseId = `sp-shape-noise-${uid}`;
   const paint = g ? `url(#${gradId})` : solid;
   const w = field.width;
   const h = field.height;
@@ -647,9 +695,6 @@ function ShapeFieldBox({ field }: { field: TemplateField }) {
             .join(" ");
     return <polygon points={points} {...(extra as React.SVGProps<SVGPolygonElement>)} />;
   };
-  const stops = g?.stops.map((s, i) => (
-    <stop key={i} offset={`${Math.round(s.position * 100)}%`} stopColor={s.color} />
-  ));
   // A stroke that sits outside the box needs the SVG to paint past its
   // viewport; inside strokes keep today's clipped root.
   const beyond = Boolean(stroke) && align !== "inside";
@@ -682,18 +727,7 @@ function ShapeFieldBox({ field }: { field: TemplateField }) {
         }}
       >
         <defs>
-          {g && g.kind === "radial" ? (
-            <RadialGradientDef id={gradId} gradient={g}>
-              {stops}
-            </RadialGradientDef>
-          ) : g ? (
-            <linearGradient
-              id={gradId}
-              gradientTransform={`rotate(${(((g.angle - 90) % 360) + 360) % 360}, 0.5, 0.5)`}
-            >
-              {stops}
-            </linearGradient>
-          ) : null}
+          {g && <GradientDef id={gradId} gradient={g} />}
           {stroke && align === "inside" && <clipPath id={clipId}>{shapeEl()}</clipPath>}
           {stroke && align === "outside" && (
             // The mask reaches as far as a mitered corner can (miter limit
@@ -742,6 +776,130 @@ function ShapeFieldBox({ field }: { field: TemplateField }) {
           <React.Fragment key={i}>{shapeEl({ fill: `url(#${noiseId}-${i})` })}</React.Fragment>
         ))}
         {strokeEl}
+      </svg>
+    </div>
+  );
+}
+
+/** The gradient defs a shape or icon paints with: linear rotated about the
+ * centre, or radial (gradientCss's two kinds). The gradient's box is the
+ * bounding box of whatever it fills. */
+function GradientDef({
+  id,
+  gradient,
+}: {
+  id: string;
+  gradient: NonNullable<TemplateField["textGradient"]>;
+}) {
+  const stops = gradient.stops.map((s, i) => (
+    <stop key={i} offset={`${Math.round(s.position * 100)}%`} stopColor={s.color} />
+  ));
+  return gradient.kind === "radial" ? (
+    <RadialGradientDef id={id} gradient={gradient}>
+      {stops}
+    </RadialGradientDef>
+  ) : (
+    <linearGradient
+      id={id}
+      gradientTransform={`rotate(${(((gradient.angle - 90) % 360) + 360) % 360}, 0.5, 0.5)`}
+    >
+      {stops}
+    </linearGradient>
+  );
+}
+
+/** Icon: vector artwork fitted inside the box with its aspect ratio kept
+ * (contain, centred), in the field's color. Fill paths are filled, stroke
+ * paths are drawn with the vector's line style; a path's own color wins
+ * (multi-color art such as a logo). A gradient or grain paints a rect over
+ * the whole art and is masked to the paths, so a gradient runs across the
+ * icon rather than restarting in each path; it paints after the paths that
+ * carry their own color. Drop shadows and blur are the filter, as for
+ * shapes; inner shadows don't apply. */
+function IconFieldBox({ field }: { field: TemplateField }) {
+  const uid = useSvgId();
+  const vector = readVector(field.vector);
+  const effects = readEffects(field.effects);
+  const filter = filterCss(effects);
+  const base = { ...contentBaseStyle(field), ...(filter ? { filter } : {}) };
+  if (!vector) return <div style={base} />;
+  const [minX, minY, vw, vh] = vector.viewBox;
+  const sw = vector.stroke?.width ?? 1;
+  const color = field.colorHex ?? DEFAULT_FILL_HEX;
+  const g = field.textGradient?.stops.length ? field.textGradient : undefined;
+  const noise = noiseEffects(effects);
+  const gradId = `sp-icon-grad-${uid}`;
+  const ownMaskId = `sp-icon-mask-${uid}`;
+  const artMaskId = `sp-icon-art-${uid}`;
+  const noiseId = `sp-icon-noise-${uid}`;
+  // Room for lines drawn on the viewBox edge.
+  const pad = sw;
+  const area = { x: minX - pad, y: minY - pad, width: vw + pad * 2, height: vh + pad * 2 };
+  const draw = (p: (typeof vector.paths)[number], i: number, paint: string) =>
+    p.paint === "stroke" ? (
+      <path
+        key={i}
+        d={p.d}
+        fill="none"
+        stroke={paint}
+        strokeWidth={sw}
+        strokeLinecap={vector.stroke?.cap ?? "butt"}
+        strokeLinejoin={vector.stroke?.join ?? "miter"}
+      />
+    ) : (
+      <path key={i} d={p.d} fill={paint} fillRule={p.fillRule ?? "nonzero"} />
+    );
+  const fieldPaths = vector.paths.filter((p) => !p.colorHex);
+  return (
+    <div style={base}>
+      <svg
+        viewBox={`${minX} ${minY} ${vw} ${vh}`}
+        preserveAspectRatio="xMidYMid meet"
+        style={{ width: "100%", height: "100%", display: "block", overflow: "visible" }}
+      >
+        <defs>
+          {g && <GradientDef id={gradId} gradient={g} />}
+          {g && (
+            <mask id={ownMaskId} maskUnits="userSpaceOnUse" {...area}>
+              {fieldPaths.map((p, i) => draw(p, i, "white"))}
+            </mask>
+          )}
+          {noise.length > 0 && (
+            <mask id={artMaskId} maskUnits="userSpaceOnUse" {...area}>
+              {vector.paths.map((p, i) => draw(p, i, "white"))}
+            </mask>
+          )}
+          {noise.map((n, i) => {
+            // The tile is n.size canvas px per cell; user units here are the
+            // viewBox's, scaled by the meet fit.
+            const fit = Math.min(field.width / vw, field.height / vh) || 1;
+            const tile = (NOISE_TILE_CELLS * n.size) / fit;
+            return (
+              <pattern
+                key={i}
+                id={`${noiseId}-${i}`}
+                patternUnits="userSpaceOnUse"
+                width={tile}
+                height={tile}
+              >
+                <image
+                  href={noiseTileDataUrl(n)}
+                  width={tile}
+                  height={tile}
+                  preserveAspectRatio="none"
+                  style={{ imageRendering: "pixelated" }}
+                />
+              </pattern>
+            );
+          })}
+        </defs>
+        {vector.paths.map((p, i) =>
+          p.colorHex ? draw(p, i, p.colorHex) : g ? null : draw(p, i, color),
+        )}
+        {g && <rect {...area} fill={`url(#${gradId})`} mask={`url(#${ownMaskId})`} />}
+        {noise.map((_, i) => (
+          <rect key={i} {...area} fill={`url(#${noiseId}-${i})`} mask={`url(#${artMaskId})`} />
+        ))}
       </svg>
     </div>
   );
@@ -906,6 +1064,20 @@ function TextFieldBox({
   );
 }
 
+/** An image field's clipping box when an effects wrapper holds it. It is its
+ * own stacking context so that a cropped image, which is positioned and so
+ * a layer of its own, paints inside the box's layer. Safari before 26 stops
+ * clipping the layers it paints straight from an element whose filter moves
+ * pixels (the wrapper's drop shadow or blur), and drew the crop whole, over
+ * the frame and its corners (WebKit bug 219520). An inner shadow's frame
+ * with no blur is such a layer too; BoxOverlay keeps that one in. */
+const WRAPPED_IMAGE_BOX: React.CSSProperties = {
+  width: "100%",
+  height: "100%",
+  position: "relative",
+  isolation: "isolate",
+};
+
 function ImageFieldBox({ field, value }: { field: TemplateField; value: string | undefined }) {
   // EVERY image the canvas paints has to be a data URL before toPng runs.
   // html-to-image refetches remote sources in an isolated context, and when
@@ -941,14 +1113,15 @@ function ImageFieldBox({ field, value }: { field: TemplateField; value: string |
   // shape instead of being cut off by it; inner shadows and noise overlay
   // the photo inside the mask. Without effects the markup is today's.
   const effects = readEffects(field.effects);
+  // A crop places the image at its own rect inside the box; the box still
+  // clips it, with its corners and mask.
+  const rect = readImageRect(field.imageRect);
   const box = (
     <div
       data-image-status={status}
       data-field-label={field.label}
       style={{
-        ...(effects.length
-          ? { width: "100%", height: "100%", position: "relative" }
-          : contentBaseStyle(field)),
+        ...(effects.length ? WRAPPED_IMAGE_BOX : contentBaseStyle(field)),
         overflow: "hidden",
         borderRadius: cornerRadiusCss(field),
         display: "flex",
@@ -957,13 +1130,19 @@ function ImageFieldBox({ field, value }: { field: TemplateField; value: string |
         background: value ? undefined : "rgba(0,0,0,0.06)",
         border: value ? undefined : "1.5px dashed rgba(0,0,0,0.25)",
         ...maskStyle,
+        ...(rect ? { position: "relative" } : {}),
       }}
     >
       {image.dataUrl ? (
         <img
           src={image.dataUrl}
           alt={field.label}
-          style={{ width: "100%", height: "100%", objectFit: field.objectFit ?? "cover" }}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: field.objectFit ?? "cover",
+            ...(rect ? imageRectStyle(rect) : {}),
+          }}
         />
       ) : value ? null : ( // the export gate above will wait or refuse on the marker. // In flight, or gone. Either way there is nothing to paint yet, and
         <span

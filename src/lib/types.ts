@@ -101,6 +101,42 @@ export interface BrandTypeStyle {
    * Heading and one for Body. Null holds none; absent means the kit predates
    * roles, and `withFontRoles` (lib/brand/fontRoles) gives it its roles. */
   useFor?: "heading" | "body" | null;
+  /** The style's colour as a role (brand-system Phase 5, D3), resolved per
+   * scheme once a template states its scheme (Phase 6). Absent: colorKey,
+   * as today. */
+  colorRole?: ColorRole;
+}
+
+/** A colour's job in a graphic (brand-system Phase 5, D1). Replaces the
+ * Primary / Secondary / Accent labels, which stay readable as a hint. */
+export type ColorRole =
+  "ground" | "soft" | "deep" | "accent" | "card" | "inkOnLight" | "inkOnDark" | "emphasis";
+
+/** The grounds one brand renders on (brand-system Phase 5). */
+export type SchemeId = "light" | "dark" | "brand" | "accent" | "tonal";
+
+/** A text block's job in a graphic, which sets its size per canvas. */
+export type TypeRole = "display" | "headline" | "subhead" | "body" | "label" | "cta" | "number";
+
+/** The brand's design system (brand-system Phase 5, D4). It stores only
+ * what the admin decided: every unset value is derived by the resolvers in
+ * src/lib/brand/system/ at read time, so an empty or absent system renders
+ * exactly as before. */
+export interface BrandSystem {
+  version: 1;
+  color?: {
+    /** The admin's corrections: role to palette key. */
+    roles?: Partial<Record<ColorRole, string>>;
+    /** The derived neutral ramp's temperature (default mono). */
+    neutrals?: "cool" | "mono" | "warm";
+  };
+  schemes?: { enabled?: SchemeId[]; preferred?: SchemeId };
+  type?: {
+    /** Headline size over body size, never under 2.8 (default 2.9). */
+    ratio?: number;
+    /** Role to type style key. */
+    roles?: Partial<Record<TypeRole, string>>;
+  };
 }
 
 export interface BrandKit {
@@ -129,6 +165,8 @@ export interface BrandKit {
    * renders as the nearest palette color. Absent = true: any hex renders
    * as authored. */
   allowOffPalette?: boolean;
+  /** The design system (migration 0052). Absent: nothing decided yet. */
+  system?: BrandSystem;
 }
 
 export type AssetKind = "logo" | "font" | "image";
@@ -218,10 +256,45 @@ export type FieldEffect =
    * `seed` fixes the pattern so every export of a template is identical. */
   | { type: "noise"; color: string; size: number; density: number; seed?: number };
 
+/** An image's rect inside its field's box, as fractions of the box: x and y
+ * place its top-left corner (negative reaches past the left or top edge),
+ * width and height size it (above 1 is larger than the box). */
+export interface ImageRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 /** Where a shape's stroke sits on its edge. */
 export type StrokeAlign = "inside" | "center" | "outside";
 
-export type FieldType = "text" | "multiline" | "image" | "select" | "shape";
+export type FieldType = "text" | "multiline" | "image" | "select" | "shape" | "icon";
+
+/** Vector artwork an icon field draws (brand-system Phase 3). Coordinates are
+ * viewBox units; the art is fitted inside the field box keeping its aspect
+ * ratio (contain, centred). */
+export interface FieldVector {
+  viewBox: [number, number, number, number]; // minX, minY, width, height
+  paths: VectorPath[];
+  /** Line style for paths painted as strokes. Width is in viewBox units, so
+   * it scales with the icon. */
+  stroke?: {
+    width: number;
+    cap?: "butt" | "round" | "square";
+    join?: "miter" | "round" | "bevel";
+  };
+  /** Where the art came from, so the builder can swap or re-weight it. */
+  source?: { set: "lucide"; name: string };
+}
+
+export interface VectorPath {
+  d: string; // SVG path data
+  paint?: "fill" | "stroke"; // absent: fill
+  fillRule?: "nonzero" | "evenodd"; // absent: nonzero
+  /** #RRGGBB for multi-color art (a logo). Absent: the field's color. */
+  colorHex?: string;
+}
 
 /** Decorative shape kinds (a "line" is a thin rect). */
 export type ShapeKind = "rect" | "ellipse" | "triangle" | "star";
@@ -281,6 +354,10 @@ export interface TemplateField {
   strokeAlign?: StrokeAlign;
   /** Depth effects, painted in list order (Figma's order). Absent = none. */
   effects?: FieldEffect[];
+  /** Icon fields only: the vector the field draws, in colorHex (or
+   * textGradient). Icons are always static, like shapes. Absent: nothing
+   * is drawn. */
+  vector?: FieldVector;
   /** Text fields only: a plate painted behind the text, sized to the text's
    * rendered box plus padding, sharing the field's cornerRadius. Full radius
    * makes a pill. The plate is part of the field: one element to select,
@@ -294,6 +371,12 @@ export interface TemplateField {
    * URL). Set by the Figma importer for custom-shape mask groups;
    * cornerRadius still applies on top. */
   maskUrl?: string;
+  /** Image fields only (brand-system Phase 4): where the image sits inside
+   * the box, as fractions of the box. The image is fitted into this rect
+   * with objectFit (cover by default) and clipped by the box, its corners
+   * and its mask; a member's replacement photo lands in the same rect, as
+   * in Figma. Absent: the rect is the box itself, today's behaviour. */
+  imageRect?: ImageRect;
   /** Figma node this field was imported from (transient import provenance —
    * used to lift the element off the recomposed background). */
   sourceNodeId?: string;
@@ -831,6 +914,15 @@ export interface GenerateInput {
    * first message (no followUp) with templateIdHint, no details and no
    * documents; otherwise treated as false. */
   allowQuestion?: boolean;
+  /** A new design's follow-up (freestyle mode): the latest finished turn's
+   * designs with the member's current text values, so the new message can
+   * revise them instead of starting over. At most 3, each at most 40
+   * fields. Images inside them keep only this company's own storage
+   * references; anything else is dropped server-side. */
+  currentDesigns?: Array<{
+    design: GeneratedDesign;
+    values: Array<{ fieldKey: string; value: string }>;
+  }>;
 }
 
 /** The kinds of Generate's details (new look, Phase 5). */
@@ -860,13 +952,18 @@ export interface GenerateFollowUp {
 
 /** A freestyle proposal's design: a complete, ephemeral template the client
  * renders and fills WITHOUT persisting anything — assembled into a
- * TemplateSchema by designToSchema. Every color arrived as a brand palette
- * key and left the server as its resolved hex. */
+ * TemplateSchema by designToSchema. Every color arrived as a brand color key
+ * (or as the look of one of the team's own elements) and left the server as
+ * baked hex. */
 export interface GeneratedDesign {
   name: string;
   canvasWidth: number;
   canvasHeight: number;
   backgroundColor?: string;
+  /** The canvas fill as a gradient (wins over backgroundColor). */
+  backgroundGradient?: TextGradient;
+  /** Effects on the whole canvas, such as grain. */
+  canvasEffects?: FieldEffect[];
   /** Caption with {field_key} merge tags intact, so a design saved to the
    * library carries a caption that works for every future fill. */
   captionTemplate: string;
@@ -1095,11 +1192,41 @@ export interface ImportIssue {
   severity: "info" | "degraded";
 }
 
+/** What a Figma import read from the frame and what its model pass cost
+ * (import intent, Phase 1). Mirrors ImportIntentReport in
+ * supabase/functions/_shared/importIntent.ts. */
+export interface ImportIntentReport {
+  /** "model": keys and the model pass. "keys": the call failed or was
+   * skipped, and the fields stand on their layer names' keys. */
+  filledBy: "model" | "keys";
+  layers: number;
+  keyed: number;
+  /** Kinds and keys kept but not understood. */
+  unknown: string[];
+  /** Colour roles as written (reported, not stored). */
+  roles: Array<{ fieldKey: string; fill?: string; text?: string; color?: string }>;
+  /** The `max` and `lines` a text field's layer declares, by field id. */
+  limits: Array<{ fieldId: string; max?: number; lines?: number }>;
+  /** Text boxes the import grew back from a cap trim, to re-place from the
+   * face's real metrics. `capHeight` is the cap height Figma trimmed to,
+   * in px, and `band` is the way the box was then extended. */
+  capTrim: Array<{ fieldId: string; capHeight: number; band?: "down" | "up" }>;
+  /** Member field ids in the order the form should read. */
+  formOrder: string[];
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  modelMs: number;
+}
+
 export interface DesignImportResult {
   backgroundUrl: string;
   canvasWidth: number;
   canvasHeight: number;
   suggestedFields: TemplateField[];
+  /** The frame's own effects (brand-system Phase 4): they land on the
+   * canvas. */
+  canvasEffects?: FieldEffect[];
   warnings: string[];
   warningDetails?: ImportIssue[];
   /** Echo of the imported frame link — used for the layered re-render. */
@@ -1108,6 +1235,13 @@ export interface DesignImportResult {
    * re-render so both passes decompose one consistent snapshot instead of
    * re-fetching a tree that may have drifted. */
   tree?: unknown;
+  /** The frame's name: the template's when nothing better is known. */
+  frameName?: string;
+  /** From the model pass, when it ran. */
+  template?: AutoBuildResult["template"];
+  rationale?: Array<{ fieldKey: string; why: string }>;
+  meta?: AutoBuildMeta;
+  intent?: ImportIntentReport;
 }
 
 /** Element-level import: a single Figma layer (pasted as a link) becomes
@@ -1122,6 +1256,9 @@ export interface ElementImportResult {
   warnings: string[];
   warningDetails?: ImportIssue[];
   sourceUrl?: string;
+  /** The pasted layer's name. */
+  frameName?: string;
+  intent?: ImportIntentReport;
 }
 
 /** One paintable unit of a decomposed Figma frame (frame-relative, scale 1). */

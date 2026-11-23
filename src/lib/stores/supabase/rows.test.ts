@@ -65,6 +65,34 @@ describe("template field row mapping", () => {
     expect(back.strokeAlign).toBeUndefined();
   });
 
+  it("round-trips an icon's vector (migration 0049)", () => {
+    const icon: TemplateField = {
+      ...shape,
+      type: "icon",
+      shape: undefined,
+      colorHex: "#0B0B0C",
+      vector: {
+        viewBox: [0, 0, 24, 24],
+        paths: [{ d: "M5 12h14", paint: "stroke" }],
+        stroke: { width: 2, cap: "round", join: "round" },
+        source: { set: "lucide", name: "minus" },
+      },
+    };
+    expect(roundTrip(icon)).toMatchObject({ type: "icon", vector: icon.vector });
+    expect("vector" in fieldToRow("t1", shape, 0)).toBe(false);
+  });
+
+  it("round-trips an image's rect (migration 0050)", () => {
+    const photo: TemplateField = {
+      ...shape,
+      type: "image",
+      shape: undefined,
+      imageRect: { x: -0.057, y: -0.02, width: 1.494, height: 1.042 },
+    };
+    expect(roundTrip(photo)).toMatchObject({ imageRect: photo.imageRect });
+    expect("image_rect" in fieldToRow("t1", shape, 0)).toBe(false);
+  });
+
   it("round-trips plate properties on text fields", () => {
     const plated: TemplateField = {
       ...shape,

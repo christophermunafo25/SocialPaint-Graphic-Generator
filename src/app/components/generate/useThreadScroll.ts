@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef } from "react";
 
 /** How close to the bottom still counts as reading the latest turn
  * (PROMPT §8.4). */
@@ -32,18 +32,13 @@ const HOLD_PX = 2;
  * wherever the view was. The browser's scroll anchoring is off on the
  * scroller (in the CSS) for the same reason: this hook owns the position.
  *
- * It also reports the thread column's width, which a wide draft card must
- * fit (GenerateTurn's `maxWidth`): 760 beside the rail, less on a narrow
- * window.
- *
  * `preserve(el)` is for a change the member made to the layout rather
  * than to the content (the editor opening or closing, which narrows the
- * column and swaps every card's size): the element keeps its place on
- * screen through the reflow, whatever following would have done, so the
- * member is left looking at what they were looking at. Call it before the
- * change commits; it holds for the layout passes that change sets off (the
- * column's new width re-sizes the cards a second time) and lapses two
- * frames after the last one. Following then goes by where that leaves the
+ * column and reflows every card): the element keeps its place on screen
+ * through the reflow, whatever following would have done, so the member is
+ * left looking at what they were looking at. Call it before the change
+ * commits; it holds for the layout passes that change sets off and lapses
+ * two frames after the last one. Following then goes by where that leaves the
  * view.
  *
  * `active` is whether the thread is on screen; the refs attach to the
@@ -60,7 +55,6 @@ export function useThreadScroll(active: boolean) {
   // (its top in the window, since the scroller itself can move when the
   // layout changes), and the frame that lets it lapse.
   const anchor = useRef<{ el: Element; top: number; lapse: number } | null>(null);
-  const [columnWidth, setColumnWidth] = useState<number | undefined>(undefined);
 
   useLayoutEffect(() => {
     if (!active) return;
@@ -128,7 +122,6 @@ export function useThreadScroll(active: boolean) {
     // A preserve() outranks both: the member changed the layout, not the
     // content, and stays where they were.
     const ro = new ResizeObserver(() => {
-      setColumnWidth(column.clientWidth);
       const held = anchor.current;
       if (held) {
         pending.current = false;
@@ -144,7 +137,6 @@ export function useThreadScroll(active: boolean) {
     ro.observe(scroller);
     scroller.addEventListener("scroll", onScroll, { passive: true });
     following.current = true;
-    setColumnWidth(column.clientWidth);
     settle();
     return () => {
       ro.disconnect();
@@ -174,5 +166,5 @@ export function useThreadScroll(active: boolean) {
     anchor.current = held;
   }, []);
 
-  return { scrollRef, columnRef, columnWidth, follow, preserve };
+  return { scrollRef, columnRef, follow, preserve };
 }

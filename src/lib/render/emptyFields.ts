@@ -18,7 +18,7 @@ export type EmptyFieldsMode = "placeholder" | "hideOptional" | "chat";
 /** A member field with nothing in it. Fixed fields are never empty: the
  * admin owns their content. */
 export function isEmptyMemberField(field: TemplateField, value: string | undefined): boolean {
-  return !field.static && field.type !== "shape" && !value;
+  return !field.static && field.type !== "shape" && field.type !== "icon" && !value;
 }
 
 /** Is this field left off the graphic (neither measured nor painted)? */

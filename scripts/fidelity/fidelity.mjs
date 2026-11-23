@@ -2,9 +2,10 @@
 /**
  * The render fidelity harness (docs/brand-system/PHASE-0.md, Step 4).
  *
- *   node scripts/fidelity/fidelity.mjs run [--only a,b] [--engines chromium,firefox,webkit]
+ *   node scripts/fidelity/fidelity.mjs run [--only a,b] [--engines chromium,firefox,webkit,webkit18]
  *   node scripts/fidelity/fidelity.mjs bless <name> [--approved]
  *   node scripts/fidelity/fidelity.mjs baseline <name> --approved [--engines …]
+ *   node scripts/fidelity/fidelity.mjs fonts [--only a,b] [--engines …]
  *
  * run renders every fixture in test/fidelity/fixtures through the dev render
  * page (/dev/render/:fixture, window.__spFidelity) and the real export path,
@@ -33,6 +34,22 @@
  * fixture's baseline and blurBaseline.
  * Only CJ approves a baseline, so it runs only with --approved.
  *
+ * Google's fonts are pinned. Every request a fixture's page makes to
+ * fonts.googleapis.com or fonts.gstatic.com is answered from the recording
+ * in test/fidelity/google-fonts, never by Google (fontRecording.mjs says
+ * why). A request the recording lacks fails the row that made it, unless
+ * the fixture was skipped, and the run and report.json name it. fonts is
+ * the one command that reaches Google: it renders the fixtures into
+ * test/fidelity/out/fonts, fetches the answers the recording lacks and
+ * writes them. It never fetches an answer it already has, and when it has
+ * rendered every fixture in every engine it records for, it drops the
+ * answers none of them asked for.
+ *
+ * The fourth engine, webkit18, is an older WebKit that stands in for
+ * Safari before 26 (webkit18.mjs says what it is and installs it). It is
+ * given WebKit's recorded fonts, so fonts leaves it out, and refuses it
+ * when --engines names it.
+ *
  * The harness starts its own Vite dev server on the local backend (the
  * shots.mjs approach; --port, default 4327) unless --base points at one.
  */
@@ -43,15 +60,32 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, firefox, webkit } from "playwright";
 import * as prettier from "prettier";
+import {
+  outcomeWithFonts,
+  recordingPart,
+  sawEveryRequest,
+  unrecordable,
+} from "../../src/app/dev/fidelityFonts.ts";
 import { DEFAULT_TOLERANCE, routeFor, verdictFor } from "../../src/app/dev/fidelityVerdict.ts";
+import { openFontRecording } from "./fontRecording.mjs";
+import { WEBKIT_18, webkit18 } from "./webkit18.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
 const fixturesDir = path.join(root, "test/fidelity/fixtures");
 const outDir = path.join(root, "test/fidelity/out");
+/** Google's recorded answers (fontRecording.mjs). */
+const fontsDir = path.join(root, "test/fidelity/google-fonts");
 
 const ENGINES = { chromium, firefox, webkit };
-const ALL_ENGINES = Object.keys(ENGINES);
+/** The engines the font recording holds answers for, which is what fonts
+ * renders in. */
+const RECORDED_ENGINES = Object.keys(ENGINES);
+/** What run and baseline render in unless --engines says otherwise. */
+const ALL_ENGINES = [...RECORDED_ENGINES, WEBKIT_18];
+/** An engine's Playwright browser type. webkit18 comes from an older
+ * Playwright, loaded only when a run renders in it. */
+const browserType = (engine) => (engine === WEBKIT_18 ? webkit18() : ENGINES[engine]);
 /** Larger than the biggest canvas (1080 x 1920 stories), at 1x. */
 const VIEWPORT = { width: 2000, height: 2000 };
 const FIXTURE_TIMEOUT_MS = 60_000;
@@ -59,6 +93,11 @@ const FIXTURE_TIMEOUT_MS = 60_000;
 const CHANNEL_THRESHOLD = 6;
 /** The blurred share's blur (a canvas `blur()`, in px). */
 const BLUR_PX = 4;
+/** How long the harness's Firefox suppresses painting in a new document:
+ * the pref nglayout.initialpaint.delay, in ms. Stock Firefox uses 5. Keep
+ * it below SNAPSHOT_SETTLE_MS in src/lib/render/exportPng.ts (50); the
+ * launch in renderEngine says why. */
+const FIREFOX_PAINT_DELAY_MS = 40;
 
 // ------------------------------------------------------------------ args
 const [mode, ...rest] = process.argv.slice(2);
@@ -88,8 +127,8 @@ const list = (v) =>
         .map((s) => s.trim())
         .filter(Boolean)
     : null;
-const engines = list(flags.engines) ?? ALL_ENGINES;
-for (const e of engines) if (!ENGINES[e]) usage();
+const engines = list(flags.engines) ?? (mode === "fonts" ? RECORDED_ENGINES : ALL_ENGINES);
+for (const e of engines) if (!ENGINES[e] && e !== WEBKIT_18) usage();
 
 // -------------------------------------------------------------- fixtures
 async function loadFixtures(only) {
@@ -162,18 +201,36 @@ async function withServer(fn) {
 }
 
 // ---------------------------------------------------------------- render
-/** Renders each fixture in one engine. Returns name -> outcome:
+/** Renders each fixture in one engine, its Google font requests answered
+ * by `fonts` (openFontRecording). Returns name -> outcome:
  * { status: "rendered", file } | { status: "skipped", reason } |
  * { status: "error", message }. */
-async function renderEngine(base, engine, fixtures, dir) {
+async function renderEngine(base, engine, fixtures, dir, fonts) {
   await mkdir(dir, { recursive: true });
-  const browser = await ENGINES[engine].launch();
+  // Firefox is the one engine launched off stock settings, by one pref.
+  // It suppresses painting for the first moments of every document's
+  // life, the export snapshot's own document included, and a snapshot
+  // drawn in that window loses everything clipped to text (a text
+  // gradient, grain on glyphs). Stock Firefox ends the window after 5 ms,
+  // so an export that draws too early loses the race only on a busy
+  // machine, which reads as an occasional flake. Held open for
+  // FIREFOX_PAINT_DELAY_MS, longer than a frame, that export loses on
+  // every run. The real export passes because it waits SNAPSHOT_SETTLE_MS
+  // on a timer set after the snapshot loads, which fires after Firefox's
+  // for as long as its wait is the longer of the two.
+  const browser = await browserType(engine).launch(
+    engine === "firefox"
+      ? { firefoxUserPrefs: { "nglayout.initialpaint.delay": FIREFOX_PAINT_DELAY_MS } }
+      : {},
+  );
   const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
   const outcomes = new Map();
   try {
     for (const fixture of fixtures) {
       const page = await context.newPage();
       page.setDefaultTimeout(FIXTURE_TIMEOUT_MS);
+      const pinned = await fonts.attach(page, engine);
+      let outcome;
       try {
         await page.goto(base + routeFor(fixture), { waitUntil: "domcontentloaded" });
         await page.waitForFunction(() => window.__spFidelity);
@@ -187,25 +244,32 @@ async function renderEngine(base, engine, fixtures, dir) {
           }
         });
         if (result.error) {
-          outcomes.set(fixture.name, { status: "error", message: result.error });
+          outcome = { status: "error", message: result.error };
         } else if (result.missingFonts) {
-          outcomes.set(fixture.name, {
+          outcome = {
             status: "skipped",
             reason: `missing font ${result.missingFonts.join(", ")}`,
-          });
+          };
         } else {
           const file = path.join(dir, `${fixture.name}.png`);
           await writeFile(file, Buffer.from(result.png, "base64"));
-          outcomes.set(fixture.name, { status: "rendered", file });
+          outcome = { status: "rendered", file };
         }
       } catch (e) {
-        outcomes.set(fixture.name, {
+        outcome = {
           status: "error",
           message: e instanceof Error ? e.message.split("\n")[0] : String(e),
-        });
+        };
       } finally {
+        await pinned.settle();
         await page.close();
       }
+      // A font request that went unanswered is an error, never a pass. A
+      // skipped fixture rendered nothing, so what its page asked for
+      // counts for nothing.
+      const final = outcomeWithFonts(outcome, pinned.missed, fonts.record);
+      if (final.status !== "skipped") pinned.keep();
+      outcomes.set(fixture.name, final);
     }
   } finally {
     await browser.close();
@@ -324,11 +388,20 @@ const pct = (v) => (v === undefined || v === null ? "" : `${v.toFixed(2)}%`);
  * reports it, which is how a new fixture gets its first numbers. */
 const STRICT = Boolean(process.env.CI);
 
-async function measure(fixtures, selectedEngines) {
+async function measure(fixtures, selectedEngines, fonts) {
+  // An engine that is not installed is found here, before the dev server
+  // starts, and not after the engines named ahead of it have rendered.
+  for (const engine of selectedEngines) browserType(engine);
   const rendered = {};
   await withServer(async (base) => {
     for (const engine of selectedEngines) {
-      rendered[engine] = await renderEngine(base, engine, fixtures, path.join(outDir, engine));
+      rendered[engine] = await renderEngine(
+        base,
+        engine,
+        fixtures,
+        path.join(outDir, engine),
+        fonts,
+      );
     }
   });
   const comparer = await openComparer();
@@ -390,18 +463,59 @@ function printTable(rows) {
   );
 }
 
+/** Names the font requests the recording could not answer, and the fix. */
+function printUnanswered(fonts) {
+  const requests = fonts.unanswered();
+  if (!requests.length) return;
+  console.error(
+    fonts.record
+      ? "Google font requests that could not be recorded:"
+      : `Google font requests not in the recording (${rel(fontsDir)}):`,
+  );
+  for (const request of requests) console.error(`  ${request}`);
+  if (!fonts.record) {
+    console.error(
+      "Run `node scripts/fidelity/fidelity.mjs fonts` to record them, then commit that folder.",
+    );
+    // webkit18 misses whatever WebKit misses, and fonts records those for
+    // both. What it cannot record is a request WebKit did not make. A run
+    // that did not render in WebKit cannot tell the two apart.
+    const lost = unrecordable(requests);
+    if (lost.length && engines.includes("webkit")) {
+      console.error(
+        `fonts cannot record what only ${WEBKIT_18} asked for (${lost.length} of these): it is given WebKit's answers (test/fidelity/README.md).`,
+      );
+    } else if (lost.length) {
+      console.error(
+        `fonts records for WebKit, whose answers ${WEBKIT_18} is given. What WebKit does not ask for too, it cannot record (test/fidelity/README.md).`,
+      );
+    }
+  }
+}
+
 async function run() {
   const fixtures = await loadFixtures(list(flags.only));
   if (!fixtures.length) {
     console.log("No fixtures.");
     return;
   }
-  const rows = await measure(fixtures, engines);
+  const fonts = await openFontRecording(fontsDir);
+  const rows = await measure(fixtures, engines, fonts);
   printTable(rows);
+  printUnanswered(fonts);
   await mkdir(outDir, { recursive: true });
   await writeFile(
     path.join(outDir, "report.json"),
-    JSON.stringify({ generatedAt: new Date().toISOString(), engines, rows }, null, 2) + "\n",
+    JSON.stringify(
+      {
+        generatedAt: new Date().toISOString(),
+        engines,
+        unansweredFontRequests: fonts.unanswered(),
+        rows,
+      },
+      null,
+      2,
+    ) + "\n",
   );
   const failures = rows.filter((r) => r.failed);
   if (failures.length) {
@@ -425,11 +539,13 @@ async function bless(name) {
   if (existsSync(golden) && !flags.approved) {
     throw new Error(`${name} already has a golden. Replacing it needs CJ's approval (--approved).`);
   }
+  const fonts = await openFontRecording(fontsDir);
   let outcome;
   await withServer(async (base) => {
     const dir = path.join(outDir, "chromium");
-    outcome = (await renderEngine(base, "chromium", [fixture], dir)).get(name);
+    outcome = (await renderEngine(base, "chromium", [fixture], dir, fonts)).get(name);
   });
+  printUnanswered(fonts);
   if (outcome.status !== "rendered") {
     throw new Error(`${name} did not render: ${outcome.message ?? outcome.reason}`);
   }
@@ -443,8 +559,10 @@ async function baseline(name) {
     throw new Error("Only CJ approves a baseline. Run with --approved once CJ has.");
   }
   const [fixture] = await loadFixtures([name]);
-  const rows = await measure([fixture], engines);
+  const fonts = await openFontRecording(fontsDir);
+  const rows = await measure([fixture], engines, fonts);
   printTable(rows);
+  printUnanswered(fonts);
   const blocked = rows.filter((r) => r.changedPct === null || r.verdict === "size");
   if (blocked.length) {
     throw new Error(
@@ -463,10 +581,64 @@ async function baseline(name) {
   );
 }
 
+// ----------------------------------------------------------------- fonts
+/** Records Google's answers to the font requests the recording lacks. */
+async function recordFonts() {
+  // Refused before anything starts; fontRecording.mjs refuses it again
+  // where the fetch would happen.
+  for (const engine of engines) recordingPart(engine, true);
+  const only = list(flags.only);
+  const fixtures = await loadFixtures(only);
+  if (!fixtures.length) {
+    console.log("No fixtures.");
+    return;
+  }
+  const fonts = await openFontRecording(fontsDir, { record: true });
+  const outcomes = [];
+  let crash = null;
+  try {
+    await withServer(async (base) => {
+      for (const engine of engines) {
+        // Its own folder: run's renders, heatmaps and report stay a set.
+        const dir = path.join(outDir, "fonts", engine);
+        for (const [name, outcome] of await renderEngine(base, engine, fixtures, dir, fonts)) {
+          outcomes.push({ name, engine, outcome });
+        }
+      }
+    });
+  } catch (e) {
+    // What was fetched before the run broke is still worth keeping.
+    crash = e;
+  }
+  // Only a run that rendered everything knows what nothing asks for.
+  const prune =
+    !crash &&
+    sawEveryRequest({
+      everyFixture: !only,
+      everyEngine: RECORDED_ENGINES.every((e) => engines.includes(e)),
+      outcomes: outcomes.map((o) => o.outcome),
+    });
+  const saved = await fonts.save({ prune });
+  for (const request of saved.added) console.log(`added    ${request}`);
+  for (const request of saved.removed) console.log(`removed  ${request}`);
+  console.log(
+    `${rel(fontsDir)}: ${saved.answers} answers in ${saved.files} files, ` +
+      `${Math.round(saved.bytes / 1024)} KB (${saved.added.length} added, ${saved.removed.length} removed)`,
+  );
+  printUnanswered(fonts);
+  for (const { name, engine, outcome } of outcomes) {
+    if (outcome.status === "rendered") continue;
+    console.error(`${name}/${engine} ${outcome.status}: ${outcome.message ?? outcome.reason}`);
+    if (outcome.status === "error") process.exitCode = 1;
+  }
+  if (crash) throw crash;
+}
+
 try {
   if (mode === "run") await run();
   else if (mode === "bless" && positional[0]) await bless(positional[0]);
   else if (mode === "baseline" && positional[0]) await baseline(positional[0]);
+  else if (mode === "fonts") await recordFonts();
   else usage();
 } catch (e) {
   console.error(e instanceof Error ? e.message : e);

@@ -2,22 +2,23 @@ import React from "react";
 import { Sidebar } from "./Sidebar";
 import { ChromeProvider } from "./layout/ChromeContext";
 
-/** Platform chrome — SocialPaint design system. A persistent left sidebar
- * (Figma node 13:28) replaces the old topbar; content fills the rest. Tenant
- * brand kits style the graphics, never this shell.
+/** The app frame (every product frame of the ElevenLabs file, e.g.
+ * 6010:2064; docs/design/elevenlabs/RULES.md section 10): the Sidebar and
+ * Main on surface/page. At 1024 and wider the window is the frame, the
+ * Sidebar flush against it with no inset (--layout-shell-inset), and only
+ * Main's content scrolls (layout/Page.tsx). Below 1024 the mobile bar sits on top and the
+ * document scrolls. Tenant brand kits style the graphics, never this shell.
  *
- * The `sp-appshell` class is what a full-viewport surface (the Template
- * Builder) hangs its non-scrolling layout off — see `[data-sp-fullscreen]`
- * in socialpaint.css. Every other route keeps the document scroll. */
+ * Every child of `.sp-appshell` but `main` is the app's chrome: Generate's
+ * editor sheet makes each one inert while it is open, and below 1024 a
+ * full-viewport surface hangs its layout off `.sp-appshell`
+ * (`[data-sp-fullscreen]` in socialpaint.css). */
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <ChromeProvider>
-      <div
-        className="sp-appshell min-h-screen flex flex-col lg:flex-row"
-        style={{ background: "var(--bg-canvas)", fontFamily: "var(--font-ui)" }}
-      >
+      <div className="sp-appshell">
         <Sidebar />
-        <main className="flex-1 min-w-0">{children}</main>
+        <main className="sp-main">{children}</main>
       </div>
     </ChromeProvider>
   );

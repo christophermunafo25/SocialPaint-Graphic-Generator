@@ -213,10 +213,31 @@ describe("standInGenerate for Generate", () => {
     expect(res.proposals[0].imageTargetFieldKey).toBe("image");
   });
 
-  it("refuses a new design", async () => {
-    await expect(
-      standInGenerate("co-1", { brief: "x", mode: "freestyle" }, loaders),
-    ).rejects.toThrow(STAND_IN_REFUSAL);
+  it("hands back published layouts as new designs for a Generate run", async () => {
+    const res = await build({ brief: "Launch day", mode: "freestyle", count: 2 });
+    expect(res.meta.mode).toBe("freestyle");
+    expect(res.proposals.map((p) => [p.templateId, p.design?.name])).toEqual([
+      ["freestyle-1", "Product launch"],
+      ["freestyle-2", "Open role"],
+    ]);
+    const [first] = res.proposals;
+    expect(first.design?.fields.map((f) => f.fieldKey)).toEqual(
+      TEMPLATE.fields.map((f) => f.fieldKey),
+    );
+    // Fresh element ids, and the member text the stand-in always writes.
+    expect(first.design?.fields[0].id).not.toBe(TEMPLATE.fields[0].id);
+    expect(first.values.eyebrow).toBe("Now available");
+  });
+
+  it("refuses a new design when no published template is drawn as live layers", async () => {
+    vi.useFakeTimers();
+    const flat = { ...TEMPLATE, backgroundUrl: "template-backgrounds/co-1/flat.png" };
+    const pending = standInGenerate(
+      "co-1",
+      { brief: "x", mode: "freestyle" },
+      { get: async () => flat, listPublished: async () => [flat] },
+    );
+    await expect(pending).rejects.toThrow(STAND_IN_REFUSAL);
   });
 
   it("stops when the chat aborts", async () => {

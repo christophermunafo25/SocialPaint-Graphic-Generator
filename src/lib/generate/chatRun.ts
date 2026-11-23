@@ -38,6 +38,7 @@ import {
   repairBriefFor,
   type ChatAction,
 } from "./chatReducer";
+import { relaxDesignFit, withFields } from "./designFit";
 import { designToSchema } from "./designToSchema";
 import { measureProposal } from "./measureProposal";
 import { repairProposal } from "./repairProposal";
@@ -250,17 +251,32 @@ async function resolveProposal(
   const { fx } = ctx;
   if (proposal.design) {
     // Freestyle designs have no stored template to repair against: the
-    // server forces shrink sizing on all their text, so measure and drop
-    // honestly. The ordinal and provenance are the ones the old page
-    // stamped, so a design saved to the library answers which model made
-    // it and when.
-    const schema = designToSchema(proposal.design, ctx.companyId, index + 1, {
+    // server sets shrink sizing on all their text, so measure, let what
+    // runs over shrink to the type floor (relaxDesignFit), measure again,
+    // and drop honestly if it still does not fit. The ordinal and provenance
+    // are the ones the old page stamped, so a design saved to the library
+    // answers which model made it and when.
+    let design = proposal.design;
+    let schema = designToSchema(design, ctx.companyId, index + 1, {
       model: ctx.meta.model,
       generatedAt: ctx.meta.generatedAt,
     });
-    const fit = measureProposal(schema, proposal.values, ctx.kit, ctx.measure);
+    let fit = measureProposal(schema, proposal.values, ctx.kit, ctx.measure);
+    if (!fit.ok) {
+      const over = fit.fields.filter((f) => f.fit === "overflows").map((f) => f.fieldKey);
+      const relaxed = relaxDesignFit(schema, over, ctx.kit);
+      if (relaxed) {
+        fit = measureProposal(relaxed, proposal.values, ctx.kit, ctx.measure);
+        if (fit.ok) {
+          schema = relaxed;
+          design = withFields(design, relaxed);
+        }
+      }
+    }
     if (!fit.ok) return { warning: overflowingDesignWarning(proposal.templateName) };
-    return { draft: toDraft(fx.newId(), proposal, schema, proposal.values) };
+    return {
+      draft: toDraft(fx.newId(), { ...proposal, design }, schema, proposal.values),
+    };
   }
   const schema = await fx.getTemplate(proposal.templateId);
   if (!schema) return { warning: unavailableWarning(proposal.templateName) };

@@ -21,26 +21,48 @@ Requires Node 26 and Deno 2.x (`brew install deno`).
 (`node scripts/fidelity/fidelity.mjs run`, `docs/brand-system/README.md`) on
 pull requests that touch the renderer, export, template types, the Figma
 importer, the starters, or the harness and its fixtures. It renders every
-fixture in Chromium, Firefox and WebKit, compares each with its golden, and
-fails when a fixture gets worse than its approved baseline. The renders,
+fixture in Chromium, Firefox, WebKit and an older WebKit that stands in for
+Safari before 26 (`test/fidelity/README.md`), compares each with its golden,
+and fails when a fixture gets worse than its approved baseline. The renders,
 heatmaps and `report.json` upload as the `fidelity-out` artifact on every
 run, pass or fail.
 
 It is kept out of `npm run verify` on purpose: it starts a dev server and
-three browsers, and takes about a minute, while verify stays fast. Run it
+four browsers, and takes a few minutes, while verify stays fast. Run it
 locally before a pull request that touches those paths. It runs on macOS
 because the baselines were recorded there; text rasterizes differently on
 Linux. macOS runner minutes bill at a higher rate than Linux on private
 repositories, which is one reason it only runs when its paths change.
 
-Two things can move its numbers with no code change: the runner image
-(GitHub updates `macos-latest`), and Google Fonts, which the starter fixtures
-and most text load live, shipping a new build of a family. When the job fails
-across many fixtures at once, check those first: open the `fidelity-out`
-artifact's heatmaps, and if only glyph edges moved, re-measure the baselines
-with CJ's approval. It is not a required check today; add **`fidelity`** to the ruleset
+One thing can move its numbers with no code change: the runner image
+(GitHub updates `macos-latest`). When the job fails across many fixtures at
+once, check that first: open the `fidelity-out` artifact's heatmaps, and if
+only glyph edges moved, re-measure the baselines with CJ's approval.
+
+Google Fonts cannot move them. The harness answers every Google font request
+from the recording in `test/fidelity/google-fonts` and never asks Google, so
+a new build of a family changes nothing until the recording is refreshed
+(`test/fidelity/README.md`). A row that reports `error` with a note about the
+recording means a change asks Google for something the recording lacks: run
+`node scripts/fidelity/fidelity.mjs fonts` and commit that folder.
+
+It is not a required check today; add **`fidelity`** to the ruleset
 below if it should gate merges (it only reports on pull requests that touch
 its paths, so a required check would block the others).
+
+Playwright's own install cannot fetch the older WebKit.
+`node scripts/fidelity/webkit18.mjs install` does, in the job and once on
+each machine that runs the harness. A run that lacks it stops before it
+renders anything and names that command.
+
+That build is frozen: it belongs to a Playwright release from June 2025.
+If its archive leaves Playwright's CDN, the job fails at its install step,
+the gate step is skipped, and the job says nothing about the other three
+engines. If a new runner image stops the build launching, the run stops
+there with no table and no report for any engine. Either way that is every
+pull request that touches these paths. The remedy then is to drop the
+engine, with CJ's say: take `webkit18` out of the default engines in
+`scripts/fidelity/fidelity.mjs` and its step out of the workflow.
 
 ## Build-guard variables (optional)
 

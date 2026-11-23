@@ -90,6 +90,7 @@ export function AuthScreen({
   const emailField = (
     <Field label="Email" error={errors.email}>
       <Input
+        size="lg"
         type="email"
         value={email}
         autoComplete="email"
@@ -102,6 +103,7 @@ export function AuthScreen({
   const passwordField = (
     <Field label={view === "setPassword" ? "New password" : "Password"} error={errors.password}>
       <Input
+        size="lg"
         type="password"
         value={password}
         autoComplete={view === "signin" ? "current-password" : "new-password"}
@@ -121,7 +123,7 @@ export function AuthScreen({
         <>
           <p className="t-body-m sp-auth-message">
             {view === "checkEmail" ? "We sent a confirmation link to " : "We sent a reset link to "}
-            <span className="t-label-l sp-auth-strong">{email}</span>
+            <span className="t-label-m sp-auth-strong">{email}</span>
             {view === "checkEmail"
               ? ". Open it, then come back and sign in."
               : ". Open it to choose a new password."}
@@ -169,7 +171,7 @@ export function AuthScreen({
               {SUBMIT[view]}
             </Button>
             {view === "signup" && (
-              <p className="t-caption-s sp-auth-consent">
+              <p className="t-caption-m sp-auth-consent">
                 By creating an account, you agree to the{" "}
                 <a className="t-label-xs sp-auth-strong" href={TERMS.href}>
                   {TERMS.label}
@@ -183,13 +185,13 @@ export function AuthScreen({
             )}
             {view === "signin" && (
               <p className="sp-auth-switch">
-                <span className="t-body-s sp-auth-muted">Don’t have an account?</span>
+                <span className="t-body-m sp-auth-muted">Don’t have an account?</span>
                 {link("Sign up", "signup")}
               </p>
             )}
             {view === "signup" && (
               <p className="sp-auth-switch">
-                <span className="t-body-s sp-auth-muted">Already have an account?</span>
+                <span className="t-body-m sp-auth-muted">Already have an account?</span>
                 {link("Sign in", "signin")}
               </p>
             )}

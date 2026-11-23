@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { BrandKit, LayoutGroup, TemplateField } from "@/lib/types";
 import { groupChildRef, isFreeGroup, parseGroupChildRef } from "@/lib/types";
 import { useDataUrl } from "@/lib/render/useDataUrl";
@@ -14,6 +14,14 @@ import {
 } from "@/lib/render/layout";
 import { resolveFieldStyle } from "@/lib/brand/resolveStyle";
 import { cornerRadiusCss, DEFAULT_FILL_HEX, FieldBoxContent } from "../SchemaRenderer";
+import {
+  innerShadowFrames,
+  noiseEffects,
+  paintsBeyondBox,
+  readEffects,
+} from "@/lib/render/effects";
+import { noiseLayerCss } from "@/lib/render/noise";
+import type { FieldEffect } from "@/lib/types";
 import { ErrorBoundary, FieldCrashFallback } from "../ErrorBoundary";
 import { PALETTE_MIME, isTypingTarget, paintOrder, type BuilderTool } from "./fieldOps";
 import { selectedFieldIds, selectedGroupIds } from "./groupOps";
@@ -25,6 +33,9 @@ interface FieldOverlayEditorProps {
   backgroundUrl: string;
   /** Canvas base fill (schemaBackgroundCss) — under the background image. */
   backgroundCss?: string;
+  /** The look's canvas effects: an inner shadow over the background and
+   * grain over every field, as the export paints them. */
+  canvasEffects?: FieldEffect[];
   fields: TemplateField[];
   /** Groups over the fields — plain or auto-layout (may be empty). */
   groups: LayoutGroup[];
@@ -88,6 +99,10 @@ interface FieldOverlayEditorProps {
   onScaleChange?(scale: number): void;
   /** Session key for remembering zoom and pan (the template id). */
   viewKey?: string;
+  /** Room to leave around the artboard at fit, per side, for what floats
+   * over the view (the builder stage's variations, tools and selects).
+   * Absent, FIT_MARGIN_PX on every side. Must be stable. */
+  fitInsets?: { top: number; right: number; bottom: number; left: number };
   /** Elements the admin has locked or hidden FOR THIS SESSION. Locked ones
    * refuse selection and drags on the canvas; hidden ones are left out of
    * the canvas view. Neither reaches the schema, the layout pass, the
@@ -586,6 +601,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     canvasHeight,
     backgroundUrl,
     backgroundCss,
+    canvasEffects,
     fields,
     groups,
     layout,
@@ -607,12 +623,20 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
     apiRef,
     onScaleChange,
     viewKey,
+    fitInsets,
     lockedIds,
     hiddenIds,
     emptyHint,
     selectionToolbar,
     appearanceOf,
   } = props;
+  // Canvas effects, painted as the export paints them: the inner shadow over
+  // the background, the grain above the topmost field but under the
+  // selection box, marquee and guides.
+  const canvasFx = useMemo(() => readEffects(canvasEffects), [canvasEffects]);
+  const canvasInner = useMemo(() => innerShadowFrames(canvasFx), [canvasFx]);
+  const canvasNoise = useMemo(() => noiseLayerCss(noiseEffects(canvasFx)), [canvasFx]);
+  const canvasNoiseZ = Math.max(0, ...fields.map((f) => f.zIndex ?? 0)) + 3;
   const { kit } = useBrand();
   /** THE ARTBOARD — every pointer-to-canvas conversion measures against this
    * element, so pan costs the conversion nothing: the element carries the
@@ -781,22 +805,30 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
   /** The view that frames a canvas-space rect, centred, with pasteboard
    * showing around it. Fit is this over the whole artboard — a computed
    * target, not the zoom floor. */
-  const viewFraming = useCallback((r: Rect): View | null => {
-    const vp = viewportRef.current;
-    if (!vp) return null;
-    const w = vp.clientWidth;
-    const h = vp.clientHeight;
-    if (w <= 0 || h <= 0 || r.width <= 0 || r.height <= 0) return null;
-    const inner = 2 * FIT_MARGIN_PX;
-    const s = clampScale(
-      Math.min(Math.max(1, w - inner) / r.width, Math.max(1, h - inner) / r.height),
-    );
-    return {
-      scale: s,
-      x: w / 2 - (r.x + r.width / 2) * s,
-      y: h / 2 - (r.y + r.height / 2) * s,
-    };
-  }, []);
+  const viewFraming = useCallback(
+    (r: Rect): View | null => {
+      const vp = viewportRef.current;
+      if (!vp) return null;
+      const w = vp.clientWidth;
+      const h = vp.clientHeight;
+      if (w <= 0 || h <= 0 || r.width <= 0 || r.height <= 0) return null;
+      const ins = fitInsets ?? {
+        top: FIT_MARGIN_PX,
+        right: FIT_MARGIN_PX,
+        bottom: FIT_MARGIN_PX,
+        left: FIT_MARGIN_PX,
+      };
+      const innerW = Math.max(1, w - ins.left - ins.right);
+      const innerH = Math.max(1, h - ins.top - ins.bottom);
+      const s = clampScale(Math.min(innerW / r.width, innerH / r.height));
+      return {
+        scale: s,
+        x: ins.left + innerW / 2 - (r.x + r.width / 2) * s,
+        y: ins.top + innerH / 2 - (r.y + r.height / 2) * s,
+      };
+    },
+    [fitInsets],
+  );
 
   const fitView = useCallback(
     (): View | null => viewFraming({ x: 0, y: 0, width: canvasWidth, height: canvasHeight }),
@@ -1472,7 +1504,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
         if (inStack(f)) {
           const stripped = new Map<string, Partial<TemplateField>>();
           for (const [id, o] of latest) {
-            const isText = f.type !== "image" && f.type !== "shape";
+            const isText = f.type !== "image" && f.type !== "shape" && f.type !== "icon";
             const vertical = directGroupOf(f.fieldKey)?.direction !== "horizontal";
             const patch: Partial<TemplateField> = { width: o.width, height: o.height };
             if (isText && vertical) delete patch.height;
@@ -2052,6 +2084,13 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                 }}
               />
             )}
+            {canvasInner.length > 0 && (
+              <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+                {canvasInner.map((frameStyle, i) => (
+                  <div key={i} style={frameStyle} />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Group frames: builder-only chrome (never in preview or export).
@@ -2169,7 +2208,7 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
             const isSelected = selectedIds.includes(f.id);
             const isEditing = editingId === f.id;
             const showHandles = isSelected && single?.id === f.id && !isEditing && !locked;
-            const isText = f.type !== "image" && f.type !== "shape";
+            const isText = f.type !== "image" && f.type !== "shape" && f.type !== "icon";
             const stackChild = inStack(f);
             const groupVertical = stackChild
               ? directGroupOf(f.fieldKey)?.direction !== "horizontal"
@@ -2410,7 +2449,9 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                     style={{
                       position: "absolute",
                       inset: 0,
-                      overflow: "hidden",
+                      // Clipped to its box, unless its shadow, glow, blur or
+                      // stroke paints beyond it, as it does in the export.
+                      overflow: paintsBeyondBox((appearanceOf ?? same)(v)) ? "visible" : "hidden",
                       pointerEvents: "none",
                     }}
                   >
@@ -2477,9 +2518,9 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
                     {(() => {
                       // "Image · image" says nothing — suppress the type when it
                       // duplicates the label. "fixed" carries information except
-                      // on shapes, which are always design-only.
+                      // on shapes and icons, which are always design-only.
                       const segment =
-                        f.type === "shape"
+                        f.type === "shape" || f.type === "icon"
                           ? null
                           : f.static
                             ? "fixed"
@@ -2544,6 +2585,26 @@ export function FieldOverlayEditor(props: FieldOverlayEditorProps) {
               </div>
             );
           })}
+
+          {canvasNoise && (
+            // Canvas grain over every field, as the export paints it. Never
+            // hit-testable. It lies lightly over a single selection's handles
+            // (they ride inside the field box); the multi-selection box is above.
+            <div
+              style={{
+                width: canvasWidth,
+                height: canvasHeight,
+                transform: `scale(${scale})`,
+                transformOrigin: "top left",
+                position: "absolute",
+                top: 0,
+                left: 0,
+                pointerEvents: "none",
+                zIndex: canvasNoiseZ,
+                ...canvasNoise,
+              }}
+            />
+          )}
 
           {/* An empty artboard is not an error, but it should say what to do
           next. It rides in a chip of its own: the artboard behind it is the

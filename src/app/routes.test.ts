@@ -21,8 +21,10 @@ const TABLE: Array<[url: string, admin: string, member: string]> = [
   ["/templates", "portal", "portal"],
   ["/templates?platform=instagram&q=hiring", "portal", "portal"],
   ["/templates/t1", "template", "template"],
-  ["/templates/t1/chat", "templateChat", "templateChat"],
-  ["/templates/t1/chat/c1", "templateChat", "templateChat"],
+  // The template chat is hidden (new brand, PLAN.md judgement calls 1 and
+  // 8): its addresses open the fill page.
+  ["/templates/t1/chat", "template", "template"],
+  ["/templates/t1/chat/c1", "template", "template"],
   ["/templates/t1/bulk", "bulk", "portal"],
   ["/generate", "generate", "generate"],
   ["/generate/c/c1", "generate", "generate"],

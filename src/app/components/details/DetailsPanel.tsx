@@ -13,10 +13,8 @@ import {
   Select,
   TextArea,
   Upload,
+  CONFIRM_MS,
 } from "../primitives";
-
-/** How long "Copied" stays on the caption's action, as today. */
-export const COPIED_MS = 1600;
 
 export interface DetailsLook {
   options: Array<{ id: string; label: string }>;
@@ -42,7 +40,8 @@ export interface DetailsPanelProps {
   sizeSwitch?: DetailsLook | null;
   /** Generate's preview stage, under the size switch. */
   stage?: React.ReactNode;
-  /** Look, as a Segmented control, when the template has more than one. */
+  /** The variation (a look in the schema), as a Segmented control, when the
+   * template has more than one. */
   look?: DetailsLook | null;
   /** The member fields to show, in the template's order. */
   fields?: TemplateField[];
@@ -77,10 +76,11 @@ export interface DetailsPanelProps {
 /**
  * The Details panel (new look, 156:782 and 13:8148): one component,
  * configured per place (PHASE-4.md §9 D4). The fill page titles it
- * "Details"; the template chat "Edit details", with a close button. The
- * fields come from the template in both: Look, every member field (a photo
- * as the Upload control), then Caption, whose label row carries Copy. The
- * fields scroll inside the panel; the title and the footer stay put.
+ * "Details" (new brand, 2322:918); the template chat "Edit details", with a
+ * close button. The fields come from the template in both: Variation,
+ * every member field (a photo as the Upload control), then Caption, whose
+ * label row carries Copy. The fields scroll inside the panel; the title and
+ * the footer stay put.
  */
 export function DetailsPanel({
   title,
@@ -116,7 +116,7 @@ export function DetailsPanel({
     await navigator.clipboard.writeText(caption.value);
     setCopied(true);
     window.clearTimeout(copiedTimer.current);
-    copiedTimer.current = window.setTimeout(() => setCopied(false), COPIED_MS);
+    copiedTimer.current = window.setTimeout(() => setCopied(false), CONFIRM_MS);
   };
 
   return (
@@ -130,7 +130,16 @@ export function DetailsPanel({
         <h2 id={titleId} className="t-title-card">
           {title}
         </h2>
-        {onClose && <IconButton ref={closeRef} icon={X} label={closeLabel} onClick={onClose} />}
+        {onClose && (
+          <IconButton
+            ref={closeRef}
+            variant="ghost"
+            size="sm"
+            icon={X}
+            label={closeLabel}
+            onClick={onClose}
+          />
+        )}
       </div>
 
       {sizeSwitch && sizeSwitch.options.length > 1 && (
@@ -154,7 +163,7 @@ export function DetailsPanel({
           <div className="ui-field">
             <div className="ui-field__row">
               <span id={lookLabelId} className="t-label-xs ui-field__label">
-                Look
+                Variation
               </span>
             </div>
             <SegmentedControl
@@ -186,7 +195,16 @@ export function DetailsPanel({
             edited={caption.edited}
             action={{ label: copied ? "Copied" : "Copy", onClick: () => void copyCaption() }}
           >
-            <TextArea value={caption.value} onChange={(e) => caption.onChange(e.target.value)} />
+            <TextArea
+              value={caption.value}
+              onChange={(e) => caption.onChange(e.target.value)}
+              className="sp-details__caption"
+              copy={
+                caption.value.trim()
+                  ? { label: "Copy caption", onCopy: () => void copyCaption(), copied }
+                  : undefined
+              }
+            />
           </Field>
         )}
       </form>
@@ -256,7 +274,6 @@ export function DetailField({
         <Select
           id={controlId}
           ariaLabel={field.label}
-          size="lg"
           value={value || undefined}
           placeholder={field.placeholder || "Select…"}
           options={(field.options ?? []).map((o) => ({ value: o, label: o }))}

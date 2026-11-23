@@ -1,39 +1,69 @@
 import React from "react";
-import { ArrowUp, Plus } from "lucide-react";
+import { ArrowUp, Square } from "lucide-react";
 import { cx, type DemoStateAttr, type IconComponent } from "./cx";
+import { IconSlot } from "./IconSlot";
 
-export type ButtonKind = "primary" | "neutral" | "neutralOnPage" | "destructive";
-export type ButtonSize = "lg" | "md" | "default" | "sm";
+export type ButtonKind = "primary" | "neutral" | "ghost" | "destructive";
+export type ButtonSize = "sm" | "md" | "lg";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Primary is the one action a view leads with. Neutral sits inside cards
-   * and panels, Neutral on page on the page itself. Destructive deletes. */
+  /** Primary is the one action a view leads with. Neutral is every other
+   * action, on the page or on a raised surface. Ghost has no fill until it
+   * is hovered. Destructive deletes. */
   kind?: ButtonKind;
-  /** Large 44, Medium 40, Default 36, Small 28. */
+  /** Small 28, Medium 36, Large 44. */
   size?: ButtonSize;
-  /** A leading icon, drawn at 16 (14 at Small). A busy button passes its
-   * spinner here with aria-busy; the file draws no loading variant. */
+  /** A leading icon, drawn at 16. A change of icon crossfades in its slot,
+   * and Check draws itself in (Copy to Check). */
   icon?: IconComponent;
+  /** Work is under way: the button takes aria-busy and aria-disabled and
+   * ignores clicks, and once the wait passes 400 ms its icon slot shows a
+   * spinner. */
+  busy?: boolean;
+  /** A trailing icon, drawn at 16. */
+  trailingIcon?: IconComponent;
   "data-demo-state"?: DemoStateAttr;
 }
 
-/** Button (Figma 43:123). Hover and pressed lay the kind's tint over its
- * fill; disabled is 40% with no hover; focus is the 2px-out ring. */
+/** Button (Figma 2206:542). Each state is a color of its kind's own;
+ * disabled is action/disabled under text/disabled; focus is the 2 px ring,
+ * 2 px out. */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { kind = "neutral", size = "default", icon: Icon, className, children, type = "button", ...rest },
+  {
+    kind = "neutral",
+    size = "md",
+    icon,
+    busy = false,
+    trailingIcon: TrailingIcon,
+    className,
+    children,
+    type = "button",
+    onClick,
+    ...rest
+  },
   ref,
 ) {
   return (
     <button
       ref={ref}
       type={type}
-      className={cx("ui-reset ui-tint ui-ring ui-btn", className)}
+      className={cx("ui-reset ui-fill ui-ring ui-btn", className)}
       data-kind={kind}
       data-size={size}
+      aria-busy={busy || undefined}
+      aria-disabled={busy || undefined}
       {...rest}
+      onClick={(e) => {
+        if (busy) {
+          e.preventDefault();
+          return;
+        }
+        onClick?.(e);
+      }}
     >
-      {Icon && <Icon size={size === "sm" ? 14 : 16} className="ui-icon" aria-hidden />}
-      <span className={size === "sm" ? "t-button-s" : "t-button-m"}>{children}</span>
+      {icon && <IconSlot icon={icon} busy={busy} />}
+      <span className={size === "sm" ? "t-label-s" : "t-label-m"}>{children}</span>
+      {TrailingIcon && <TrailingIcon size={16} className="ui-icon" aria-hidden />}
     </button>
   );
 });
@@ -46,50 +76,23 @@ export interface SendButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   "data-demo-state"?: DemoStateAttr;
 }
 
-/** Send button (Figma 44:9): Slime with a Deep Moss glyph in both themes. */
+/** Send button (Figma 2206:754): a 36 circle on action/accent with its
+ * glyph on action/on-accent, in both themes. */
 export const SendButton = React.forwardRef<HTMLButtonElement, SendButtonProps>(function SendButton(
   { action = "send", label, className, type = "button", ...rest },
   ref,
 ) {
+  const Glyph = action === "send" ? ArrowUp : Square;
   return (
     <button
       ref={ref}
       type={type}
       aria-label={label}
-      className={cx("ui-reset ui-tint ui-ring ui-send", className)}
+      className={cx("ui-reset ui-fill ui-ring ui-send", className)}
       data-action={action}
       {...rest}
     >
-      {action === "send" ? (
-        <ArrowUp size={16} className="ui-icon" aria-hidden />
-      ) : (
-        <span className="ui-send__stop" aria-hidden />
-      )}
+      <Glyph size={16} className="ui-icon" aria-hidden />
     </button>
   );
 });
-
-export interface AttachButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  /** The accessible name ("Attach"). */
-  label: string;
-  "data-demo-state"?: DemoStateAttr;
-}
-
-/** Attach button (Figma 102:569): the composer's plus, inverse in each
- * theme. It opens the attach menu, so callers pass aria-haspopup and
- * aria-expanded. */
-export const AttachButton = React.forwardRef<HTMLButtonElement, AttachButtonProps>(
-  function AttachButton({ label, className, type = "button", ...rest }, ref) {
-    return (
-      <button
-        ref={ref}
-        type={type}
-        aria-label={label}
-        className={cx("ui-reset ui-tint ui-ring ui-attach", className)}
-        {...rest}
-      >
-        <Plus size={14} className="ui-icon" aria-hidden />
-      </button>
-    );
-  },
-);

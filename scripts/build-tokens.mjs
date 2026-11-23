@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /* Builds src/styles/tokens.css from design/tokens/master.tokens.json.
  *
- * The JSON is exported from the Figma file "Master UX-UI"
- * (mEJRslarcQDkgPeY6AObi5), which is the source of truth for the platform's
+ * The JSON is exported from the Figma file "Master UX-UI New Brand Eleven Labs
+ * Inspired" (dQ8bQq3V7Bue5pvFrI2g9X), which is the source of truth for the platform's
  * tokens. Never edit tokens.css by hand: change Figma, re-export the JSON,
  * then run `npm run tokens`. `npm run tokens:check` fails when tokens.css is
  * out of date with the JSON, or when another stylesheet in src/styles
@@ -10,13 +10,14 @@
  * (CI runs it through `npm run verify`).
  *
  * Output:
- *   :root                 primitives, radius, spacing, text styles
- *   [data-theme="light"]  brand tokens, Light values
- *   [data-theme="dark"]   brand tokens, Dark values
+ *   :root                 primitives, the Scale collection, text styles
+ *   @media reduced motion the motion durations at zero
+ *   [data-theme="light"]  Color tokens, Light values
+ *   [data-theme="dark"]   Color tokens, Dark values
  *   [data-theme]          composites built from themed tokens (elevation,
  *                         glow), declared on every theme scope so a nested
  *                         [data-theme] recomputes them
- *   .t-*                  one class per text style, plus .t-trim
+ *   .t-*                  one class per text style, trimmed to cap height
  */
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -46,26 +47,31 @@ const slug = (name) =>
     .replace(/\//g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
-const cssVarOfPrimitive = (name) => {
+const cssVarOfPrimitive = (name, owner) => {
   const p = tokens.primitives[name];
-  if (!p) throw new Error(`Brand token points at unknown primitive "${name}"`);
+  if (!p) throw new Error(`${owner} points at unknown primitive "${name}"`);
   return `var(${p.css})`;
 };
-const cssVarOfAny = (name) => {
-  if (tokens.primitives[name]) return `var(${tokens.primitives[name].css})`;
-  if (tokens.brand[name] && tokens.brand[name].css) return `var(${tokens.brand[name].css})`;
-  throw new Error(`Unknown token "${name}"`);
+const cssVarOfColor = (name, owner) => {
+  const c = tokens.color[name];
+  if (!c) throw new Error(`${owner} is bound to unknown Color token "${name}"`);
+  return `var(${c.css})`;
 };
-const brandValue = (v) =>
-  typeof v === "string" && tokens.primitives[v] ? cssVarOfPrimitive(v) : color(v);
+const cssVarOfScale = (name, owner) => {
+  const s = tokens.scale[name];
+  if (!s) throw new Error(`${owner} is bound to unknown Scale token "${name}"`);
+  return `var(${s.css})`;
+};
 
-const FAMILY = {
-  "Inter Tight": "var(--font-ui)",
-  "Geist Mono": "var(--font-mono)",
-  // Mono/Code is a documentation style in Figma; the app has no IBM Plex Mono.
-  "IBM Plex Mono": "var(--font-code, var(--font-mono))",
+// Figma holds the public family names. The app registers its chrome faces
+// under private names so a tenant's font can never collide with them
+// (docs/design/elevenlabs/RULES.md section 5), so the font tokens are written
+// as these stacks. A family that is not here fails the build.
+const FAMILY_STACK = {
+  "Inter Tight": '"Inter Tight Platform", system-ui, -apple-system, sans-serif',
+  "Geist Mono": '"Geist Mono", ui-monospace, "SF Mono", Menlo, monospace',
 };
-const WEIGHT = { "Display Medium": 500, "Display Regular": 400, Regular: 400, Medium: 500 };
+const WEIGHT = { Regular: 400, Medium: 500 };
 const lineHeight = (v) =>
   v === "AUTO" ? "normal" : v.endsWith("%") ? String(parseFloat(v) / 100) : v;
 const tracking = (v) => {
@@ -79,49 +85,72 @@ const rootLines = [];
 rootLines.push("/* Primitives: raw values. Components never read these directly. */");
 for (const [, p] of Object.entries(tokens.primitives))
   rootLines.push(`${p.css}: ${color(p.value)};`);
-rootLines.push("/* Radius */");
-for (const [, r] of Object.entries(tokens.radius)) rootLines.push(`${r.css}: ${px(r.value)};`);
-rootLines.push("/* Spacing */");
-for (const [, s] of Object.entries(tokens.spacing)) rootLines.push(`${s.css}: ${px(s.value)};`);
 
-// text styles: one font shorthand and one tracking value per style
-const styles = Object.entries(tokens.textStyles);
-const twin = (name) => name.replace(/^Trimmed\//, "");
+// Scale: the unit comes from the token's type and its name. A name that
+// matches no rule fails the build, so a new group in Figma is a decision
+// here and never a silent guess.
+const LENGTH = /^--(space|radius|size|type-size|layout)-|^--stroke-|^--focus-offset$/;
+const scaleValue = (name, s) => {
+  if (s.type === "STRING") {
+    if (/^--font-/.test(s.css)) {
+      const stack = FAMILY_STACK[s.value];
+      if (!stack) throw new Error(`No font stack for "${s.value}" (${name})`);
+      return stack;
+    }
+    if (/^--motion-easing-/.test(s.css)) return s.value;
+  } else if (s.type === "FLOAT") {
+    if (LENGTH.test(s.css)) return px(s.value);
+    if (/^--type-weight-/.test(s.css)) return String(s.value);
+    if (/^--motion-duration-/.test(s.css)) return `${s.value}ms`;
+  }
+  throw new Error(`No unit rule for Scale token "${name}" (${s.css}, ${s.type})`);
+};
+rootLines.push("/* Scale: spacing, radius, sizes, strokes, type, fonts and motion. */");
+const durations = [];
+for (const [name, s] of Object.entries(tokens.scale)) {
+  rootLines.push(`${s.css}: ${scaleValue(name, s)};`);
+  if (/^--motion-duration-/.test(s.css) && s.value !== 0) durations.push(s.css);
+}
+
+// text styles: one font shorthand and one tracking value per style, and one
+// class each. Every style trims to cap height, as the file has them.
 const classes = [];
 rootLines.push("/* Text styles (font shorthand + tracking). Apply them with the .t-* classes. */");
-for (const [name, s] of styles) {
-  const isTrimmedTwin = name.startsWith("Trimmed/") && tokens.textStyles[twin(name)];
-  if (isTrimmedTwin) continue; // the untrimmed twin's class plus .t-trim covers it
-  const key = slug(twin(name));
-  const fam = FAMILY[s.family];
-  if (!fam) throw new Error(`No CSS family for "${s.family}" (${name})`);
+for (const [name, s] of Object.entries(tokens.textStyles)) {
+  const key = slug(name);
+  if (!FAMILY_STACK[s.family]) throw new Error(`No font stack for "${s.family}" (${name})`);
   const weight = WEIGHT[s.style];
   if (!weight) throw new Error(`No weight for "${s.style}" (${name})`);
+  if (s.leadingTrim !== "CAP_HEIGHT")
+    throw new Error(`Text style "${name}" does not trim to cap height`);
+  const fam = s.bound?.family ? cssVarOfScale(s.bound.family, name) : FAMILY_STACK[s.family];
   rootLines.push(`--type-${key}: ${weight} ${s.size}px/${lineHeight(s.lineHeight)} ${fam};`);
   rootLines.push(`--type-${key}-tracking: ${tracking(s.letterSpacing)};`);
   const decl = [`font: var(--type-${key});`, `letter-spacing: var(--type-${key}-tracking);`];
   if (s.textCase === "UPPER") decl.push("text-transform: uppercase;");
-  if (s.leadingTrim === "CAP_HEIGHT") decl.push("text-box: trim-both cap alphabetic;");
+  decl.push("text-box: trim-both cap alphabetic;");
   classes.push(`.t-${key} {\n${decl.join("\n")}\n}`);
 }
 
 // ---------------------------------------------------------------- themes
 const light = [];
 const dark = [];
-for (const [name, b] of Object.entries(tokens.brand)) {
-  if (b.type === "boolean") continue; // theme/is-light|dark are the [data-theme] selectors themselves
-  light.push(`${b.css}: ${brandValue(b.light)}; /* ${name} */`);
-  dark.push(`${b.css}: ${brandValue(b.dark)}; /* ${name} */`);
+for (const [name, c] of Object.entries(tokens.color)) {
+  light.push(`${c.css}: ${cssVarOfPrimitive(c.light, name)}; /* ${name} */`);
+  dark.push(`${c.css}: ${cssVarOfPrimitive(c.dark, name)}; /* ${name} */`);
 }
 
-// composites from effect styles
+// composites from effect styles. Effect styles carry no code syntax, so a
+// composite is named after its style. A name a Color token already has
+// (Glow/Accent's color is glow/accent) takes a -shadow suffix.
+const colorNames = new Set(Object.values(tokens.color).map((c) => c.css));
 const composite = [];
 for (const [name, effects] of Object.entries(tokens.effectStyles)) {
   const parts = [];
   for (const e of effects) {
     if (e.visible === false) continue;
     if (e.type !== "DROP_SHADOW" && e.type !== "INNER_SHADOW") continue;
-    const c = e.colorVar ? cssVarOfAny(e.colorVar) : color(e.color);
+    const c = e.colorVar ? cssVarOfColor(e.colorVar, name) : color(e.color);
     parts.push(
       `${e.type === "INNER_SHADOW" ? "inset " : ""}${px(e.x)} ${px(e.y)} ${px(e.blur)} ${px(e.spread || 0)} ${c}`,
     );
@@ -130,7 +159,8 @@ for (const [name, effects] of Object.entries(tokens.effectStyles)) {
     composite.push(`/* ${name}: no CSS equivalent (${effects.map((e) => e.type).join(", ")}) */`);
     continue;
   }
-  composite.push(`--${slug(name)}: ${parts.join(", ")};`);
+  const base = `--${slug(name)}`;
+  composite.push(`${colorNames.has(base) ? `${base}-shadow` : base}: ${parts.join(", ")};`);
 }
 
 // ---------------------------------------------------------------- write
@@ -142,6 +172,13 @@ const css = `${header}
 
 :root {
 ${rootLines.join("\n")}
+}
+
+/* With reduced motion on, durations are zero. */
+@media (prefers-reduced-motion: reduce) {
+:root {
+${durations.map((d) => `${d}: 0ms;`).join("\n")}
+}
 }
 
 [data-theme="light"] {
@@ -156,12 +193,8 @@ ${dark.join("\n")}
 ${composite.join("\n")}
 }
 
-/* Text style classes. Pair a style with .t-trim for Figma's cap-height trim. */
+/* Text style classes, one per Figma text style. Each trims to cap height. */
 ${classes.join("\n\n")}
-
-.t-trim {
-text-box: trim-both cap alphabetic;
-}
 `;
 
 const options = (await prettier.resolveConfig(OUT)) ?? {};
@@ -220,7 +253,7 @@ async function findShadows() {
       }
     }
   } catch {
-    /* no bridge (before Phase 1 or after Phase 9) */
+    /* no bridge (after the new-brand program's Phase 10) */
   }
   const files = (await readdir(stylesDir)).filter(
     (f) => f.endsWith(".css") && !["tokens.css", "legacy-bridge.css"].includes(f),
@@ -257,9 +290,8 @@ if (check) {
   await writeFile(OUT, formatted);
   const counts = {
     primitives: Object.keys(tokens.primitives).length,
-    brand: Object.values(tokens.brand).filter((b) => b.type !== "boolean").length,
-    radius: Object.keys(tokens.radius).length,
-    spacing: Object.keys(tokens.spacing).length,
+    color: Object.keys(tokens.color).length,
+    scale: Object.keys(tokens.scale).length,
     textStyleClasses: classes.length,
     composites: composite.filter((l) => l.startsWith("--")).length,
   };

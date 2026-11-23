@@ -1,15 +1,17 @@
 ---
 name: fidelity
-description: Run the render fidelity harness, add a fixture, or read its results. Use when checking how graphics render and export against Figma goldens or blessed baselines in Chromium, Firefox and WebKit.
+description: Run the render fidelity harness, add a fixture, or read its results. Use when checking how graphics render and export against Figma goldens or blessed baselines in Chromium, Firefox, WebKit and the older WebKit that stands in for Safari before 26.
 ---
 
 # Fidelity harness
 
 Commands, from the repo root:
 
-- `node scripts/fidelity/fidelity.mjs run [--only a,b] [--engines chromium,firefox,webkit]`
+- `node scripts/fidelity/fidelity.mjs run [--only a,b] [--engines chromium,firefox,webkit,webkit18]`
+- `node scripts/fidelity/webkit18.mjs install`: once per machine, installs the fourth engine, `webkit18`, an older WebKit that draws as Safari 18 does (`test/fidelity/README.md`). A run that lacks it stops and names this command.
 - `node scripts/fidelity/fidelity.mjs bless <name>`: for starter fixtures, today's Chromium render becomes the golden.
 - `node scripts/fidelity/fidelity.mjs baseline <name>`: records the current changed percentages as the fixture's baseline. Only with CJ's approval.
+- `node scripts/fidelity/fidelity.mjs fonts`: records Google's answers to the font requests the recording in `test/fidelity/google-fonts` lacks. Run it when a row errors because a Google font request is not in the recording, then commit that folder.
 - `node scripts/fidelity/goldens.mjs fetch <name>`: for figma fixtures, exports the golden and the node JSON. Needs `FIGMA_TOKEN`.
 
 ## Reading results
@@ -21,7 +23,7 @@ Changed % is the share of pixels that differ by more than 6 on any channel. Brow
 1. Create `test/fidelity/fixtures/<name>/fixture.json` with `kind: "figma"` and `source: { fileKey, nodeId }`.
 2. Read exact values from Figma (the Figma MCP server, or the node JSON the fetch script saves) and build `schema` with the `TemplateField` properties that exist today. List anything you couldn't express in `unsupported`, with the reason.
 3. Put images and fonts beside the fixture. Commit a font only when its license allows it; otherwise use `test/fidelity/fonts-private/`.
-4. Fetch the golden, run all three engines, report the numbers, and ask CJ before recording a baseline.
+4. Fetch the golden, run all four engines, report the numbers, and ask CJ before recording a baseline.
 
 ## Adding a starter fixture
 

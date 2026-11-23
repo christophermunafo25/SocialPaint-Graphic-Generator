@@ -53,7 +53,7 @@ export interface ProposalMeasurement {
   ok: boolean;
 }
 
-type MeasurableSchema = Pick<
+export type MeasurableSchema = Pick<
   TemplateSchema,
   "fields" | "layoutGroups" | "canvasWidth" | "canvasHeight"
 >;
@@ -115,7 +115,7 @@ function containingGroups(schema: MeasurableSchema, fieldKey: string) {
  * containing group on the canvas? The group half re-runs the real layout
  * pass with the candidate substituted, so the budget accounts for stack
  * growth, not just the field's own box. */
-function fitsInContext(
+export function fitsInContext(
   schema: MeasurableSchema,
   values: FieldValues,
   kit: BrandKit | null,

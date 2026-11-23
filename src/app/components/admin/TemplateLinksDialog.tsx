@@ -13,7 +13,19 @@ import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { publicLinkUrl } from "@/lib/publicLink/route";
 import { ErrorState } from "../ErrorState";
-import { Button, Field, Input, Modal, Select, Stat, Status, Switch } from "../primitives";
+import {
+  Badge,
+  Button,
+  Field,
+  Input,
+  Modal,
+  ModalActions,
+  ModalBody,
+  Select,
+  Skeleton,
+  Stat,
+  Switch,
+} from "../primitives";
 
 /** What a link-creating form sends. */
 export interface NewLinkInput {
@@ -102,7 +114,13 @@ export function TemplateLinksDialog({
   };
 
   return (
-    <Modal open onOpenChange={(open) => !open && onClose()} title="Public links" icon={Link}>
+    <Modal
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title="Public links"
+      icon={Link}
+      className="sp-links-dialog"
+    >
       <PublicLinksBody
         state={!available ? "unavailable" : template.status !== "published" ? "draft" : "ready"}
         variants={hasVariants(template) ? template.variants : undefined}
@@ -165,7 +183,8 @@ export function PublicLinksBody({
 }: {
   /** Ready, or why there is nothing to manage. */
   state: "ready" | "unavailable" | "draft";
-  /** The template's looks, when there is more than one to pin. */
+  /** The template's variations (looks in the schema), when there is more
+   * than one to pin. */
   variants?: TemplateVariant[];
   /** Workspace-level starting values (Settings › Sharing). */
   defaults: CompanyLinkDefaults;
@@ -188,7 +207,7 @@ export function PublicLinksBody({
 
   if (state === "unavailable") {
     return (
-      <p className="t-body-s sp-links__note">
+      <p className="t-body-m sp-links__note">
         Public links need the Supabase backend. This session is running on the local development
         store, which has no way to issue or check a link.
       </p>
@@ -196,7 +215,7 @@ export function PublicLinksBody({
   }
   if (state === "draft") {
     return (
-      <p className="t-body-s sp-links__note">
+      <p className="t-body-m sp-links__note">
         Publish this template first. A link to a draft would refuse the moment someone opened it.
       </p>
     );
@@ -232,7 +251,7 @@ export function PublicLinksBody({
       {freshUrl && <FreshLink url={freshUrl} />}
 
       {missingAssets && missingAssets.length > 0 && (
-        <p role="alert" className="t-body-s sp-links__alert">
+        <p role="alert" className="t-body-m sp-links__alert">
           Links to this template won't open right now.{" "}
           {missingAssets.length === 1
             ? `“${missingAssets[0]}” points at an image that no longer exists.`
@@ -243,7 +262,7 @@ export function PublicLinksBody({
       )}
 
       {error && (
-        <p role="alert" className="t-caption-s sp-links__error">
+        <p role="alert" className="t-caption-m sp-links__error">
           {error}
         </p>
       )}
@@ -263,9 +282,12 @@ export function PublicLinksBody({
             onRetry={onRetryLoad}
           />
         ) : links === null ? (
-          <p className="t-body-s sp-links__note">Loading…</p>
+          <div className="sp-links__rows" aria-busy="true" aria-label="Loading links">
+            <Skeleton width="40%" height={13} />
+            <Skeleton width="100%" height={36} radius="sm" />
+          </div>
         ) : links.length === 0 ? (
-          <p className="t-body-s sp-links__note">No links yet.</p>
+          <p className="t-body-m sp-links__note">No links yet.</p>
         ) : (
           <ul className="sp-links__rows">
             {links.map((link) => (
@@ -309,15 +331,15 @@ function Confirm({
 }) {
   return (
     <Modal open={open} onOpenChange={(next) => !next && onCancel()} title={title}>
-      <p className="t-body-s sp-links__confirm">{body}</p>
-      <div className="sp-links__actions">
-        <Button kind="neutral" size="lg" onClick={onCancel}>
+      <ModalBody>{body}</ModalBody>
+      <ModalActions>
+        <Button kind="neutral" onClick={onCancel}>
           Cancel
         </Button>
-        <Button kind={destructive ? "destructive" : "primary"} size="lg" onClick={onConfirm}>
+        <Button kind={destructive ? "destructive" : "primary"} onClick={onConfirm}>
           {confirmLabel}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }
@@ -435,10 +457,9 @@ function CreateLinkForm({
       </div>
       {variants && (
         <div className="ui-field">
-          <span className="t-label-xs ui-field__label">Look</span>
+          <span className="t-label-xs ui-field__label">Variation</span>
           <Select
-            ariaLabel="Which look this link opens"
-            size="lg"
+            ariaLabel="Which variation this link opens"
             value={pinned}
             options={lookOptions(variants)}
             onSelect={setPinned}
@@ -446,7 +467,7 @@ function CreateLinkForm({
         </div>
       )}
       <div className="sp-links__toggle">
-        <span className="t-body-s">Allow photo uploads</span>
+        <span className="t-label-m">Allow photo uploads</span>
         <Switch
           checked={allowUploads}
           onChange={setAllowUploads}
@@ -495,7 +516,7 @@ function LinkRow({
       <div className="sp-links__rowhead">
         <span className="sp-links__rowname">
           <span className="t-label-m">{name}</span>
-          <Status tone={state.live ? "active" : "neutral"}>{state.label}</Status>
+          <Badge tone={state.live ? "active" : "neutral"}>{state.label}</Badge>
         </span>
         <span className="sp-links__rowactions">
           <Button kind="neutral" size="sm" onClick={onRegenerate} disabled={busy}>
@@ -519,9 +540,9 @@ function LinkRow({
       </div>
       {variants && (
         <div className="sp-links__toggle">
-          <span className="t-body-s">Look</span>
+          <span className="t-label-m">Variation</span>
           <Select
-            ariaLabel={`Which look ${name} opens`}
+            ariaLabel={`Which variation ${name} opens`}
             value={link.pinnedVariantId ?? ""}
             options={lookOptions(variants)}
             onSelect={(next) => onPin(next || null)}
@@ -531,7 +552,7 @@ function LinkRow({
         </div>
       )}
       <div className="sp-links__toggle">
-        <span className="t-body-s">Photo uploads</span>
+        <span className="t-label-m">Photo uploads</span>
         <Switch
           checked={link.allowUploads}
           onChange={onToggleUploads}

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { LayoutGrid, Link, Sparkles } from "lucide-react";
+import { LayoutGrid, Link } from "lucide-react";
 import type { FieldValues } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -7,12 +7,11 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { useRouter } from "../router";
 import { ErrorState } from "./ErrorState";
-import { Bone } from "./Skeleton";
 import { TemplateFill } from "./TemplateFill";
 import { TemplateLinksDialog } from "./admin/TemplateLinksDialog";
-import { BreadcrumbHeader } from "./layout/Breadcrumb";
 import { Page } from "./layout/Page";
-import { Button } from "./primitives";
+import { Button, PageHeader, Skeleton } from "./primitives";
+import { AREA_ICON } from "./areas";
 
 /** Member self-service flow. Loads the template through the authenticated
  * store, then hands it to the shared fill surface — the same component the
@@ -30,44 +29,61 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
     // The fill page's shape (header, stage, panel), so nothing jumps when
     // the template lands.
     return (
-      <Page layout={{ className: "sp-fill-page" }}>
-        <div aria-busy="true" aria-label="Loading template">
-          <div className="sp-shell-pagehead">
-            <Bone w={220} h={14} tone="var(--surface-sunken)" />
+      <Page
+        layout={{ className: "sp-fill-page" }}
+        kind="self"
+        footer={false}
+        header={
+          <div className="ui-page-header">
+            <div className="ui-page-header__lead">
+              <AREA_ICON.brandTemplates
+                size={18}
+                strokeWidth={1.5}
+                className="ui-icon ui-page-header__icon"
+                aria-hidden
+              />
+              <Skeleton width={220} height={14} />
+            </div>
           </div>
-          <div className="sp-fill">
-            <div className="sp-fill__form">
-              <Bone w={220} h={28} r="var(--radius-pill)" tone="var(--surface-sunken)" />
-              <div className="sp-fill__step">
-                <Bone w={96} h={10} tone="var(--surface-sunken)" />
-                <Bone w="100%" h={40} r="var(--radius-control-md)" tone="var(--surface-sunken)" />
-              </div>
+        }
+      >
+        <div className="sp-fill" data-place="member" aria-busy="true" aria-label="Loading template">
+          <div className="sp-fill__preview">
+            <div className="sp-fill__stage" />
+          </div>
+          <div className="sp-details">
+            <Skeleton width={80} height={13} />
+            <div className="sp-details__fields">
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} width="100%" height={36} radius="sm" />
+              ))}
             </div>
-            <div className="sp-fill__preview">
-              <div className="sp-fill__previewcard">
-                <Bone w={80} h={17} tone="var(--surface-sunken)" />
-                <Bone w="100%" h={480} r="var(--radius-media-plate)" tone="var(--surface-sunken)" />
-              </div>
-            </div>
+            <Skeleton width="100%" height={44} radius="sm" />
           </div>
         </div>
       </Page>
     );
   }
+  // With no form there are no links under a stage, so these two states
+  // take the frame's footer links.
   if (templateState.status === "error") {
     return (
-      <ErrorState
-        title="We couldn't load this template."
-        detail="Check your connection and try again."
-        onRetry={templateState.retry}
-      />
+      <Page>
+        <ErrorState
+          title="We couldn't load this template."
+          detail="Check your connection and try again."
+          onRetry={templateState.retry}
+        />
+      </Page>
     );
   }
   if (!template) {
     return (
-      <p className="t-body-s text-center py-24" style={{ color: "var(--text-secondary)" }}>
-        Template not found.
-      </p>
+      <Page>
+        <p className="tu-body-m text-center py-24" style={{ color: "var(--text-secondary)" }}>
+          Template not found.
+        </p>
+      </Page>
     );
   }
 
@@ -81,50 +97,45 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
   /** Bulk fill follows the same rule: admin-only, and only once there is a
    * published template to fill. A draft has nothing to run forty times. */
   const canBulkFill = role === "admin" && template.status === "published";
-  /** The template chat asks for each field and builds the graphic; it needs
-   * a published template and somewhere for the chat to run
-   * (stores.generate.isConfigured()), and is for everyone. */
-  const canAssist = template.status === "published" && stores.generate.isConfigured();
+
+  // The page is form only (new brand, PLAN.md decision 9): no way into the
+  // template chat from here.
+  const header = (
+    <PageHeader
+      icon={AREA_ICON.brandTemplates}
+      crumbs={[
+        { label: "Brand Templates", onClick: () => navigate({ name: "portal" }) },
+        { label: template.name },
+      ]}
+      actions={
+        (canBulkFill || canShare) && (
+          <>
+            {canBulkFill && (
+              <Button
+                kind="neutral"
+                icon={LayoutGrid}
+                onClick={() => navigate({ name: "bulk", templateId: template.id })}
+              >
+                Bulk fill
+              </Button>
+            )}
+            {canShare && (
+              <Button kind="neutral" icon={Link} onClick={() => setSharing(true)}>
+                Public link
+              </Button>
+            )}
+          </>
+        )
+      }
+    />
+  );
 
   return (
-    <Page layout={{ className: "sp-fill-page" }}>
+    // The page holds to the window in the app frame and the panel's fields
+    // scroll ("self"); Terms and Privacy sit under the stage, so the frame
+    // has no footer here.
+    <Page layout={{ className: "sp-fill-page" }} kind="self" header={header} footer={false}>
       {sharing && <TemplateLinksDialog template={template} onClose={() => setSharing(false)} />}
-
-      <BreadcrumbHeader
-        crumbs={[
-          { label: "Brand Templates", onClick: () => navigate({ name: "portal" }) },
-          { label: template.name },
-        ]}
-        actions={
-          (canAssist || canBulkFill || canShare) && (
-            <>
-              {canAssist && (
-                <Button
-                  kind="neutralOnPage"
-                  icon={Sparkles}
-                  onClick={() => navigate({ name: "templateChat", templateId: template.id })}
-                >
-                  Use AI to assist
-                </Button>
-              )}
-              {canBulkFill && (
-                <Button
-                  kind="neutralOnPage"
-                  icon={LayoutGrid}
-                  onClick={() => navigate({ name: "bulk", templateId: template.id })}
-                >
-                  Bulk fill
-                </Button>
-              )}
-              {canShare && (
-                <Button kind="neutralOnPage" icon={Link} onClick={() => setSharing(true)}>
-                  Public link
-                </Button>
-              )}
-            </>
-          )
-        }
-      />
 
       <TemplateFill
         template={template}

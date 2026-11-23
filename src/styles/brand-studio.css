@@ -1,46 +1,15 @@
-/* ── Brand Studio on the new look (PHASE-6.md; frames 13:9043 to 13:12879) ──
+/* ── Brand Studio (ElevenLabs Phase E6; frames 6085:1601 to 6085:2657) ──
    The page column, the detail header's actions, the toast and the legal
    links, then each page's parts. */
 
-/* The page column: the header, the content 24 under it, and the legal links
-   at the foot of a viewport-tall column (13:9173). */
+/* The page column: the content, then the toast's anchor at its foot. The
+   app frame places the header and the legal links (layout/Page.tsx). */
 .sp-bs-page {
   display: flex;
   flex-direction: column;
-  min-height: calc(100dvh - var(--chrome-top));
-  padding-bottom: calc(28px + var(--dev-banner-h, 0px)); /* as drawn */
 }
 .sp-bs-content {
   flex: 1 0 auto;
-}
-
-/* The detail header's actions (13:9388): the save status, 16, then Undo. */
-.sp-bs-head__actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-.sp-bs-head__status {
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-/* Terms and Privacy at the foot of every Brand Studio page, not underlined
-   (13:9173). */
-.sp-bs-legal {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-sm);
-  margin: 0;
-  padding-top: var(--space-xl);
-  color: var(--text-secondary);
-}
-.sp-bs-legal > a {
-  color: inherit;
-  text-decoration: none;
-}
-.sp-bs-legal > a:hover {
-  text-decoration: underline;
 }
 
 /* The toast (13:9850): centred on the page column, 75 above the window's
@@ -54,6 +23,13 @@
   justify-content: center;
   height: 0;
 }
+/* In the app frame (1024 and wider) the frame scrolls, not the window:
+   the anchor rides 32 above the frame's foot. */
+@media (min-width: 1024px) {
+  .sp-bs-toast-anchor {
+    bottom: var(--space-32);
+  }
+}
 .sp-bs-toast-anchor > .ui-toast {
   position: absolute;
   bottom: 0;
@@ -62,24 +38,18 @@
 
 /* A save error under the header. */
 .sp-bs-error {
-  margin: 0 0 var(--space-md);
-  padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-control-md);
-  background: color-mix(in srgb, var(--state-error) 10%, transparent);
-  color: var(--state-error);
-}
-/* A loading stand-in: a sunken bar. */
-.sp-bs-bone {
-  display: block;
-  border-radius: var(--radius-xs);
-  background: var(--surface-sunken);
+  margin: 0 0 var(--space-24);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-sm);
+  background: var(--feedback-error-surface);
+  color: var(--feedback-error-text);
 }
 
 /* ── Overview (13:9043) ── */
 .sp-bs-overview {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-24);
 }
 /* The setup strip: the status and the reason on one baseline row, the five
    bars under them, and the action. */
@@ -88,24 +58,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-md);
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-card);
-  background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  gap: var(--space-24);
+  padding: var(--space-16) var(--space-24);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
 }
 .sp-bs-strip__progress {
   display: flex;
   flex-direction: column;
-  gap: 10px; /* as drawn */
+  gap: var(--space-12);
   min-width: 0;
 }
 .sp-bs-strip__status {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--space-xs);
+  gap: var(--space-24) var(--space-12);
   margin: 0;
 }
 .sp-bs-strip__reason {
@@ -113,7 +83,7 @@
 }
 .sp-bs-strip__bars {
   display: flex;
-  gap: var(--space-3xs);
+  gap: var(--space-4);
 }
 .sp-bs-strip__bar {
   width: 32px;
@@ -129,7 +99,7 @@
 .sp-bs-overview__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-sm);
+  gap: var(--space-16);
 }
 @media (max-width: 1023.98px) {
   .sp-bs-overview__grid {
@@ -146,17 +116,18 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: var(--space-2xs);
-  border-radius: var(--radius-card);
-  background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
   text-decoration: none;
 }
+/* The cover keeps its 3:2 shape at every width (CJ, 2026-11-20). */
 .sp-bs-cat__cover {
   display: block;
   aspect-ratio: 3 / 2;
-  border-radius: var(--radius-media-plate);
+  border-radius: var(--radius-lg);
   background: var(--surface-sunken);
 }
 .sp-bs-cat__cover img {
@@ -168,14 +139,16 @@
 .sp-bs-cat__meta {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3xs);
+  gap: var(--space-8);
   min-width: 0;
-  padding: var(--space-sm) var(--space-2xs) var(--space-2xs);
+  padding: var(--space-24) var(--space-8) var(--space-16);
 }
 .sp-bs-cat__title,
 .sp-bs-cat__count {
   overflow: hidden;
   text-overflow: ellipsis;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
   white-space: nowrap;
 }
 .sp-bs-cat__count {
@@ -189,11 +162,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-3xs);
+  gap: var(--space-8);
   width: 100%;
-  padding: var(--space-sm);
-  border: 1px dashed var(--text-secondary);
-  border-radius: var(--radius-card);
+  padding: var(--space-16);
+  border: var(--stroke-hairline) dashed var(--text-secondary);
+  border-radius: var(--radius-xl);
   background: none;
   color: var(--text-secondary);
   cursor: pointer;
@@ -204,7 +177,7 @@
 }
 /* A label wrapping a file input: its ring follows the input's focus. */
 label.sp-bs-add:focus-within {
-  outline: var(--focus-width) solid var(--ring);
+  outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
 }
 .sp-bs-add__detail {
@@ -219,7 +192,7 @@ label.sp-bs-add:focus-within {
   grid-template-columns: repeat(6, minmax(0, 1fr));
   /* Equal rows, so Add color keeps a card's height on a row of its own. */
   grid-auto-rows: 1fr;
-  gap: var(--space-xs);
+  gap: var(--space-12);
   align-items: start;
 }
 @media (max-width: 1279.98px) {
@@ -249,46 +222,56 @@ label.sp-bs-add:focus-within {
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: var(--space-2xs);
-  border-radius: var(--radius-card);
-  background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
   text-align: left;
 }
-/* The open card (13:9632): a 1px ring in text/strong on its own edge. */
+/* The open card (13:9632): a hairline ring in text/primary on its own edge. */
 .sp-bs-color[aria-expanded="true"] {
   box-shadow:
-    var(--elevation-small),
-    inset 0 0 0 1px var(--text-strong);
+    inset 0 0 0 var(--stroke-hairline) var(--text-primary),
+    var(--elevation-1-raised);
 }
 .sp-bs-color__swatch {
   height: 88px;
-  border-radius: var(--radius-media-plate);
+  border-radius: var(--radius-lg);
 }
 .sp-bs-color__fill {
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: var(--swatch);
-  box-shadow: inset 0 0 0 1px var(--border-default);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-subtle);
 }
 .sp-bs-color__role {
   position: absolute;
-  top: var(--space-2xs);
-  left: var(--space-2xs);
+  top: var(--space-8);
+  left: var(--space-8);
+  /* The role tag as drawn on a swatch (6085:1662): 16 tall, Caption/S. */
+  height: 16px;
+  padding: 0 var(--space-8);
+  border-radius: var(--radius-chip);
+}
+.sp-bs-color__role > .t-label-xs {
+  font: var(--type-caption-s);
+  letter-spacing: var(--type-caption-s-tracking);
 }
 .sp-bs-color__meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-12);
   min-width: 0;
-  padding: var(--space-xs) var(--space-3xs) var(--space-3xs);
+  padding: var(--space-20) var(--space-4) var(--space-6);
 }
 .sp-bs-color__name,
 .sp-bs-color__hex {
   overflow: hidden;
   text-overflow: ellipsis;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
   white-space: nowrap;
 }
 .sp-bs-color__hex {
@@ -303,24 +286,30 @@ label.sp-bs-add:focus-within {
   pointer-events: none;
 }
 
-/* A floating editor (13:9633): 300 wide, Elevation/Medium, 10 under its
+/* A floating editor (13:9633): 300 wide, Elevation/2 Overlay, 16 under its
    card, left-aligned; right-aligned or above where §8 says. */
 .sp-bs-popover {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + var(--space-16));
   left: 0;
   z-index: 3;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 10px; /* as drawn */
+  gap: var(--space-24);
   width: 300px;
   max-width: calc(100vw - 32px);
-  padding: 14px; /* as drawn */
-  border-radius: var(--radius-menu);
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-medium);
-  color: var(--text-strong);
+  box-shadow: var(--elevation-2-overlay);
+  color: var(--text-primary);
+}
+/* Name, value and contrast, 12 apart; Role and the foot follow 24 down. */
+.sp-bs-popover__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
 }
 .sp-bs-popover[data-end] {
   left: auto;
@@ -328,32 +317,35 @@ label.sp-bs-add:focus-within {
 }
 .sp-bs-popover[data-above] {
   top: auto;
-  bottom: calc(100% + 10px);
+  bottom: calc(100% + var(--space-16));
 }
 .sp-bs-popover__foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 32px;
-  padding: var(--space-3xs) 0 0 2px;
+  min-height: var(--size-control-sm);
+  padding: var(--space-4) 0 0 var(--space-2);
 }
 /* Remove where Undo brings it back: quiet text, not red (§9 D6). */
 .sp-bs-quiet-action {
-  border-radius: var(--radius-control);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-control-xs);
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
   cursor: pointer;
 }
 .sp-bs-quiet-action:hover {
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .sp-bs-error-line {
   margin: 0;
-  color: var(--state-error);
+  color: var(--feedback-error-text);
 }
 .sp-bs-color-popover__value {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
 .sp-bs-color-popover__value > :last-child {
   flex: 1;
@@ -362,8 +354,8 @@ label.sp-bs-add:focus-within {
 .sp-bs-color-popover__contrast {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 0 2px;
+  gap: var(--space-8);
+  padding: 0 var(--space-2);
   color: var(--text-secondary);
 }
 .sp-bs-color-popover__contrast > p {
@@ -372,8 +364,8 @@ label.sp-bs-add:focus-within {
 .sp-bs-color-popover__role {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 2px 2px 0;
+  gap: var(--space-12);
+  padding: var(--space-2) var(--space-2) 0;
 }
 .sp-bs-color-popover__label {
   color: var(--text-secondary);
@@ -381,20 +373,20 @@ label.sp-bs-add:focus-within {
 .sp-bs-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-6);
 }
 
 /* Who holds each role (13:9457), 24 under the grid. */
 .sp-bs-roles {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2xs) var(--space-md);
-  margin-top: var(--space-md);
+  gap: var(--space-8) var(--space-24);
+  margin-top: var(--space-24);
 }
 .sp-bs-roles__item {
   display: flex;
   align-items: baseline;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
 .sp-bs-roles__role {
   color: var(--text-secondary);
@@ -408,7 +400,7 @@ label.sp-bs-add:focus-within {
 .sp-bs-logos-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-16);
 }
 .sp-bs-logos-filter {
   align-self: flex-start;
@@ -417,7 +409,7 @@ label.sp-bs-add:focus-within {
 .sp-bs-logos {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-sm);
+  gap: var(--space-16);
   align-items: start;
 }
 @media (max-width: 1023.98px) {
@@ -436,17 +428,17 @@ label.sp-bs-add:focus-within {
   flex-direction: column;
   width: 100%;
   min-width: 0;
-  padding: var(--space-2xs);
-  border-radius: var(--radius-card);
-  background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
   text-align: left;
 }
 .sp-bs-logo__plate {
   display: block;
   height: 132px;
-  border-radius: var(--radius-media-plate);
+  border-radius: var(--radius-lg);
 }
 /* The proof plate: one fixed ground per surface, never inverting. */
 .sp-bs-plate {
@@ -455,7 +447,7 @@ label.sp-bs-add:focus-within {
   display: flex;
   overflow: hidden;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px var(--border-default);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-subtle);
 }
 .sp-bs-plate__half {
   flex: 1;
@@ -482,32 +474,34 @@ label.sp-bs-add:focus-within {
 .sp-bs-logo__meta {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: var(--space-12);
   min-width: 0;
-  padding: var(--space-xs) var(--space-3xs) var(--space-3xs);
+  padding: var(--space-16) var(--space-4) var(--space-8);
 }
 .sp-bs-logo__name {
   overflow: hidden;
   text-overflow: ellipsis;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
   white-space: nowrap;
 }
 .sp-bs-logo__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3xs);
+  gap: var(--space-4);
 }
 /* The card, editing in place (13:10267). */
 .sp-bs-logo__fields {
   display: flex;
   flex-direction: column;
-  gap: 10px; /* as drawn */
-  padding: 10px 0 2px;
+  gap: var(--space-24);
+  padding: var(--space-12) 0 var(--space-2);
 }
 .sp-bs-choice-row {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 0 2px;
+  gap: var(--space-12);
+  padding: 0 var(--space-2);
 }
 .sp-bs-choice-row__label {
   color: var(--text-secondary);
@@ -518,10 +512,10 @@ label.sp-bs-add:focus-within {
 }
 /* Remove where Undo can't bring it back (a file): red (§9 D6). */
 .sp-bs-quiet-action[data-destructive] {
-  color: var(--state-error);
+  color: var(--feedback-error-text);
 }
 .sp-bs-quiet-action[data-destructive]:hover {
-  color: var(--state-error);
+  color: var(--feedback-error-text);
   text-decoration: underline;
 }
 
@@ -530,31 +524,33 @@ label.sp-bs-add:focus-within {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
-  padding: var(--space-2xs);
-  border-radius: var(--radius-card);
+  gap: var(--space-8);
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-1-raised);
+  color: var(--text-primary);
 }
 .sp-bs-list__rows {
   display: flex;
   flex-direction: column;
-  padding: 0 var(--space-sm);
+  padding: 0 var(--space-16);
 }
 .sp-bs-list > .sp-bs-add {
-  border-radius: var(--radius-media-plate);
+  border-radius: var(--radius-lg);
 }
 /* Rows 1px apart; the open editor sits under its row with no divider. */
 .sp-bs-style + .sp-bs-style {
-  border-top: 1px solid var(--border-default);
+  border-top: var(--stroke-hairline) solid var(--border-subtle);
 }
 .sp-bs-style__row {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-24);
   min-width: 0;
-  padding: 20px 0; /* as drawn */
+  padding: var(--space-20) 0;
 }
 .sp-bs-style__spec {
   flex: none;
@@ -562,18 +558,21 @@ label.sp-bs-add:focus-within {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
+/* ElevenLabs E1: a field rests on its border/field hairline. */
 .sp-bs-style__rename {
-  background: var(--input-bg);
-  border-radius: var(--radius-control);
+  background: var(--surface-field);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-field);
 }
+
 .sp-bs-style__face {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   color: var(--text-secondary);
 }
 .sp-bs-style__face > span:first-child {
@@ -584,15 +583,15 @@ label.sp-bs-add:focus-within {
 .sp-bs-style__values {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-6);
   flex: none;
 }
 .sp-bs-style__slash {
   color: var(--text-secondary);
 }
 .sp-bs-style__value {
-  border-radius: var(--radius-control);
-  color: var(--text-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
   cursor: text;
 }
 .sp-bs-style__value[data-auto] {
@@ -602,20 +601,20 @@ label.sp-bs-add:focus-within {
   width: 64px;
 }
 .sp-bs-style__blocked {
-  padding-bottom: var(--space-sm);
+  padding-bottom: var(--space-16);
 }
 /* The editor (13:11314): 640 wide, two columns of fields 16 apart. */
 .sp-bs-style__editor {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-24);
   max-width: 640px;
-  padding-bottom: var(--space-md);
+  padding-bottom: var(--space-24);
 }
 .sp-bs-style__fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-xs) var(--space-sm);
+  gap: var(--space-24) var(--space-16);
 }
 @media (max-width: 767.98px) {
   .sp-bs-style__fields {
@@ -625,30 +624,35 @@ label.sp-bs-add:focus-within {
     flex-wrap: wrap;
   }
 }
+/* Two groups 24 apart (6085:2278): "Use for" 12 from its chips, then the
+   two toggle chips. */
 .sp-bs-style__toggles {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-12) var(--space-24);
+}
+.sp-bs-style__toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-12);
 }
 .sp-bs-style__toggle-label {
   color: var(--text-secondary);
 }
-.sp-bs-style__toggle-gap {
-  width: 10px;
-}
 .sp-bs-style__rules {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
-  padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-control-md);
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-sm);
   background: var(--surface-sunken);
 }
 .sp-bs-style__rule {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
   margin: 0;
   color: var(--text-secondary);
 }
@@ -660,28 +664,28 @@ label.sp-bs-add:focus-within {
 /* A row's menu trigger, at rest as drawn (§9 D7). */
 .sp-bs-style__row > .ui-rowmenu {
   flex: none;
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 
 /* ── Fonts (13:13689, 13:13980) ── */
 .sp-bs-font-wrap + .sp-bs-font-wrap,
 .sp-bs-font-wrap + .sp-bs-font,
 .sp-bs-font + .sp-bs-font {
-  border-top: 1px solid var(--border-default);
+  border-top: var(--stroke-hairline) solid var(--border-subtle);
 }
 .sp-bs-font {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-16);
   min-width: 0;
-  padding: 20px 0; /* as drawn */
+  padding: var(--space-20) 0;
 }
 .sp-bs-font__aa {
   flex: none;
   width: 48px;
   font-size: 36px;
   line-height: 1;
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 /* The face isn't loaded while it uploads: the chrome face, greyed. */
 .sp-bs-font__aa--pending {
@@ -691,17 +695,19 @@ label.sp-bs-add:focus-within {
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3xs);
+  gap: var(--space-8);
   width: 220px;
   min-width: 0;
 }
 .sp-bs-font__id--pending {
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
 .sp-bs-font__family,
 .sp-bs-font__file {
   overflow: hidden;
   text-overflow: ellipsis;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
   white-space: nowrap;
 }
 .sp-bs-font__file {
@@ -710,8 +716,8 @@ label.sp-bs-add:focus-within {
 .sp-bs-font__added {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-3xs);
-  color: var(--text-strong);
+  gap: var(--space-4);
+  color: var(--text-primary);
 }
 .sp-bs-font__specimen {
   flex: 1;
@@ -724,10 +730,10 @@ label.sp-bs-add:focus-within {
 }
 .sp-bs-font > .ui-rowmenu {
   flex: none;
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .sp-bs-font__blocked {
-  padding-bottom: var(--space-sm);
+  padding-bottom: var(--space-16);
 }
 @media (max-width: 767.98px) {
   .sp-bs-font__specimen {
@@ -742,11 +748,11 @@ label.sp-bs-add:focus-within {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-sm);
+  gap: var(--space-16);
   min-height: 320px;
-  border: 1px dashed var(--text-secondary);
-  border-radius: var(--radius-card);
-  color: var(--text-strong);
+  border: var(--stroke-hairline) dashed var(--text-secondary);
+  border-radius: var(--radius-xl);
+  color: var(--text-primary);
 }
 .sp-bs-images-empty > p {
   margin: 0;
@@ -758,7 +764,9 @@ label.sp-bs-add:focus-within {
 .sp-bs-images {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-sm);
+  /* Equal rows, so Add images keeps a card's height on a row of its own. */
+  grid-auto-rows: 1fr;
+  gap: var(--space-16);
   align-items: start;
 }
 @media (max-width: 1023.98px) {
@@ -776,25 +784,25 @@ label.sp-bs-add:focus-within {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: var(--space-2xs);
-  border-radius: var(--radius-card);
-  background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  box-shadow: var(--elevation-1-raised);
+  color: var(--text-primary);
 }
 .sp-bs-image__plate {
   position: relative;
   display: block;
   height: 132px;
   overflow: hidden;
-  border-radius: var(--radius-media-plate);
+  border-radius: var(--radius-lg);
 }
 .sp-bs-image__plate::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px var(--border-default);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-subtle);
   pointer-events: none;
 }
 .sp-bs-image__plate img {
@@ -806,25 +814,27 @@ label.sp-bs-add:focus-within {
 .sp-bs-image__meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-8);
   min-width: 0;
-  padding: 6px 0 var(--space-3xs) var(--space-3xs);
+  padding: var(--space-6) 0 var(--space-8) var(--space-4);
 }
 .sp-bs-image[data-uploading] .sp-bs-image__meta {
-  gap: var(--space-2xs);
-  padding-right: var(--space-3xs);
+  gap: var(--space-8);
+  padding-right: var(--space-4);
 }
 .sp-bs-image__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2xs);
-  min-height: 32px;
+  gap: var(--space-8);
+  min-height: var(--size-control-sm);
 }
 .sp-bs-image__name,
 .sp-bs-image__size {
   overflow: hidden;
   text-overflow: ellipsis;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
   white-space: nowrap;
 }
 .sp-bs-image__size {
@@ -832,28 +842,28 @@ label.sp-bs-add:focus-within {
 }
 .sp-bs-image__row > .ui-rowmenu {
   flex: none;
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .sp-bs-image__blocked {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-3xs);
-  padding-top: var(--space-2xs);
+  gap: var(--space-4);
+  padding-top: var(--space-8);
 }
 
 /* ── Import (13:12670, 13:12871, 13:12978) ── */
 .sp-bs-import-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-24);
 }
 /* Two equal raised cards, 24 apart; stacked under 768. */
 .sp-bs-import {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-md);
-  align-items: start;
+  gap: var(--space-24);
+  align-items: stretch;
 }
 @media (max-width: 767.98px) {
   .sp-bs-import {
@@ -865,13 +875,23 @@ label.sp-bs-add:focus-within {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-12);
   min-width: 0;
-  padding: var(--space-md);
-  border-radius: var(--radius-card);
+  padding: var(--space-24);
+  border-radius: var(--radius-xl);
+  color: var(--text-primary);
+}
+/* The two legs are item cards; the status under them is a panel. */
+.sp-bs-import__leg {
+  gap: var(--space-24);
+  background: var(--surface-card);
+  box-shadow: var(--elevation-1-raised);
+}
+.sp-bs-import__status {
   background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-1-raised);
 }
 .sp-bs-import__leg > p,
 .sp-bs-import__status > p {
@@ -880,16 +900,11 @@ label.sp-bs-add:focus-within {
 .sp-bs-import__row {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
 .sp-bs-import__row > :first-child {
   flex: 1;
   min-width: 0;
-}
-/* Disabled Import is drawn neutral at 40%, not primary at 40%. */
-.sp-bs-import__row > .ui-btn[data-kind="primary"]:disabled {
-  background: var(--surface-sunken);
-  color: var(--text-strong);
 }
 /* Choose tokens.json: a neutral md button that is also the file picker and
    a drop target, so it stays a label around the input. */
@@ -898,26 +913,29 @@ label.sp-bs-add:focus-within {
   display: inline-flex;
   align-self: flex-start;
   align-items: center;
-  height: 40px;
-  padding: 0 18px;
-  border-radius: var(--radius-control);
-  background: var(--surface-sunken);
-  color: var(--text-strong);
+  height: var(--size-control-md);
+  padding: 0 var(--space-16);
+  border-radius: var(--radius-sm);
+  --_fill: var(--action-neutral);
+  --_hover: var(--action-neutral-hover);
+  --_pressed: var(--action-neutral-pressed);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-strong);
+  color: var(--text-primary);
   white-space: nowrap;
   cursor: pointer;
 }
 .sp-bs-import__choose:has(input:focus-visible) {
-  outline: var(--focus-width) solid var(--ring);
+  outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
 }
 .sp-bs-import__choose[data-active="true"] {
-  box-shadow: inset 0 0 0 1px var(--text-secondary);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--text-secondary);
 }
 .sp-bs-import__note {
   color: var(--text-secondary);
 }
 .sp-bs-import__status--done {
-  gap: 6px;
+  gap: var(--space-6);
 }
 .sp-bs-import__matched {
   color: var(--text-secondary);
@@ -925,21 +943,24 @@ label.sp-bs-add:focus-within {
 .sp-bs-import__actions {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  padding-top: 10px;
+  gap: var(--space-16);
+  padding-top: var(--space-12);
 }
 /* A text link on text/secondary, not underlined: the breadcrumb's link. */
 .sp-bs-link {
-  border-radius: var(--radius-control);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-control-xs);
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
   text-decoration: none;
   cursor: pointer;
 }
 .sp-bs-link:hover {
-  color: var(--text-strong);
+  color: var(--text-primary);
 }
 .sp-bs-import__note .sp-bs-link {
-  color: var(--text-strong);
+  color: var(--text-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
 }

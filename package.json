@@ -95,6 +95,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "happy-dom": "^20.14.5",
     "playwright": "^1.63.0",
+    "playwright-webkit-18": "npm:playwright-core@1.53.0",
     "prettier": "^3.9.6",
     "stripe": "23.0.0",
     "tailwindcss": "4.1.12",

@@ -5,8 +5,15 @@ import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { ErrorState } from "../../ErrorState";
-import { SkeletonRows } from "../../Skeleton";
-import { Avatar, Button, Input, RowMenu, Select, SettingsCard } from "../../primitives";
+import {
+  Avatar,
+  Button,
+  Input,
+  RowMenu,
+  Select,
+  SettingsCard,
+  SkeletonRows,
+} from "../../primitives";
 import { ConfirmModal } from "./SettingsConfirm";
 import { DevBackendNotice } from "./settingsShared";
 import { useSettingsToast } from "./settingsToast";
@@ -139,7 +146,6 @@ export function PeopleSection() {
           />
           <Select
             ariaLabel="Invite as"
-            size="lg"
             className="sp-st-invite__role"
             value={role}
             options={ROLE_OPTIONS}
@@ -165,7 +171,7 @@ export function PeopleSection() {
             onRetry={membersState.retry}
           />
         ) : members.length === 0 ? (
-          <p className="t-body-s sp-st-empty">No members yet.</p>
+          <p className="t-body-m sp-st-empty">No members yet.</p>
         ) : (
           <ul className="sp-st-list">
             {shown.map((m) => {

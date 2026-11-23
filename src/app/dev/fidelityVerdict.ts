@@ -5,12 +5,14 @@
 
 export const DEFAULT_TOLERANCE = 0.25;
 
-export type Engine = "chromium" | "firefox" | "webkit";
+/** The harness's engines. webkit18 is an older WebKit standing in for
+ * Safari before 26 (scripts/fidelity/webkit18.mjs). */
+export type Engine = "chromium" | "firefox" | "webkit" | "webkit18";
 
 /** The parts of a fixture.json the runner decides with. */
 export interface VerdictFixture {
   name: string;
-  kind: "figma" | "starter" | "synthetic";
+  kind: "figma" | "starter" | "synthetic" | "import";
   /** A starter fixture that names its blueprint here renders its own file. */
   starter?: string;
   variantId?: string | null;

@@ -36,6 +36,8 @@ export const ACCENT_FALLBACK = "#E2452C";
 /** The two onAccent candidates; whichever clears 4.5 on the accent wins. */
 export const ON_ACCENT_DARK = "#111112";
 export const ON_ACCENT_LIGHT = "#FFFFFF";
+/** The "shadow" effect tint: near-black in both colourways. */
+export const SHADOW_HEX = "#0B0B0C";
 
 /** Font fallbacks for a kit missing a heading or body pick, and the fixed
  * label face (tenants restyle labels later in the builder). */

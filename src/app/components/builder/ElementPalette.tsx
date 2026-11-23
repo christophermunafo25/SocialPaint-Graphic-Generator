@@ -1,173 +1,244 @@
-import React from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
-  AlignLeft,
-  ChevronDown,
+  Badge as BadgeGlyph,
   Circle,
-  Image as ImageIcon,
+  Figma,
+  Image as ImageGlyph,
+  List,
   Minus,
-  Pill as PillIcon,
+  PencilRuler,
+  RectangleHorizontal,
+  Smile,
   Square,
   Star,
+  Text as TextGlyph,
   Triangle,
-  Type as TypeIcon,
+  Type as TypeGlyph,
+  type LucideIcon,
 } from "lucide-react";
 import type { BrandAsset } from "@/lib/types";
-import {
-  LOGO_PALETTE_PREFIX,
-  PALETTE_ITEMS,
-  PALETTE_MIME,
-  TOOL_PALETTE_ID,
-  type BuilderTool,
-  type PaletteItem,
-} from "./fieldOps";
+import { LOGO_PALETTE_PREFIX, PALETTE_MIME } from "./fieldOps";
 import { SignedImg } from "../SignedImg";
+import { IconPicker } from "./IconPicker";
+import { Menu, MenuItem } from "../primitives";
+import type { IconComponent } from "../primitives/cx";
 
-const ICONS: Record<string, React.ComponentType<{ style?: React.CSSProperties }>> = {
-  text: TypeIcon,
-  multiline: AlignLeft,
-  image: ImageIcon,
-  select: ChevronDown,
-  rect: Square,
-  ellipse: Circle,
-  triangle: Triangle,
-  star: Star,
-  line: Minus,
-  pill: PillIcon,
-};
+interface TileSpec {
+  /** The PALETTE_ITEMS id the tile adds. */
+  id: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+/** The grid as drawn (322:196), three across. The Logo tile sits between
+ * Image and Pill; Triangle, Star and Icon follow the frame's nine, so every
+ * element the builder draws stays a tile. */
+const BEFORE_LOGO: TileSpec[] = [
+  { id: "text", label: "Text", icon: TypeGlyph },
+  { id: "multiline", label: "Paragraph", icon: TextGlyph },
+  { id: "select", label: "Dropdown", icon: List },
+  { id: "image", label: "Image", icon: ImageGlyph },
+];
+const AFTER_LOGO: TileSpec[] = [
+  { id: "pill", label: "Pill", icon: RectangleHorizontal },
+  { id: "rect", label: "Rectangle", icon: Square },
+  { id: "ellipse", label: "Ellipse", icon: Circle },
+  { id: "line", label: "Line", icon: Minus },
+  { id: "triangle", label: "Triangle", icon: Triangle },
+  { id: "star", label: "Star", icon: Star },
+];
+
+interface ElementTileProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  icon: LucideIcon;
+  label: string;
+  /** Set when the tile can be dragged onto the canvas. */
+  paletteId?: string;
+}
+
+/** Element Tile (321:77): 70 by 60 on surface/sunken, an 18 icon over its
+ * Caption/M name. Forwards its ref and props so a Menu can open from it. */
+const ElementTile = React.forwardRef<HTMLButtonElement, ElementTileProps>(function ElementTile(
+  { icon: Icon, label, paletteId, className, ...rest },
+  ref,
+) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={["ui-reset ui-ring sp-element-tile", className].filter(Boolean).join(" ")}
+      draggable={paletteId ? true : undefined}
+      onDragStart={
+        paletteId
+          ? (e) => {
+              e.dataTransfer.setData(PALETTE_MIME, paletteId);
+              e.dataTransfer.effectAllowed = "copy";
+            }
+          : undefined
+      }
+      {...rest}
+    >
+      <Icon size={18} strokeWidth={1.5} className="ui-icon" aria-hidden />
+      <span className="t-caption-m sp-element-tile__label">{label}</span>
+    </button>
+  );
+});
+
+/** A logo's artwork at the size of a menu icon: a logo is recognised, not
+ * read. */
+function logoThumb(asset: BrandAsset): IconComponent {
+  return function LogoThumb({ size = 16, className }) {
+    return (
+      <SignedImg
+        src={asset.url}
+        alt=""
+        draggable={false}
+        className={className}
+        style={{ width: size, height: size, objectFit: "contain" }}
+      />
+    );
+  };
+}
+
+const logoName = (asset: BrandAsset) => asset.name.replace(/\.[^.]+$/, "");
+
+/** The Logo tile. One logo adds on a click and drags like any tile; with
+ * several it opens a menu of their artwork; with none, the menu offers
+ * Brand Studio, where logos are added. */
+function LogoTile({
+  logos,
+  onAdd,
+  onOpenLogos,
+}: {
+  logos: BrandAsset[];
+  onAdd(paletteId: string): void;
+  onOpenLogos(): void;
+}) {
+  const thumbs = useMemo(() => new Map(logos.map((a) => [a.id, logoThumb(a)])), [logos]);
+  if (logos.length === 1) {
+    const paletteId = `${LOGO_PALETTE_PREFIX}${logos[0].id}`;
+    return (
+      <ElementTile
+        icon={BadgeGlyph}
+        label="Logo"
+        paletteId={paletteId}
+        onClick={() => onAdd(paletteId)}
+      />
+    );
+  }
+  return (
+    <Menu trigger={<ElementTile icon={BadgeGlyph} label="Logo" />} aria-label="Logos">
+      {logos.length === 0 ? (
+        <MenuItem icon={BadgeGlyph} onSelect={onOpenLogos}>
+          Add a logo in Brand Studio
+        </MenuItem>
+      ) : (
+        logos.map((asset) => (
+          <MenuItem
+            key={asset.id}
+            icon={thumbs.get(asset.id)}
+            onSelect={() => onAdd(`${LOGO_PALETTE_PREFIX}${asset.id}`)}
+          >
+            {logoName(asset)}
+          </MenuItem>
+        ))
+      )}
+    </Menu>
+  );
+}
+
+/** The Icon tile opens the icon picker; picking one adds it. */
+function IconTile({ onAddIcon }: { onAddIcon(name: string): void }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <ElementTile
+        ref={ref}
+        icon={Smile}
+        label="Icon"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        data-open={open || undefined}
+        onClick={() => setOpen((o) => !o)}
+      />
+      {open && (
+        <IconPicker
+          anchorRef={ref}
+          side="right"
+          onPick={(name) => {
+            setOpen(false);
+            onAddIcon(name);
+          }}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
+  );
+}
 
 interface ElementPaletteProps {
-  /** Click fallback: adds the element at the canvas center. */
+  /** Adds the element at the canvas centre. A tile dragged onto the canvas
+   * lands where it is dropped instead. */
   onAdd(paletteId: string): void;
-  /** The company's uploaded logo assets — each becomes a draggable tile. */
+  /** Adds the picked Lucide icon at the canvas centre. */
+  onAddIcon(name: string): void;
+  /** The brand's logos. */
   logos?: BrandAsset[];
-  /** The canvas tool that is armed right now. The palette does not SET the
-   * tool — clicking a tile still adds the element at the canvas centre, as
-   * it always has — but it marks the tile the active tool will draw, so the
-   * top bar and this rail never disagree about state. */
-  activeTool?: BuilderTool;
+  /** Opens Brand Studio's logos, for a brand with none. */
+  onOpenLogos(): void;
+  /** Present when the workspace can import a design. */
+  onImportFigma?(): void;
+  onAutoBuild?(): void;
 }
 
-function Tile({
-  item,
+/** The rail's Add section (322:194): Mono/Eyebrow over the tiles, 10
+ * apart, then Import when the workspace can import. */
+export function ElementPalette({
   onAdd,
-  armed,
-}: {
-  item: PaletteItem;
-  onAdd(id: string): void;
-  armed?: boolean;
-}) {
-  const Icon = ICONS[item.id] ?? Square;
-  return (
-    <button
-      draggable
-      data-armed={armed ? "true" : undefined}
-      onDragStart={(e) => {
-        e.dataTransfer.setData(PALETTE_MIME, item.id);
-        e.dataTransfer.effectAllowed = "copy";
-      }}
-      onClick={() => onAdd(item.id)}
-      title={
-        armed
-          ? `${item.label}, the active tool. Drag on the canvas to draw one, or click here to add at the center.`
-          : "Drag onto the canvas, or click to add at the center"
-      }
-      className="sp-palette-tile flex flex-col items-center gap-1.5 py-3 px-2 transition-colors"
-      style={{
-        border: `1px solid ${armed ? "var(--editor-accent)" : "var(--border-strong)"}`,
-        borderRadius: "var(--radius-control)",
-        background: armed ? "var(--bg-hover)" : "var(--bg-surface)",
-        cursor: "grab",
-        fontSize: 11,
-        color: armed ? "var(--text-primary)" : "var(--text-secondary)",
-      }}
-    >
-      <Icon style={{ width: 16, height: 16 }} />
-      {item.label}
-    </button>
+  onAddIcon,
+  logos = [],
+  onOpenLogos,
+  onImportFigma,
+  onAutoBuild,
+}: ElementPaletteProps) {
+  const tile = (t: TileSpec) => (
+    <ElementTile
+      key={t.id}
+      icon={t.icon}
+      label={t.label}
+      paletteId={t.id}
+      onClick={() => onAdd(t.id)}
+    />
   );
-}
-
-function LogoTile({ asset, onAdd }: { asset: BrandAsset; onAdd(id: string): void }) {
-  const paletteId = `${LOGO_PALETTE_PREFIX}${asset.id}`;
-  const name = asset.name.replace(/\.[^.]+$/, "");
   return (
-    <button
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData(PALETTE_MIME, paletteId);
-        e.dataTransfer.effectAllowed = "copy";
-      }}
-      onClick={() => onAdd(paletteId)}
-      title={`${name}: drag onto the canvas, or click to add at the center`}
-      className="flex flex-col items-center gap-1.5 py-2 px-2 transition-colors"
-      style={{
-        border: "1px solid var(--border-strong)",
-        borderRadius: "var(--radius-control)",
-        background: "var(--bg-surface)",
-        cursor: "grab",
-        fontSize: 10.5,
-        color: "var(--text-secondary)",
-      }}
-    >
-      {/* The artwork itself is the tile — a logo is recognized, not read. */}
-      <span className="flex items-center justify-center w-full" style={{ height: 36 }}>
-        <SignedImg
-          src={asset.url}
-          alt={name}
-          draggable={false}
-          style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
-        />
-      </span>
-      <span className="truncate w-full text-center">{name}</span>
-    </button>
-  );
-}
-
-/** The Fields step's element palette: member-editable fields, decorative
- * shapes (always fixed on the graphic), then the company's logos. Drag a
- * tile onto the canvas to drop it where it lands; clicking adds at the
- * center. A dropped logo lands as a fixed image sized to its artwork and
- * always fits inside its box ("contain") — it never crops. */
-export function ElementPalette({ onAdd, logos = [], activeTool = "move" }: ElementPaletteProps) {
-  const fields = PALETTE_ITEMS.filter((i) => i.group === "fields");
-  const shapes = PALETTE_ITEMS.filter((i) => i.group === "shapes");
-  const armedId = activeTool === "move" ? null : TOOL_PALETTE_ID[activeTool];
-  return (
-    <div className="sp-card sp-card--chrome p-3 space-y-3">
-      <div className="space-y-2">
-        <h3 className="sp-eyebrow">Fields</h3>
-        {/* When the builder stacks to one column (below lg), the palette spans
-            the full content width — four-across keeps the tiles hand-sized. */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
-          {fields.map((item) => (
-            <Tile key={item.id} item={item} onAdd={onAdd} armed={item.id === armedId} />
-          ))}
+    <>
+      <section className="sp-palette" aria-labelledby="sp-palette-add">
+        <h3 id="sp-palette-add" className="t-mono-eyebrow sp-palette__title">
+          Add
+        </h3>
+        <div className="sp-palette__grid">
+          {BEFORE_LOGO.map(tile)}
+          <LogoTile logos={logos} onAdd={onAdd} onOpenLogos={onOpenLogos} />
+          {AFTER_LOGO.map(tile)}
+          <IconTile onAddIcon={onAddIcon} />
         </div>
-      </div>
-      <div className="space-y-2">
-        <h3 className="sp-eyebrow">Shapes</h3>
-        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-3 gap-2">
-          {shapes.map((item) => (
-            <Tile key={item.id} item={item} onAdd={onAdd} armed={item.id === armedId} />
-          ))}
-        </div>
-        <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-          Shapes are design-only. Members never see them as fields.
-        </p>
-      </div>
-      {logos.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="sp-eyebrow">Logos</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
-            {logos.map((asset) => (
-              <LogoTile key={asset.id} asset={asset} onAdd={onAdd} />
-            ))}
+      </section>
+      {onImportFigma && onAutoBuild && (
+        <section className="sp-palette" aria-labelledby="sp-palette-import">
+          <h3 id="sp-palette-import" className="t-mono-eyebrow sp-palette__title">
+            Import
+          </h3>
+          <div className="sp-palette__grid">
+            <ElementTile
+              icon={Figma}
+              label="Figma"
+              aria-label="Import from Figma"
+              onClick={onImportFigma}
+            />
+            <ElementTile icon={PencilRuler} label="Auto build" onClick={onAutoBuild} />
           </div>
-          <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-            Logos land fixed and always fit inside their box, with no cropping.
-          </p>
-        </div>
+        </section>
       )}
-    </div>
+    </>
   );
 }

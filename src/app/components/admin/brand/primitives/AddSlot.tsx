@@ -16,8 +16,8 @@ interface AddSlotProps {
   style?: React.CSSProperties;
 }
 
-/** The dashed "+ Add" slot that ends every collection (13:9455): radius 20,
- * a 1px dashed edge in text/secondary, the label in Button/M. A file slot
+/** The dashed "+ Add" slot that ends every collection (13:9455): radius/xl,
+ * a hairline dashed edge in text/secondary, the label in Button/M. A file slot
  * takes a drop too, and lights up under one (PHASE-6 §9 D9). */
 export function AddSlot({
   label,
@@ -32,8 +32,8 @@ export function AddSlot({
 
   const body = (
     <>
-      <span className="t-button-m sp-bs-add__label">+ {label}</span>
-      {detail && <span className="t-label-xs sp-bs-add__detail">{detail}</span>}
+      <span className="t-label-m sp-bs-add__label">+ {label}</span>
+      {detail && <span className="t-caption-m sp-bs-add__detail">{detail}</span>}
     </>
   );
 

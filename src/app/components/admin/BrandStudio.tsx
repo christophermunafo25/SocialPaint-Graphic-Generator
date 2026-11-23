@@ -3,12 +3,14 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
 import { type BrandCategory } from "../../router";
 import { Page } from "../layout/Page";
-import { LegalLinks } from "../generate/LegalLinks";
-import { Toast } from "../primitives";
+import { PageHeader, Toast } from "../primitives";
 import { BrandDetail } from "./brand/BrandDetail";
+import { BrandDetailHeader } from "./brand/BrandDetailHeader";
 import { BrandOverview } from "./brand/BrandOverview";
+import { CATEGORY_TITLES } from "./brand/categories";
 import type { LogoSurface } from "./brand/kitOps";
-import { useBrandBindings, useBrandDraft } from "./brand/kitPlumbing";
+import { TOAST_MS, useBrandBindings, useBrandDraft } from "./brand/kitPlumbing";
+import { AREA_ICON } from "../areas";
 
 /** Brand Studio, in two steps: /brand-studio is an overview of category
  * cards, /brand-studio/<category> is that category's detail page, edited
@@ -32,7 +34,16 @@ export function BrandStudio({
   useUnsavedChangesWarning(brand.pending || brand.saving);
 
   return (
-    <Page layout={{ className: "sp-bs-page" }}>
+    <Page
+      layout={{ className: "sp-bs-page" }}
+      header={
+        category ? (
+          <BrandDetailHeader title={CATEGORY_TITLES[category]} brand={brand} />
+        ) : (
+          <PageHeader icon={AREA_ICON.brandStudio} title="Brand Studio" />
+        )
+      }
+    >
       <div className="sp-bs-content">
         {category ? (
           <BrandDetail category={category} surface={surface} brand={brand} bindings={bindings} />
@@ -43,18 +54,16 @@ export function BrandStudio({
 
       {/* The toast (13:9850): the Toast primitive, centred on the page. */}
       <div className="sp-bs-toast-anchor">
-        {brand.undoOffer && (
-          <Toast
-            message={brand.undoOffer.message}
-            actionLabel="Undo"
-            onAction={() => brand.undo(brand.undoOffer?.snapshot)}
-          />
-        )}
+        <Toast
+          open={brand.undoOffer !== null}
+          message={brand.undoOffer?.message}
+          messageKey={brand.undoOffer}
+          actionLabel="Undo"
+          onAction={() => brand.undo(brand.undoOffer?.snapshot)}
+          duration={TOAST_MS}
+          onTimeout={brand.dismissUndo}
+        />
       </div>
-
-      <p className="t-caption-s sp-bs-legal">
-        <LegalLinks />
-      </p>
     </Page>
   );
 }

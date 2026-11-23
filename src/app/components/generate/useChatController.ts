@@ -44,8 +44,8 @@ export interface ChatSendInput {
    * only and is never saved (PROMPT §12.3). */
   document?: ChatDocument | null;
   /** `null` is an explicit "Any platform"; left out, a follow-up reuses the
-   * thread's last composer send (the compact composer has no platform
-   * select; a Try next chip's platform was for its own run). */
+   * thread's last composer send (a Try next chip's platform was for its own
+   * run). */
   platformHint?: PlatformId | null;
   /** Left out, a follow-up reuses the thread's last composer send; a first
    * message gets the stepper's default. */
@@ -331,9 +331,13 @@ export function useChatController(opts: ChatControllerOptions): ChatController {
           });
           return;
         case "layout": {
-          // A new layout at the size of the latest drafts' first one.
+          // A new layout at the size of the latest drafts' first one. A new
+          // design travels with the request (currentDesigns) and the server
+          // keeps its exact size, so it sends no hint; a template draft's
+          // size travels as its platform.
           const first = latestDoneTurn(threadRef.current.turns)?.drafts[0];
-          const platformHint = first ? primaryPlatformOf(first.canvas) : undefined;
+          const platformHint =
+            first && !first.proposal.design ? primaryPlatformOf(first.canvas) : undefined;
           start({
             text: action.label,
             photo: null,

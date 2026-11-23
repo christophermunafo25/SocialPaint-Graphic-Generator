@@ -14,7 +14,7 @@
 // PLATED fields — a plate hugs its text at the authored size (layout.ts), so
 // the CTAs' shrink is stored but inert; long CTA copy grows the pill.
 
-import type { StarterBlueprint, StarterField } from "./types";
+import type { StarterBlueprint, StarterEffect, StarterField } from "./types";
 
 type Ramp = Pick<
   StarterField,
@@ -80,6 +80,65 @@ const RAMP = {
   },
 } as const satisfies Record<string, Ramp>;
 
+/** Subtle depth (brand-system Phase 2, approved by CJ at Gate B). Shadows
+ * use the fixed "shadow" tint and are off in Dark, where a shadow on the
+ * near-black ground can't be seen; accent lifts and glows take the tenant's
+ * accent; grain uses ink, dark on Light and light on Dark. */
+const DEPTH = {
+  /** A photo panel lifted off the page. */
+  panel: [
+    {
+      type: "dropShadow",
+      x: 0,
+      y: 16,
+      blur: 40,
+      color: { slot: "shadow", alpha: 0.12, darkAlpha: 0 },
+    },
+  ],
+  /** A full-height panel casting to its left. */
+  panelLeft: [
+    {
+      type: "dropShadow",
+      x: -16,
+      y: 0,
+      blur: 48,
+      color: { slot: "shadow", alpha: 0.1, darkAlpha: 0 },
+    },
+  ],
+  /** A logo card. */
+  card: [
+    {
+      type: "dropShadow",
+      x: 0,
+      y: 8,
+      blur: 24,
+      color: { slot: "shadow", alpha: 0.1, darkAlpha: 0 },
+    },
+  ],
+  /** The call to action, lifted in its own accent. */
+  ctaLift: [
+    {
+      type: "dropShadow",
+      x: 0,
+      y: 10,
+      blur: 28,
+      color: { slot: "accent", alpha: 0.35, darkAlpha: 0 },
+    },
+  ],
+  /** A rule glowing in the accent. */
+  ruleGlow: [{ type: "dropShadow", x: 0, y: 0, blur: 16, color: { slot: "accent", alpha: 0.5 } }],
+  /** A faint grain over the whole canvas. */
+  grain: [
+    {
+      type: "noise",
+      color: { slot: "ink", alpha: 0.04, darkAlpha: 0.08 },
+      size: 1,
+      density: 1,
+      seed: 7,
+    },
+  ],
+} satisfies Record<string, StarterEffect[]>;
+
 /** Shrink floor: 60% of the ramp size, rounded. */
 const floor = (ramp: Ramp): number => Math.round(ramp.fontSizePx! * 0.6);
 
@@ -126,6 +185,7 @@ const imageSlot = (
   y: number,
   w: number,
   h: number,
+  backdropEffects?: StarterEffect[],
 ): StarterField[] => [
   {
     fieldKey: `${fieldKey}_bg`,
@@ -138,6 +198,7 @@ const imageSlot = (
     width: w,
     height: h,
     colorHex: "surfaceAlt",
+    ...(backdropEffects && { effects: backdropEffects }),
   },
   {
     fieldKey,
@@ -178,7 +239,7 @@ const productLaunch: StarterBlueprint = {
       colorHex: "inkMuted",
       align: "right",
     },
-    ...imageSlot("image", "Product image", "Add a product image", 80, 165, 920, 560),
+    ...imageSlot("image", "Product image", "Add a product image", 80, 165, 920, 560, DEPTH.panel),
     {
       fieldKey: "eyebrow",
       label: "Eyebrow",
@@ -233,6 +294,7 @@ const productLaunch: StarterBlueprint = {
       plateColor: "accent",
       platePaddingX: 32,
       platePaddingY: 22,
+      effects: DEPTH.ctaLift,
       textSizing: "shrink",
       minFontSizePx: floor(RAMP.bodyMMedium),
       verticalAlign: "top",
@@ -264,6 +326,7 @@ const featureHighlight: StarterBlueprint = {
   canvasHeight: 1080,
   captionTemplate: "New in {company.name}: less busywork.",
   backgroundColor: "surface",
+  canvasEffects: DEPTH.grain,
   fields: [
     ...logoSlot(80, 72, 142, 50),
     {
@@ -440,7 +503,7 @@ const companyMilestone: StarterBlueprint = {
       ...RAMP.labelS,
       colorHex: "inkMuted",
     },
-    ...imageSlot("image", "Team photo", "Add a team photo", 980, 0, 620, 900),
+    ...imageSlot("image", "Team photo", "Add a team photo", 980, 0, 620, 900, DEPTH.panelLeft),
   ],
 };
 
@@ -481,8 +544,10 @@ const partnershipAnnouncement: StarterBlueprint = {
       y: 164,
       width: 300,
       height: 84,
+      colorHex: "surface",
       strokeColor: "border",
       strokeWidthPx: 1,
+      effects: DEPTH.card,
     },
     {
       fieldKey: "logo",
@@ -519,8 +584,10 @@ const partnershipAnnouncement: StarterBlueprint = {
       y: 164,
       width: 300,
       height: 84,
+      colorHex: "surface",
       strokeColor: "border",
       strokeWidthPx: 1,
+      effects: DEPTH.card,
     },
     {
       fieldKey: "partner_logo",
@@ -590,6 +657,7 @@ const statHighlight: StarterBlueprint = {
   canvasHeight: 1080,
   captionTemplate: "The numbers behind {company.name}.",
   backgroundColor: "surface",
+  canvasEffects: DEPTH.grain,
   fields: [
     ...logoSlot(80, 72, 142, 50),
     {
@@ -658,6 +726,7 @@ const statHighlight: StarterBlueprint = {
       width: 920,
       height: 3,
       colorHex: "accent",
+      effects: DEPTH.ruleGlow,
     },
     {
       fieldKey: "source",
@@ -700,7 +769,16 @@ const eventPromo: StarterBlueprint = {
   backgroundColor: "surface",
   fields: [
     ...logoSlot(80, 90, 142, 50),
-    ...imageSlot("image", "Event photo", "Add a speaker or venue photo", 80, 226, 920, 746),
+    ...imageSlot(
+      "image",
+      "Event photo",
+      "Add a speaker or venue photo",
+      80,
+      226,
+      920,
+      746,
+      DEPTH.panel,
+    ),
     {
       fieldKey: "eyebrow",
       label: "Eyebrow",
@@ -870,6 +948,7 @@ const eventPromo: StarterBlueprint = {
       plateColor: "accent",
       platePaddingX: 32,
       platePaddingY: 30,
+      effects: DEPTH.ctaLift,
       align: "center",
       textSizing: "shrink",
       minFontSizePx: floor(RAMP.bodyMMedium),

@@ -1,5 +1,6 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { TemplateField } from "@/lib/types";
+import { CONFIRM_MS, Chip, Field, TextArea } from "../primitives";
 
 interface CaptionEditorProps {
   value: string;
@@ -7,7 +8,10 @@ interface CaptionEditorProps {
   onChange(value: string): void;
 }
 
-/** Caption merge-template editor with insertable {field_key} tags. */
+/** The caption your team gets beside the finished graphic (Publish,
+ * 326:1233): the text, then a chip for each field your team fills in,
+ * which puts that field's tag where the cursor is. Fixed elements and
+ * images have no value to merge, so they get no chip. */
 export function CaptionEditor({ value, fields, onChange }: CaptionEditorProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
@@ -27,40 +31,43 @@ export function CaptionEditor({ value, fields, onChange }: CaptionEditorProps) {
     });
   };
 
-  // Static elements have no member value to merge — no tag chip.
   const taggable = fields.filter((f) => f.type !== "image" && !f.static);
 
+  // The caption's copy button (Publish template, 6072:3977): the check holds
+  // for CONFIRM_MS, and a denied write claims nothing.
+  const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(copiedTimer.current), []);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      return;
+    }
+    setCopied(true);
+    window.clearTimeout(copiedTimer.current);
+    copiedTimer.current = window.setTimeout(() => setCopied(false), CONFIRM_MS);
+  };
+
   return (
-    <div className="space-y-2">
-      <textarea
-        ref={ref}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={4}
-        placeholder="e.g. Join us in congratulating {name} on {years} incredible years!"
-        className="sp-input"
-        style={{ resize: "vertical" }}
-      />
+    <div className="sp-caption-editor">
+      <Field label="Caption">
+        <TextArea
+          ref={ref}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Join us in congratulating {name}"
+          copy={
+            value.trim() ? { label: "Copy caption", onCopy: () => void copy(), copied } : undefined
+          }
+        />
+      </Field>
       {taggable.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="sp-eyebrow">Insert</span>
+        <div className="sp-caption-editor__tags" role="group" aria-label="Insert a field">
           {taggable.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => insertTag(f.fieldKey)}
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                padding: "3px 8px",
-                borderRadius: "var(--radius-control)",
-                background: "var(--bg-hover)",
-                color: "var(--text-secondary)",
-              }}
-            >
-              {"{"}
-              {f.fieldKey}
-              {"}"}
-            </button>
+            <Chip key={f.id} aria-label={`Insert ${f.label}`} onClick={() => insertTag(f.fieldKey)}>
+              {f.label}
+            </Chip>
           ))}
         </div>
       )}

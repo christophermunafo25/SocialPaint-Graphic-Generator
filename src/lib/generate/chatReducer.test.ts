@@ -891,15 +891,19 @@ describe("pickMode", () => {
       : t,
   );
 
-  it("fills the library by default", () => {
-    expect(pickMode([], { intent: "brief" }, false)).toBe("library");
+  it("composes a new design for a chat's first message, fitting template or not", () => {
+    expect(pickMode([], { intent: "brief" }, false)).toBe("freestyle");
+    expect(pickMode([], { intent: "brief" }, true)).toBe("freestyle");
+  });
+
+  it("keeps revising a saved chat's template fills as fills", () => {
     expect(pickMode(library, { intent: "followUp" }, false)).toBe("library");
     expect(pickMode(library, { intent: "platform" }, false)).toBe("library");
   });
 
-  it("runs freestyle when the library is empty and for Try another layout", () => {
-    expect(pickMode([], { intent: "brief" }, true)).toBe("freestyle");
+  it("composes for Try another layout and with no finished turn to follow", () => {
     expect(pickMode(library, { intent: "freestyle" }, false)).toBe("freestyle");
+    expect(pickMode([userTurn()], { intent: "followUp" }, false)).toBe("freestyle");
   });
 
   it("revises freestyle drafts as freestyle", () => {
@@ -1155,6 +1159,29 @@ describe("buildGenerateInput", () => {
     const input = buildGenerateInput(prior, userTurn(), "freestyle");
     expect(input.brief).toBe(`${BRIEF}\n\nMake the date Friday`);
     expect(input.followUp).toBeUndefined();
+  });
+
+  it("carries a new design's drafts with the member's current values into its follow-up", () => {
+    const f = draft("f1", "freestyle-1", "Bold", true);
+    f.values = { ...f.values, headline: "Now hiring designers", photo: PHOTO.dataUrl };
+    const prior = doneThread([f]).turns;
+    const input = buildGenerateInput(prior, userTurn(), "freestyle");
+    expect(input.currentDesigns).toHaveLength(1);
+    expect(input.currentDesigns?.[0].design).toBe(f.proposal.design);
+    expect(input.currentDesigns?.[0].values).toContainEqual({
+      fieldKey: "headline",
+      value: "Now hiring designers",
+    });
+    expect(JSON.stringify(input)).not.toContain("data:");
+  });
+
+  it("sends no designs with a first message or a library follow-up", () => {
+    expect(buildGenerateInput([], userTurn({ intent: "brief" }), "freestyle").currentDesigns).toBe(
+      undefined,
+    );
+    expect(buildGenerateInput(doneThread().turns, userTurn(), "library").currentDesigns).toBe(
+      undefined,
+    );
   });
 
   it("builds a platform version as a one-draft follow-up hinted to that platform", () => {

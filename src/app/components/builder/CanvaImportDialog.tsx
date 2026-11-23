@@ -1,25 +1,51 @@
-import { useState } from "react";
-import { RefreshCw } from "lucide-react";
-import type { AutoBuildResult } from "@/lib/types";
+import React, { useEffect, useRef, useState } from "react";
+import { Paintbrush } from "lucide-react";
+import type { AutoBuildResult, DesignImportResult } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { ImportLinkPopup } from "./ImportLinkPopup";
+import { Button, Field, Input, Modal, ModalActions } from "../primitives";
+import { BuildProgress, useBuildStage } from "./AutoBuildDialog";
+import { NotConnected } from "./NotConnected";
+import { useStillOpen } from "./useStillOpen";
 
 interface CanvaImportDialogProps {
   onClose(): void;
-  onBuilt(result: AutoBuildResult): void;
+  onBuilt(result: AutoBuildResult | DesignImportResult): void | Promise<void>;
+  /** Where focus goes when it closes (New template's opener). */
+  returnFocus?: React.RefObject<HTMLElement | null>;
 }
 
-/** Paste a Canva design link → auto-built template. Canva hands over a flat
- * export rather than layers, so this rides the auto-build path: Claude
- * proposes the field boxes from the picture and the admin corrects them in
- * the inspector. The start screen only offers it once the workspace has
- * connected Canva, so there is no not-connected state to draw here. */
-export function CanvaImportDialog({ onClose, onBuilt }: CanvaImportDialogProps) {
+/** Import from Canva: Import from Figma's dialog (329:3710) for a Canva
+ * design link. Canva shares a flat export rather than layers, so this runs
+ * the auto build: Claude proposes the fields from the picture, and while it
+ * works the dialog shows Auto build's steps (329:4286). */
+export function CanvaImportDialog({ onClose, onBuilt, returnFocus }: CanvaImportDialogProps) {
   const { company } = useAuth();
+  const [status, setStatus] = useState<{ enabled: boolean; connected: boolean } | null>(null);
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const stage = useBuildStage(busy);
+  const stillOpen = useStillOpen();
+  const input = useRef<HTMLInputElement>(null);
+
+  // A failed import brings the form back with the error under the link;
+  // focus goes there, so the error is read with it.
+  useEffect(() => {
+    if (error) input.current?.focus();
+  }, [error]);
+
+  useEffect(() => {
+    if (!company) return;
+    let cancelled = false;
+    stores.designImport
+      .canvaStatus(company.id)
+      .then((s) => !cancelled && setStatus(s))
+      .catch(() => !cancelled && setStatus({ enabled: false, connected: false }));
+    return () => {
+      cancelled = true;
+    };
+  }, [company]);
 
   const run = async () => {
     if (!company || !url.trim() || busy) return;
@@ -30,58 +56,62 @@ export function CanvaImportDialog({ onClose, onBuilt }: CanvaImportDialogProps) 
         kind: "canva",
         url: url.trim(),
       });
-      onBuilt(result);
+      if (!stillOpen.current) return;
+      await onBuilt(result);
     } catch (e) {
-      setError(
-        `${e instanceof Error ? e.message : "Import failed."} The blank canvas and the Figma import are unaffected.`,
-      );
+      if (stillOpen.current)
+        setError(e instanceof Error ? e.message : "That design didn't import. Try again.");
     } finally {
-      setBusy(false);
+      if (stillOpen.current) setBusy(false);
     }
   };
 
   return (
-    <ImportLinkPopup kind="canva" title="Import from Canva" onClose={onClose}>
-      <form
-        className="flex flex-col"
-        style={{ gap: "var(--space-xs)" }}
-        onSubmit={(e) => {
-          e.preventDefault();
-          void run();
-        }}
-      >
-        <input
-          type="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="Paste the design link from your browser's address bar."
-          aria-label="Canva design link"
-          className="sp-import-pop__input"
-          autoFocus
-          disabled={busy}
-        />
-        {(url.trim() || busy) && (
-          <div className="sp-import-pop__actions">
-            <button type="submit" disabled={busy} className="sp-btn sp-btn-primary">
-              {busy && <RefreshCw className="w-4 h-4 animate-spin" />}
-              {busy ? "Building, 15 to 40 seconds…" : "Import design"}
-            </button>
-          </div>
-        )}
-      </form>
-      <p className="sp-import-pop__note">
-        Canva shares a flat picture, so each editable text field gets a solid plate of the colour
-        behind it. Adjust or remove a plate in the inspector where the backdrop is a photo.
-      </p>
-      {error && (
-        <p
-          className="text-sm px-4 py-3"
-          data-radius-card
-          style={{ background: "var(--danger-wash)", color: "var(--destructive)" }}
+    <Modal
+      open
+      onOpenChange={(next) => !next && onClose()}
+      title="Import from Canva"
+      icon={Paintbrush}
+      className="sp-tb-dialog"
+      returnFocus={returnFocus}
+      onOpenAutoFocus={(e) => {
+        e.preventDefault();
+        input.current?.focus();
+      }}
+    >
+      {busy ? (
+        <BuildProgress stage={stage} onCancel={onClose} />
+      ) : status !== null && !(status.enabled && status.connected) ? (
+        <NotConnected service="Canva" onClose={onClose} />
+      ) : (
+        <form
+          className="sp-tb-dialog__form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void run();
+          }}
         >
-          {error}
-        </p>
+          <Field label="Design link" error={error}>
+            <Input
+              ref={input}
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="canva.com/design/…"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </Field>
+          <ModalActions>
+            <Button kind="neutral" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button kind="primary" type="submit" disabled={status === null || !url.trim()}>
+              Import
+            </Button>
+          </ModalActions>
+        </form>
       )}
-    </ImportLinkPopup>
+    </Modal>
   );
 }

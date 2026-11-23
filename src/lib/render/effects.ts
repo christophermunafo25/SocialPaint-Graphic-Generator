@@ -5,7 +5,7 @@
 // blur and noise paint over it, and stacks still space by the box.
 
 import type React from "react";
-import type { CornerRadius, FieldEffect, StrokeAlign } from "../types";
+import type { CornerRadius, FieldEffect, StrokeAlign, TemplateField } from "../types";
 
 type Shadow = Extract<FieldEffect, { type: "dropShadow" | "innerShadow" }>;
 type Noise = Extract<FieldEffect, { type: "noise" }>;
@@ -98,11 +98,30 @@ export function filterCss(effects: readonly FieldEffect[], withShadows = true): 
   return parts.length ? parts.join(" ") : undefined;
 }
 
+/** How far inside the box a blurred ring's hole keeps a pair of edges that
+ * would otherwise sit exactly on the box's, in px.
+ *
+ * Safari before 26 hands a filtered layer a paint rectangle already cut by
+ * its ancestors' clip, and skips a border whose inner edge contains that
+ * rectangle. Along an axis the hole's two edges sit on the box's whenever
+ * no spread shrinks the hole and no offset moves it along that axis. With
+ * both axes like that the hole is the box, so a canvas inner shadow with no
+ * offset was never painted. With one, the same happened to a box the canvas
+ * cuts off on the side the offset moves the hole away from. Edges this much
+ * inside the box never contain a rectangle that reaches both of the box's.
+ *
+ * It is more than the 1/64 px WebKit lays out in and survives px()'s two
+ * decimals, and it changed no pixel of the fidelity renders in Chromium,
+ * Firefox or WebKit 26. */
+const FLUSH_EDGE_INSET_PX = 0.02;
+
 /** One inner shadow as a frame: a ring of the shadow's color around a hole
  * the size of the box, shrunk by the spread and moved by the offset, then
  * blurred. Drawn inside the box's clip, the ring's blurred inner edge is
  * the inner shadow. The ring reaches blur + 4 px past the shadow's
  * extent, so its outer edge lightens the shadow by about 1% at most. Corner radii are the box's own, so the hole's corners match.
+ * A blurred hole never lies flush with the box along an axis
+ * (FLUSH_EDGE_INSET_PX).
  * Styles are relative to the box; frames are drawn bottom to top. */
 export function innerShadowFrames(
   effects: readonly FieldEffect[],
@@ -114,13 +133,21 @@ export function innerShadowFrames(
       const spread = Math.max(0, e.spread ?? 0);
       const ring = Math.ceil(e.blur + Math.abs(e.x) + Math.abs(e.y) + spread + 4);
       const outer = ring - spread;
+      // An unblurred ring keeps its edges where they are: flush on both
+      // axes it lies wholly outside the box and rightly paints nothing.
+      const flushInset = (offset: number) =>
+        e.blur > 0 && spread < FLUSH_EDGE_INSET_PX && Math.abs(offset) < FLUSH_EDGE_INSET_PX
+          ? FLUSH_EDGE_INSET_PX
+          : 0;
+      const insetX = flushInset(e.x);
+      const insetY = flushInset(e.y);
       const corner = (r: number) => px(Math.max(0, r - spread) + ring);
       return {
         position: "absolute",
-        left: px(e.x - outer),
-        top: px(e.y - outer),
-        width: `calc(100% + ${px(outer * 2)})`,
-        height: `calc(100% + ${px(outer * 2)})`,
+        left: px(e.x - outer + insetX),
+        top: px(e.y - outer + insetY),
+        width: `calc(100% + ${px((outer - insetX) * 2)})`,
+        height: `calc(100% + ${px((outer - insetY) * 2)})`,
         boxSizing: "border-box",
         border: `${px(ring)} solid ${e.color}`,
         borderRadius: radius
@@ -159,4 +186,66 @@ export function scaleEffects(raw: unknown, u: number): FieldEffect[] {
         return { ...e, size: r(e.size) };
     }
   });
+}
+
+/** True when a field paints beyond its own box: a drop shadow or glow, a
+ * layer blur's spill, or a shape's center or outside stroke. The builder's
+ * edit canvas clips every other field to its box. */
+export function paintsBeyondBox(
+  field: Pick<TemplateField, "effects" | "strokeColor" | "strokeAlign" | "type">,
+): boolean {
+  if (readEffects(field.effects).some((e) => e.type === "dropShadow" || e.type === "layerBlur")) {
+    return true;
+  }
+  if (field.type === "icon") return true;
+  return (
+    field.type === "shape" &&
+    Boolean(field.strokeColor) &&
+    readStrokeAlign(field.strokeAlign) !== "inside"
+  );
+}
+
+/** What spills past a field's box: a drop shadow, a glow, a stroke or a
+ * blur. */
+export type Spill = "shadow" | "glow" | "stroke" | "blur";
+
+/** The first thing a field paints beyond the canvas edge, or null. Only a
+ * field whose own box sits inside the canvas is judged: one that already
+ * bleeds off the edge is cropped on purpose. A shadow reaches its blur
+ * radius past its offset box; a stroke its outer width; a blur its
+ * radius. Rotation isn't modelled. */
+export function cutOffAtCanvas(
+  field: Pick<TemplateField, "effects" | "strokeColor" | "strokeAlign" | "strokeWidthPx" | "type">,
+  box: { x: number; y: number; width: number; height: number },
+  canvas: { width: number; height: number },
+): Spill | null {
+  const inside =
+    box.x >= 0 &&
+    box.y >= 0 &&
+    box.x + box.width <= canvas.width &&
+    box.y + box.height <= canvas.height;
+  if (!inside) return null;
+  const crosses = (left: number, top: number, right: number, bottom: number) =>
+    left < -0.5 || top < -0.5 || right > canvas.width + 0.5 || bottom > canvas.height + 0.5;
+  for (const e of readEffects(field.effects)) {
+    if (e.type === "dropShadow") {
+      const left = box.x + e.x - e.blur;
+      const top = box.y + e.y - e.blur;
+      const right = box.x + box.width + e.x + e.blur;
+      const bottom = box.y + box.height + e.y + e.blur;
+      if (crosses(left, top, right, bottom)) return e.x === 0 && e.y === 0 ? "glow" : "shadow";
+    }
+    if (e.type === "layerBlur") {
+      const r = e.radius;
+      if (crosses(box.x - r, box.y - r, box.x + box.width + r, box.y + box.height + r))
+        return "blur";
+    }
+  }
+  const align = readStrokeAlign(field.strokeAlign);
+  if (field.type === "shape" && field.strokeColor && align !== "inside") {
+    const w = Math.max(1, field.strokeWidthPx ?? 1) * (align === "center" ? 0.5 : 1);
+    if (crosses(box.x - w, box.y - w, box.x + box.width + w, box.y + box.height + w))
+      return "stroke";
+  }
+  return null;
 }

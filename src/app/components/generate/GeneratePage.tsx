@@ -17,8 +17,13 @@ import {
   type ChatPhoto,
   type ChatThread,
 } from "@/lib/generate/chat";
-import { DEFAULT_VARIATIONS, sameEdits } from "@/lib/generate/chatReducer";
-import { EXPORT_ERROR_TITLE, missingFields } from "@/lib/generate/draftDownload";
+import {
+  fillSendGaps,
+  lastComposerTurn,
+  latestDoneTurn,
+  sameEdits,
+} from "@/lib/generate/chatReducer";
+import { EXPORT_ERROR_TITLE, missingFields, turnDownloadPlan } from "@/lib/generate/draftDownload";
 import { captionFor, previewValues, tooLongFields, turnPhoto } from "@/lib/generate/draftView";
 import { defaultVariant } from "@/lib/templates/variants";
 import { detailKindOf, type DetailTagValue } from "@/lib/generate/details";
@@ -37,7 +42,7 @@ import type { TemplateSchema } from "@/lib/types";
 import { threadWritesSettled } from "@/lib/generate/threadSaver";
 import { fromStoredThread } from "@/lib/generate/threadStorage";
 import { deriveTryNext, platformsAskedFor, type TryNextAction } from "@/lib/generate/tryNext";
-import { classifySize, type PlatformId } from "@/lib/templates/platforms";
+import type { PlatformId } from "@/lib/templates/platforms";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -45,8 +50,7 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { useRouter } from "../../router";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
-import { BreadcrumbHeader } from "../layout/Breadcrumb";
-import { Button, Toast } from "../primitives";
+import { Button, FooterLinks, PageHeader, Toast } from "../primitives";
 import { ChatComposer } from "../chat/ChatComposer";
 import {
   TemplateInterviewLive,
@@ -59,21 +63,17 @@ import { GenerateHeader } from "../chat/GenerateHeader";
 import { GenerateTurn } from "../chat/GenerateTurn";
 import { TemplateLinksDialog } from "../admin/TemplateLinksDialog";
 import { ChatLoading, ChatUnavailable, THREAD_PLACEHOLDER } from "./ChatLoadStates";
-import {
-  EXPORT_TOAST_MS,
-  EditorPanel,
-  ExportErrorToast,
-  type EditorSaveToLibrary,
-} from "./EditorPanel";
-import { LegalLinks } from "./LegalLinks";
+import { EXPORT_TOAST_MS, EditorPanel, type EditorSaveToLibrary } from "./EditorPanel";
 import { RecentChats } from "./RecentChats";
-import { ScrollFade, useScrollFades } from "./ScrollFade";
+import { useScrollFades } from "../layout/useScrollFades";
+import { ScrollFade } from "./ScrollFade";
 import { UserMessage } from "../chat/Messages";
 import { requestComposerFocus, requestHistoryFocus, takeComposerFocus } from "./composerFocus";
 import { useChatController } from "./useChatController";
 import { useDraftDownload } from "./useDraftDownload";
 import { useThreadPersistence } from "./useThreadPersistence";
 import { useThreadScroll } from "./useThreadScroll";
+import { AREA_ICON } from "../areas";
 
 /** The Start state's composer placeholder (PROMPT §7.9). */
 const START_PLACEHOLDER = "Describe the post. Add any dates, names, or links it needs.";
@@ -143,26 +143,24 @@ type SaveState =
  *
  * Three states, one page:
  *
- *  - Start (no message yet): the normal document page. A centred 760
- *    column holds the greeting, the Large composer (Attach, the platform
- *    select, the Variations stepper, Send) and the Start from chips, which
- *    pin one of the company's published templates for the next send
- *    (§9.7). The legal links sit at the foot of the page.
- *  - Thread (a message sent): the route takes the whole viewport
- *    (useFullViewport), a column of the page header (breadcrumb with the
+ *  - Start (no message yet, 13:1453): a centred 720 column holds the
+ *    greeting, the chat box (Attach, whose menu holds the platform and the
+ *    details, the Variations stepper and Send) and Recent. The legal links
+ *    sit at Main's foot.
+ *  - Thread (a message sent, 13:2985): the page header (breadcrumb with the
  *    chat's title, History, New chat), the thread as the only scrolling
- *    region, and the dock: the Compact composer over the footnote row. The
- *    thread is a log of user messages and assistant turns, 24 apart in a
- *    760 column anchored to the bottom (short threads sit on the dock, as
- *    chats do); it follows new content while the member is at the latest
- *    turn, never scrolling that turn's head (status and progress) under
- *    the top scroll fade, which appears once the thread has scrolled.
- *  - Edit (frame 06, §8.5): a draft's preview, or Try next's fill chip,
- *    opens the editor panel on that turn. Under the header the chat column
- *    (its thread and dock, now as wide as the column) and the 380 panel
- *    share a row, 24 apart, every draft card goes Compact and the edited
- *    one is outlined. Below 1180px the panel lays over the chat as a sheet
- *    on a scrim instead. Edits go through the controller, one call per
+ *    region, and the dock: the chat box over the footnote row. The thread
+ *    is a log of user messages and assistant turns, 24 apart in a 720
+ *    column anchored to the bottom (short threads sit on the dock, as chats
+ *    do); it follows new content while the member is at the latest turn,
+ *    never scrolling that turn's head (status and progress) under the top
+ *    scroll fade, which appears once the thread has scrolled.
+ *  - Edit (13:3150): a card's Edit, a Fill in tag or Try next's fill chip
+ *    opens the editor panel on that turn. The chat column fills and the 380
+ *    panel sits 24 to its right, running to Main's foot, with the legal
+ *    links under the chat column; the turn's card shows the draft the
+ *    editor is on. Below 1180px the panel lays over the chat as a sheet on
+ *    a scrim instead. Edits go through the controller, one call per
  *    linked group, so the cards, the caption and the panel's live preview
  *    all repaint from the thread. The panel closes on Close, Escape or the
  *    scrim, handing focus back to the preview that opened it, and on its
@@ -170,23 +168,25 @@ type SaveState =
  *    Opening or closing it never moves the thread off what the member was
  *    looking at.
  *
- * A card's Download exports its draft straight through the one export
- * path (useDraftDownload's off-screen renderer, §9.6), painted exactly as
- * the card shows it; a failure shows TemplateFill's toast. A draft with a
- * required field still empty opens the editor on that field instead, as
- * the fill page withholds its Download until every one is filled.
+ * A card's Downloads export its drafts straight through the one export
+ * path (useDraftDownload's off-screen renderer, one at a time), painted
+ * exactly as the card shows them; a failure shows TemplateFill's toast. A
+ * draft with a required field still empty opens the editor on that field
+ * instead, as the fill page withholds its Download until every one is
+ * filled.
  *
  * Everything that happens to the thread goes through useChatController
  * (the run pipeline, stop, retry, follow-ups) and its pure reducer; this
- * page owns only what outlives no run: the composer's text, photo and
- * toolbar choices, the pinned chip, which caption each turn shows, the
- * editor (which draft, what opened it), Save to library's progress per
- * draft, and the card downloads.
+ * page owns only what outlives no run: the composer's text, photo,
+ * document, details, platform and count, which draft each turn's card
+ * shows, the editor (which draft, what opened it), Save to library's
+ * progress per draft, and the card downloads.
  *
  * The member's photo never leaves the browser: the composer hands it here
  * as a data URL, the send snapshots it onto the message, and only its flag
- * and aspect reach the server. Freestyle runs when the library is empty
- * (the mode toggle is gone, §4) or from "Try another layout".
+ * and aspect reach the server. Every Generate message composes new designs
+ * from the brand and the team's templates (pickMode); a template chat fills
+ * its template.
  *
  * The dev backend has no Edge Functions and no model key, so the Start
  * state keeps today's honest empty state under the greeting there.
@@ -227,9 +227,8 @@ export function GenerateChat({
     [company],
   );
   const published = publishedState.status === "ready" ? publishedState.data : null;
-  // With no published templates the library has nothing to fill, but
-  // freestyle still works from the brand kit: every run goes freestyle and
-  // the Start state says why.
+  // Generate composes either way; with no published templates there is no
+  // house style to learn from, and the designs come from the brand alone.
   const libraryEmpty = !template && published !== null && published.length === 0;
 
   // ── Saving (§9.8) ──────────────────────────────────────────────────────
@@ -332,8 +331,11 @@ export function GenerateChat({
   const [details, setDetails] = useState<DetailTagValue[]>([]);
   // The attach menu or Add a detail is showing: Start blurs Recent (§9 D6).
   const [menuOpen, setMenuOpen] = useState(false);
-  const [platform, setPlatform] = useState<PlatformId | null>(null);
-  const [variations, setVariations] = useState(DEFAULT_VARIATIONS);
+  // The next message's platform (null is any) and variation count, when the
+  // member sets them. Unset, a message reuses the thread's last composer
+  // send's (fillSendGaps), and the chat box shows those.
+  const [platform, setPlatform] = useState<PlatformId | null | undefined>(undefined);
+  const [variations, setVariations] = useState<number | undefined>(undefined);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   // Edit details' stage, where the panel renders the draft (§12.7).
   const [stageEl, setStageEl] = useState<HTMLDivElement | null>(null);
@@ -356,28 +358,16 @@ export function GenerateChat({
     if (startReady && takeComposerFocus()) composerRef.current?.focus();
   });
 
-  // Platforms the published library covers, by each template's canvas size
-  // (the catalogue's classification). Uncovered ones stay pickable but dim:
-  // the hint is a preference, and the server falls back to the whole
-  // library with a warning when nothing matches.
-  const covered = useMemo(() => {
-    const set = new Set<PlatformId>();
-    for (const t of published ?? []) {
-      for (const p of classifySize(t.canvasWidth, t.canvasHeight).platforms) set.add(p);
-    }
-    return set;
-  }, [published]);
-
   // ── The thread ─────────────────────────────────────────────────────────
-  const { scrollRef, columnRef, columnWidth, follow, preserve } = useThreadScroll(threadLayout);
+  const { scrollRef, columnRef, follow, preserve } = useThreadScroll(threadLayout);
   const fades = useScrollFades(scrollRef);
   // The thread as of the last render, for callbacks that stay stable (the
   // turns are memoized on them) but act on the current drafts.
   const threadRef = useRef(thread);
   threadRef.current = thread;
   const titleId = useId();
-  // Which draft's caption each turn shows, by turn id.
-  const [captionPicks, setCaptionPicks] = useState<Record<string, string>>({});
+  // Which draft each turn's Result card shows, by turn id.
+  const [draftPicks, setDraftPicks] = useState<Record<string, string>>({});
   // The editor panel, while it is open.
   const [editor, setEditor] = useState<EditorState | null>(null);
   // A template chat's Public link dialog (admins), as the fill page has it.
@@ -386,6 +376,17 @@ export function GenerateChat({
   // One canvas measurer for the page's "too long" checks (§9.4).
   const measure = useMemo(() => createCanvasMeasurer(), []);
   const lastTurn = thread.turns[thread.turns.length - 1];
+  // The chat box shows what the next message would ask for: the member's
+  // pick, or the last composer send's, which a send reuses (fillSendGaps).
+  const lastSend = useMemo(() => lastComposerTurn(thread.turns), [thread.turns]);
+  const shownSend = fillSendGaps({ platformHint: platform, variations }, lastSend);
+  const nextPlatform = shownSend.platformHint ?? null;
+  const nextVariations = shownSend.variations;
+  const resetPlatform = useCallback(() => setPlatform(undefined), []);
+  // The latest finished turn's card leads with its Download (one Primary a
+  // view, RULES.md section 7); the editor's Download PNG leads while it is
+  // open.
+  const leadTurnId = useMemo(() => latestDoneTurn(thread.turns)?.id ?? null, [thread.turns]);
   // The first message of a reopened chat that was sent with a photo: the
   // photo was not saved, and the note under it says so (§9.8). A message
   // sent on this page still holds its photo and needs no note.
@@ -516,25 +517,26 @@ export function GenerateChat({
     const sentDetails = details.length
       ? { details: details.map(({ fieldKey, label, value }) => ({ fieldKey, label, value })) }
       : {};
-    const started = fromStart
-      ? send({
-          text,
-          photo,
-          document: doc,
-          platformHint: platform,
-          variations,
-          ...sentDetails,
-        })
-      : // The compact composer has no platform or count: the controller
-        // reuses the thread's last composer send (never a chip's).
-        send({ text, photo, document: doc, ...sentDetails });
+    // A platform or count left unset reuses the thread's last composer send
+    // (never a chip's).
+    const started = send({
+      text,
+      photo,
+      document: doc,
+      platformHint: platform,
+      variations,
+      ...sentDetails,
+    });
     if (!started) return;
     // The photo, the document and the tags are snapshotted on the message;
-    // the composer starts clean.
+    // the composer starts clean, and shows this message's platform and
+    // count for the next.
     setText("");
     setPhoto(null);
     setDoc(null);
     setDetails([]);
+    setPlatform(undefined);
+    setVariations(undefined);
     follow();
     if (fromStart) {
       // The Large composer leaves with the Start state; the member keeps
@@ -561,9 +563,9 @@ export function GenerateChat({
     setAnswers({});
     setAnswerError(null);
     autoBuilt.current = null;
-    setPlatform(null);
-    setVariations(DEFAULT_VARIATIONS);
-    setCaptionPicks({});
+    setPlatform(undefined);
+    setVariations(undefined);
+    setDraftPicks({});
     setEditor(null);
     requestComposerFocus();
   }, [reset]);
@@ -607,25 +609,26 @@ export function GenerateChat({
   }, [navigate]);
 
   /** A Recent card: the chat opens at its own address, a page of its own,
-   * with focus in its composer once it has loaded (§9.10). */
+   * with focus in its composer once it has loaded (§9.10). A saved template
+   * chat goes on from there to its template's fill page while the template
+   * is published (SavedChat; PLAN.md judgement call 8), and stays an
+   * ordinary chat once it has gone. */
   const openChat = useCallback(
     (threadId: string, templateId: string | null) => {
-      requestComposerFocus();
-      // A template chat opens on its template's page, which sends it on to
-      // /generate/c/<id> when that template has gone (template-chat §12.1).
-      navigate(
-        templateId
-          ? { name: "templateChat", templateId, threadId }
-          : { name: "generate", threadId },
-      );
+      if (!templateId) requestComposerFocus();
+      navigate({ name: "generate", threadId });
     },
     [navigate],
   );
 
-  const onCaptionSelect = useCallback(
-    (turnId: string, draftId: string) => setCaptionPicks((p) => ({ ...p, [turnId]: draftId })),
-    [],
-  );
+  /** A draft picked on a turn's Result card, or in the editor open on that
+   * turn: the card and the editor show the same one. */
+  const pickDraft = useCallback((turnId: string, draftId: string) => {
+    setDraftPicks((p) => ({ ...p, [turnId]: draftId }));
+    setEditor((current) =>
+      current && current.turnId === turnId ? { ...current, draftId } : current,
+    );
+  }, []);
 
   // ── The editor (frame 06, §8.5, §9.5) ──────────────────────────────────
   // It opens on a draft from its preview's Edit overlay, and on one field
@@ -686,6 +689,8 @@ export function GenerateChat({
     ) => {
       if (!editorOpenRef.current) preserve(anchor);
       opener.current = { el: from, draftId };
+      // The card shows the draft the editor opens on, and stays on it after.
+      setDraftPicks((p) => ({ ...p, [turnId]: draftId }));
       const openId = ++openCount.current;
       const turn = threadRef.current.turns.find((t) => t.id === turnId);
       const snapshot = turn && isAssistantTurn(turn) ? turn.drafts : [];
@@ -832,9 +837,10 @@ export function GenerateChat({
 
   // The sheet is modal (aria-modal): everything outside it goes inert while
   // it is up, which is the page's header and chat column under the scrim,
-  // and the app's own chrome beside the page (the sidebar, or below 1024px
-  // the top bar the sheet starts under, whose menu would otherwise open
-  // over it). The chrome is found as the app shell's children that do not
+  // the frame's footer links, and the app's own chrome beside the page (the
+  // sidebar, or below 1024px the top bar the sheet starts under, whose menu
+  // would otherwise open over it). The chrome is found as the app shell's
+  // children that do not
   // hold the page, and found again if the shell swaps them (the sidebar
   // becomes the top bar as the window narrows). Dialogs opened from the
   // sheet portal to <body>, outside the shell, and stay live. The panel
@@ -846,11 +852,13 @@ export function GenerateChat({
     const page = chatRef.current;
     const shell = page?.closest(".sp-appshell") ?? null;
     const made = new Set<HTMLElement>();
+    // The frame's footer links sit beside the page, outside the chat.
+    const footer = page?.closest(".sp-frame")?.querySelector(":scope > .sp-frame__foot") ?? null;
     const apply = () => {
       const chrome = shell
         ? Array.from(shell.children).filter((el) => !page || !el.contains(page))
         : [];
-      for (const el of [headerRef.current, chatRef.current, ...chrome]) {
+      for (const el of [headerRef.current, chatRef.current, footer, ...chrome]) {
         if (el instanceof HTMLElement && !el.inert) {
           el.inert = true;
           made.add(el);
@@ -866,9 +874,13 @@ export function GenerateChat({
     };
   }, [sheet]);
 
+  // The editor's switch moves the card's with it.
+  const editorTurnKey = editor?.turnId ?? null;
   const selectDraft = useCallback(
-    (draftId: string) => setEditor((current) => current && { ...current, draftId }),
-    [],
+    (draftId: string) => {
+      if (editorTurnKey) pickDraft(editorTurnKey, draftId);
+    },
+    [editorTurnKey, pickDraft],
   );
   const editorTurnId = editorTurn?.id ?? null;
   const editDrafts = useCallback(
@@ -922,6 +934,7 @@ export function GenerateChat({
   const {
     download,
     busyId,
+    doneCount,
     error: downloadError,
     clearError: clearDownloadError,
     stage: downloadStage,
@@ -961,11 +974,33 @@ export function GenerateChat({
     },
     [download, openEditor, templateRef, kit, measure],
   );
+  // A Result card's own Download: every draft the turn made, one export at
+  // a time. A draft with a gap opens the editor on it instead, as its own
+  // Download would, and nothing exports until it is filled.
+  const downloadTurn = useCallback(
+    (turnId: string) => {
+      const current = threadRef.current;
+      const turn = current.turns.find((t) => t.id === turnId);
+      if (!turn || !isAssistantTurn(turn)) return;
+      const photo = turnPhoto(current, turn);
+      const plan = turnDownloadPlan(turn.drafts, (d) => previewValues(d, photo));
+      if (plan.kind === "fill") {
+        downloadDraft(turnId, plan.draftId);
+        return;
+      }
+      for (const d of plan.drafts) void download(d, previewValues(d, photo));
+    },
+    [download, downloadDraft],
+  );
+
+  // While the editor is open its panel shows a card download's failure on
+  // its own Toast, so the page's line goes on the same time and does not
+  // come back when the editor closes.
   useEffect(() => {
-    if (!downloadError) return;
+    if (!editorOpen || !downloadError) return;
     const timer = window.setTimeout(clearDownloadError, EXPORT_TOAST_MS);
     return () => window.clearTimeout(timer);
-  }, [downloadError, clearDownloadError]);
+  }, [editorOpen, downloadError, clearDownloadError]);
 
   /** A Try next chip or Try again that starts a run goes with it (the row
    * hides while a run is in flight, a retried turn is replaced, an older
@@ -1043,15 +1078,16 @@ export function GenerateChat({
   const exportExtras = (
     <>
       {downloadStage}
-      {!editorOpen &&
-        downloadError &&
-        (template ? (
-          <div className="sp-fill-toast" aria-live="assertive">
-            <Toast message={`${EXPORT_ERROR_TITLE}. ${downloadError}`} />
-          </div>
-        ) : (
-          <ExportErrorToast detail={downloadError} />
-        ))}
+      {/* A card download's failure, on the Toast's own time (PROMPT.md
+          section 7.2); the panel shows its own while it is open. */}
+      <div className="sp-fill-toast" aria-live="assertive">
+        <Toast
+          open={!editorOpen && downloadError !== null}
+          message={downloadError ? `${EXPORT_ERROR_TITLE}. ${downloadError}` : undefined}
+          duration={EXPORT_TOAST_MS}
+          onTimeout={clearDownloadError}
+        />
+      </div>
       {sharing && template && (
         <TemplateLinksDialog template={template} onClose={() => setSharing(false)} />
       )}
@@ -1063,11 +1099,16 @@ export function GenerateChat({
     return (
       <>
         {exportExtras}
-        <Page layout={{ className: "sp-chat-page", state: "start" }}>
+        <Page
+          layout={{ className: "sp-chat-page", state: "start" }}
+          // Start's header row (6023:3097): the Generate title. The greeting
+          // under it stays the page's one heading.
+          header={<PageHeader icon={AREA_ICON.generate} title="Generate" titleIsHeading={false} />}
+        >
           <div className="sp-gen-start">
             <div className="sp-gen-start__column" data-pending={startReady ? undefined : true}>
               <div className="sp-gen-start__lead">
-                <h1 className="t-title-metric sp-gen-start__title">What are we painting today?</h1>
+                <h1 className="t-title-display sp-gen-start__title">What are we painting today?</h1>
                 {configured ? (
                   <ChatComposer
                     value={text}
@@ -1081,20 +1122,20 @@ export function GenerateChat({
                     onStop={stop}
                     placeholder={START_PLACEHOLDER}
                     platform={{
-                      value: platform,
+                      value: nextPlatform,
+                      chosen: platform !== undefined,
                       onChange: setPlatform,
-                      covered: published ? covered : null,
-                      dimUncovered: published !== null && !libraryEmpty,
+                      onReset: resetPlatform,
                     }}
-                    variations={{ value: variations, onChange: setVariations }}
+                    variations={{ value: nextVariations, onChange: setVariations }}
                     details={{ value: details, onChange: setDetails }}
                     onMenuOpenChange={setMenuOpen}
                     textareaRef={composerRef}
                   />
                 ) : (
                   <div className="sp-gen-start__unavailable">
-                    <p className="t-title-panel">Generate isn't available on this backend</p>
-                    <p className="t-body-s">
+                    <p className="t-title-card">Generate isn't available on this backend</p>
+                    <p className="t-body-m">
                       It needs the Supabase backend and an Anthropic API key (see .env.example). The
                       template library and manual fill work as usual.
                     </p>
@@ -1112,9 +1153,6 @@ export function GenerateChat({
               )}
             </div>
           </div>
-          <p className="t-caption-s sp-gen-legal">
-            <LegalLinks />
-          </p>
         </Page>
       </>
     );
@@ -1131,69 +1169,75 @@ export function GenerateChat({
   // under it and the panel beside it (or over it, below 1180px).
   const editView = Boolean(template && editorOpen && selectedDraft);
   const lookOptions = template?.variants?.map((v) => ({ id: v.id, label: v.name })) ?? [];
+  const threadHeader = template ? (
+    // A template chat's header (13:7138, 13:8222): the breadcrumb and
+    // its actions on the new look's Buttons.
+    <PageHeader
+      ref={headerRef}
+      icon={AREA_ICON.brandTemplates}
+      currentId={titleId}
+      crumbs={
+        editView
+          ? [
+              { label: "Brand Templates", onClick: openBrandTemplates },
+              { label: template.name, onClick: closeEditor },
+              { label: "Edit details" },
+            ]
+          : [{ label: "Brand Templates", onClick: openBrandTemplates }, { label: template.name }]
+      }
+      actions={
+        editView ? (
+          <Button kind="neutral" icon={ArrowLeft} onClick={closeEditor}>
+            Back to chat
+          </Button>
+        ) : (
+          <>
+            <Button
+              kind="neutral"
+              icon={Pencil}
+              onClick={() => navigate({ name: "template", templateId: template.id })}
+            >
+              Fill in by hand
+            </Button>
+            {role === "admin" && (
+              <Button
+                kind="neutral"
+                icon={LayoutGrid}
+                onClick={() => navigate({ name: "bulk", templateId: template.id })}
+              >
+                Bulk fill
+              </Button>
+            )}
+            {role === "admin" && (
+              <Button kind="primary" icon={Link} onClick={() => setSharing(true)}>
+                Public link
+              </Button>
+            )}
+          </>
+        )
+      }
+    />
+  ) : (
+    <GenerateHeader
+      ref={headerRef}
+      title={thread.title}
+      titleId={titleId}
+      onNewChat={startNewChat}
+      onHistory={openHistory}
+    />
+  );
+
   return (
     <>
       {exportExtras}
-      <Page layout={{ className: "sp-chat-page", state: "thread" }}>
-        {template ? (
-          // A template chat's header (13:7138, 13:8222): the breadcrumb and
-          // its actions on the new look's Buttons.
-          <BreadcrumbHeader
-            ref={headerRef}
-            currentId={titleId}
-            crumbs={
-              editView
-                ? [
-                    { label: "Brand Templates", onClick: openBrandTemplates },
-                    { label: template.name, onClick: closeEditor },
-                    { label: "Edit details" },
-                  ]
-                : [
-                    { label: "Brand Templates", onClick: openBrandTemplates },
-                    { label: template.name },
-                  ]
-            }
-            actions={
-              editView ? (
-                <Button kind="neutral" icon={ArrowLeft} onClick={closeEditor}>
-                  Back to chat
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    kind="neutral"
-                    icon={Pencil}
-                    onClick={() => navigate({ name: "template", templateId: template.id })}
-                  >
-                    Fill in by hand
-                  </Button>
-                  {role === "admin" && (
-                    <Button
-                      kind="neutral"
-                      icon={LayoutGrid}
-                      onClick={() => navigate({ name: "bulk", templateId: template.id })}
-                    >
-                      Bulk fill
-                    </Button>
-                  )}
-                  {role === "admin" && (
-                    <Button kind="primary" icon={Link} onClick={() => setSharing(true)}>
-                      Public link
-                    </Button>
-                  )}
-                </>
-              )
-            }
-          />
-        ) : (
-          <GenerateHeader
-            ref={headerRef}
-            title={thread.title}
-            titleId={titleId}
-            onNewChat={startNewChat}
-            onHistory={openHistory}
-          />
-        )}
+      <Page
+        kind="self"
+        layout={{ className: "sp-chat-page", state: "thread" }}
+        header={threadHeader}
+        // Beside the inline editor the links sit under the chat column and
+        // the panel runs to Main's foot, 16 short of the window (13:3150).
+        footer={editorPresentation !== "inline"}
+      >
         <div
           className="sp-chat-split"
           data-editor={editorPresentation}
@@ -1277,6 +1321,10 @@ export function GenerateChat({
                         busyDraftId={
                           busyId && turn.drafts.some((d) => d.id === busyId) ? busyId : null
                         }
+                        downloadedCount={turn.drafts.reduce(
+                          (n, d) => n + (doneCount[d.id] ?? 0),
+                          0,
+                        )}
                         handlers={templateHandlers}
                       />
                     ) : (
@@ -1288,19 +1336,23 @@ export function GenerateChat({
                         canRetry={
                           turn.phase === "error" && !running && (turn === lastTurn || !full)
                         }
-                        cardSize={editorOpen ? "compact" : "regular"}
                         selectedDraftId={
                           turn === editorTurn && selectedDraft ? selectedDraft.id : null
                         }
                         busyDraftId={
                           busyId && turn.drafts.some((d) => d.id === busyId) ? busyId : null
                         }
-                        maxWidth={columnWidth}
-                        captionDraftId={captionPicks[turn.id]}
-                        onCaptionSelect={onCaptionSelect}
+                        downloadedCount={turn.drafts.reduce(
+                          (n, d) => n + (doneCount[d.id] ?? 0),
+                          0,
+                        )}
+                        pickedDraftId={draftPicks[turn.id]}
+                        onPickDraft={pickDraft}
                         registerPreview={registerPreview}
                         onEditDraft={openDraftEditor}
                         onDownloadDraft={downloadDraft}
+                        onDownloadAll={downloadTurn}
+                        leadDownload={turn.id === leadTurnId && !editorOpen}
                         onTryNext={onTryNext}
                         onRetry={onRetry}
                         onFillIn={onFillIn}
@@ -1319,7 +1371,7 @@ export function GenerateChat({
             <div className="sp-chat-dock">
               <div className="sp-chat-dock__composer">
                 {full && (
-                  <p className="sp-chat-dock__note">
+                  <p className="t-caption-m sp-chat-dock__note">
                     This chat is full. Start a new chat to keep going.
                   </p>
                 )}
@@ -1342,18 +1394,33 @@ export function GenerateChat({
                         ? TEMPLATE_THREAD_PLACEHOLDER
                         : THREAD_PLACEHOLDER
                   }
-                  // A template chat's details come from its questions.
+                  // A template chat's details come from its questions, and it
+                  // has one template's size and one draft.
+                  platform={
+                    template
+                      ? undefined
+                      : {
+                          value: nextPlatform,
+                          chosen: platform !== undefined,
+                          onChange: setPlatform,
+                          onReset: resetPlatform,
+                        }
+                  }
+                  variations={
+                    template ? undefined : { value: nextVariations, onChange: setVariations }
+                  }
                   details={template ? undefined : { value: details, onChange: setDetails }}
                   textareaRef={composerRef}
                   disabled={full}
                 />
-                {unsaved && <p className="sp-chat-dock__note">{NOT_SAVED_YET}</p>}
+                {unsaved && <p className="t-caption-m sp-chat-dock__note">{NOT_SAVED_YET}</p>}
               </div>
-              {/* The footnote is the legal links alone (13:2821, 13:7195). */}
-              <p className="t-caption-s sp-tchat-legal">
-                <LegalLinks />
-              </p>
             </div>
+            {editorPresentation === "inline" && (
+              <footer className="sp-chat-split__foot">
+                <FooterLinks />
+              </footer>
+            )}
           </div>
           {editor && editorTurn && selectedDraft && editorPresentation && (
             <EditorPanel
@@ -1441,9 +1508,9 @@ function SavedChat({ threadId }: { threadId: string }) {
     await threadWritesSettled();
     const record = await stores.generateThreads.get(companyId, threadId);
     if (!record) return null;
-    // A template chat whose template is still published belongs on its
-    // template's page (template-chat §12.1); one whose template has gone
-    // stays here, an ordinary Generate chat.
+    // A template chat whose template is still published goes to that
+    // template's fill page (below); one whose template has gone stays here,
+    // an ordinary Generate chat.
     if (record.templateId) {
       const t = await stores.templates.get(record.templateId);
       if (t && t.status === "published" && t.companyId === companyId) {
@@ -1459,9 +1526,11 @@ function SavedChat({ threadId }: { threadId: string }) {
     load.status === "ready" && load.data && "templateId" in load.data && !("turns" in load.data)
       ? load.data.templateId
       : null;
+  // The template chat is hidden (PLAN.md judgement call 8): a saved one
+  // opened at a Generate address goes to its template's fill page.
   useEffect(() => {
-    if (moveTo) navigate({ name: "templateChat", templateId: moveTo, threadId }, { replace: true });
-  }, [moveTo, navigate, threadId]);
+    if (moveTo) navigate({ name: "template", templateId: moveTo }, { replace: true });
+  }, [moveTo, navigate]);
 
   const newChat = useCallback(() => {
     requestComposerFocus();

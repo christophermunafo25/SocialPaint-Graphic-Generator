@@ -6,7 +6,7 @@ import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { compactCount, exactMonthStartIso } from "@/lib/stores/monthlyUsage";
 import { ErrorState } from "../../ErrorState";
-import { Metric, SettingsCard, Stat } from "../../primitives";
+import { SettingsCard, Skeleton, Stat } from "../../primitives";
 
 const count = (n: number): string => n.toLocaleString("en");
 
@@ -42,7 +42,7 @@ export function UsageSection() {
         {state.status === "loading" ? (
           <div className="sp-st-metrics" aria-busy="true" aria-label="Loading usage">
             {Array.from({ length: 4 }, (_, i) => (
-              <span key={i} className="sp-st-bone" style={{ width: 96, height: 74 }} />
+              <Skeleton key={i} width={96} height={74} />
             ))}
           </div>
         ) : state.status === "error" ? (
@@ -54,8 +54,9 @@ export function UsageSection() {
         ) : (
           state.data && (
             <div className="sp-st-metrics">
-              <Metric label="Exports" value={count(state.data.downloads)} />
-              <Metric
+              <Stat size="lg" label="Exports" value={count(state.data.downloads)} />
+              <Stat
+                size="lg"
                 label="Opens"
                 value={count(state.data.opens)}
                 sub={
@@ -64,8 +65,8 @@ export function UsageSection() {
                     : undefined
                 }
               />
-              <Metric label="Templates used" value={count(state.data.templatesUsed)} />
-              <Metric label="Members active" value={count(state.data.membersActive)} />
+              <Stat size="lg" label="Templates used" value={count(state.data.templatesUsed)} />
+              <Stat size="lg" label="Members active" value={count(state.data.membersActive)} />
             </div>
           )
         )}
@@ -108,12 +109,7 @@ function AiUsageCard({ companyId, timeZone }: { companyId: string; timeZone?: st
   return (
     <SettingsCard title="AI usage">
       {state.status === "loading" ? (
-        <span
-          className="sp-st-bone"
-          style={{ width: 280, height: 39 }}
-          aria-busy="true"
-          aria-label="Loading AI usage"
-        />
+        <Skeleton width={280} height={39} aria-busy="true" aria-label="Loading AI usage" />
       ) : state.status === "error" ? (
         <ErrorState
           title="We couldn't load AI usage."

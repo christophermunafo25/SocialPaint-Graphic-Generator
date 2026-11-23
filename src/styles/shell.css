@@ -1,215 +1,538 @@
 /* ==========================================================================
-   The shell (new look, Phase 3): the sidebar, page headers and the
-   compositions Phase 3 adds inside Settings, built from the primitives.
-   Measurements are from docs/design/new-look/PHASE-3-SHELL.md. Tokens and
-   .t-* classes only; nothing here declares a token.
+   The shell (new brand, Phase 3; docs/design/new-brand/PHASE-3.md): the app
+   frame and Main (layout/Page.tsx), the sidebar, page headers and the
+   compositions inside Settings. Measurements are RULES.md section 10's.
+   Tokens and .t-* classes only, plus the two measures the shell owns
+   (below); nothing here declares a token. z-index is not a Figma token,
+   so the mobile bar's layer is a number, as in primitives.css.
    ========================================================================== */
 
-/* ── Settings › Workspace, Workspaces (13:14698) ── */
+/* ── The shell's own measures (BRIDGE.md section 2) ──
+   --page-pad, the page gutter: 48 from 1280, 32 from 1024, 24 below it and
+   16 below 768. Main sets 32 at 1024 and wider, where Generate's thread
+   and History reach into it. --chrome-top, the mobile bar's height below
+   1024 (0 beside the rail): sticky page chrome and Generate's editor sheet
+   offset from it. The frame caps nothing; the public link page's column
+   caps itself (.sp-public__column). */
+:root {
+  --page-pad: var(--space-48);
+  --chrome-top: 0px;
+}
+@media (max-width: 1279px) {
+  :root {
+    --page-pad: var(--space-32);
+  }
+}
+@media (max-width: 1023px) {
+  :root {
+    --page-pad: var(--space-24);
+    /* The bar's 56 row and the notch inset it carries as padding. */
+    --chrome-top: calc(56px + env(safe-area-inset-top, 0px));
+  }
+}
+@media (max-width: 767px) {
+  :root {
+    --page-pad: var(--space-16);
+  }
+}
+
+/* ── The app frame (every product frame, e.g. Brand Templates 6010:2064) ──
+   At 1024 and wider the window is the frame: the Sidebar flush against
+   its top, left and bottom, then Main, on surface/page, with no inset
+   around or between them (--layout-shell-inset, 0). It stops above the
+   local backend's banner, and the document does not scroll: Main's
+   content does. Below 1024 the mobile bar sits on top and the document
+   scrolls, as before. */
+.sp-appshell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface-page);
+  font-family: var(--font-sans);
+}
+.sp-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+@media (min-width: 1024px) {
+  /* Nothing scrolls the document here, so it keeps no scrollbar gutter, and
+     the body clips at the window as the full-viewport rules did: a page's
+     screen-reader text anchored outside its own scroller (the Generate
+     thread's) cannot stretch the document. Clip, not hidden, so the body
+     never becomes a scroller a script could move. */
+  html:has(.sp-appshell) {
+    overflow: hidden;
+    scrollbar-gutter: auto;
+  }
+  html:has(.sp-appshell) body {
+    overflow: clip;
+  }
+  .sp-appshell {
+    flex-direction: row;
+    gap: var(--layout-shell-inset);
+    box-sizing: border-box;
+    height: calc(100dvh - var(--dev-banner-h, 0px));
+    min-height: 0;
+    padding: var(--layout-shell-inset);
+  }
+  .sp-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+}
+
+/* ── Main: one page (Brand Templates 6010:2066) ──
+   The header row (6029:12824), 64 tall with a border/subtle hairline under
+   it and the 36 Page Header centred in it, then the content, each the full
+   width of Main with a 32 gutter inside it. Main has nothing above it, and
+   the footer links keep 16 under them so they never meet the window's
+   edge. The 24 under the header row is the content's own top
+   padding and the gutters its side padding, so a card's shadow is never
+   cut by the content's edge. "scroll": the header row, the content and
+   the footer links scroll inside the frame as one page, and nothing
+   sticks. "self": the content is a column as tall as Main allows and the
+   page scrolls its own region inside it. "bare": the builder editor fills
+   Main. */
+.sp-frame[data-kind="bare"] .sp-frame__body > .sp-page {
+  padding: 0;
+}
+/* Below 1024 the header row keeps the earlier page's place: 24 under the
+   mobile bar, in the page's gutters, with the content 24 under it. The
+   footer links follow the content, and on a short page they sit at the
+   window's foot: the frame is at least the window under the bar (the
+   bar's 56, its inset and its hairline), and a page's own column can fill
+   what the links leave (Generate Start). The footer carries the
+   home-indicator inset, so a page's content above it takes none
+   (--frame-inset-bottom, read by the pages' bottom padding). */
+@media (max-width: 1023px) {
+  .sp-frame__head {
+    padding: var(--space-24) var(--page-pad) 0;
+  }
+  /* As the earlier header did on a narrow screen, the actions take a line
+     of their own when they don't fit beside the title or the trail, and
+     wrap among themselves when one line can't hold them. */
+  .sp-frame__head .ui-page-header {
+    flex-wrap: wrap;
+  }
+  .sp-frame__head .ui-page-header__end {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .sp-frame__head .ui-page-header__actions {
+    flex-wrap: wrap;
+  }
+  .sp-frame[data-foot] {
+    --frame-inset-bottom: 0px;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - var(--chrome-top) - var(--stroke-hairline));
+  }
+  .sp-frame[data-foot] .sp-frame__body {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+  }
+  /* As a flex item the content would shrink to its own width between its
+     auto side margins (.sp-page centres its column); it keeps the body's. */
+  .sp-frame[data-foot] .sp-frame__body > .sp-page {
+    margin-inline: 0;
+  }
+  .sp-frame__foot {
+    padding: 0 var(--page-pad)
+      calc(var(--space-32) + env(safe-area-inset-bottom, 0px) + var(--dev-banner-h, 0px));
+  }
+}
+@media (min-width: 1024px) {
+  .sp-frame {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    box-sizing: border-box;
+    min-height: 0;
+  }
+  /* The frame is the scroller: the header row and the footer links move
+     with the content. The body keeps its content's height, and on a short
+     page takes what is left, so the links sit at Main's foot. */
+  .sp-frame[data-kind="scroll"] {
+    overflow-y: auto;
+  }
+  .sp-frame[data-kind="scroll"] .sp-frame__body {
+    flex: 1 0 auto;
+  }
+  .sp-frame__head {
+    display: flex;
+    flex: none;
+    align-items: center;
+    box-sizing: border-box;
+    min-height: calc(var(--space-64) + var(--stroke-hairline));
+    padding-inline: var(--space-32);
+    border-bottom: var(--stroke-hairline) solid var(--border-subtle);
+  }
+  .sp-frame__head > * {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  /* Footer Links (4015:750) at the foot of the page, 24 under the content.
+     On a scrolling page that 24 is the content's own bottom padding. A
+     page that scrolls its own region takes it as a margin. */
+  .sp-frame__foot {
+    flex: none;
+    padding: 0 var(--space-32) var(--space-16);
+  }
+  .sp-frame[data-kind="self"] .sp-frame__foot {
+    margin-top: var(--space-24);
+  }
+  .sp-frame__body {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-height: 0;
+  }
+  /* Three classes, so a page's own `.sp-page.sp-x` padding or height loses
+     to the frame's at this width. Generate's thread and History reach
+     into the gutters by --page-pad. Positioned, so an absolute child (a
+     screen-reader-only label) anchors to the content. */
+  .sp-frame .sp-frame__body > .sp-page {
+    --page-pad: var(--space-32);
+    position: relative;
+    flex: 1 1 auto;
+    box-sizing: border-box;
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0 var(--space-32) var(--space-24);
+  }
+  .sp-frame[data-head] .sp-frame__body > .sp-page {
+    padding-top: var(--space-24);
+  }
+  .sp-frame[data-kind="scroll"] .sp-frame__body > .sp-page {
+    flex: 1 0 auto;
+  }
+  .sp-frame[data-kind="self"] .sp-frame__body > .sp-page {
+    padding-bottom: 0;
+  }
+  /* A page that scrolls its own region and sets its own links (the fill
+     page, Generate beside its inline editor) keeps the 16 Main used to
+     hold under it, so its panel never meets the window's edge. */
+  .sp-frame[data-kind="self"]:not([data-foot]) .sp-frame__body > .sp-page {
+    padding-bottom: var(--space-16);
+  }
+  .sp-frame[data-kind="bare"] .sp-frame__body > .sp-page {
+    padding: 0;
+  }
+}
+
+/* ── Settings › Workspace, Workspaces (6095:1240): rows 60 tall, divided
+   with 8 either side of the rule. ── */
 .sp-workspaces {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .sp-workspaces__row {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-xs) 0;
-  color: var(--text-strong);
+  gap: var(--space-12);
+  min-height: 60px; /* as drawn */
+  padding: var(--space-12) 0;
+  color: var(--text-primary);
 }
 .sp-workspaces__row + .sp-workspaces__row {
-  border-top: 1px solid var(--border-default);
+  position: relative;
+  margin-top: calc(2 * var(--space-8) + var(--stroke-hairline));
+}
+.sp-workspaces__row + .sp-workspaces__row::before {
+  content: "";
+  position: absolute;
+  top: calc(-1 * (var(--space-8) + var(--stroke-hairline)));
+  right: 0;
+  left: 0;
+  height: var(--stroke-hairline);
+  background: var(--border-subtle);
 }
 .sp-workspaces__text {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px; /* as drawn (13:14707) */
+  gap: var(--space-8);
 }
 .sp-workspaces__text > :first-child {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-block: 0.3em; /* the ellipsis needs the line box the trim removes */
+  margin-block: -0.3em;
 }
 .sp-workspaces__meta {
   color: var(--text-secondary);
 }
 
-/* ── Sidebar (56:646; collapsed 189:2151, 189:2415) ─────────────────────────
-   A floating panel inset 10 from the viewport's top, left and bottom (none
-   on the right: the page column starts at its edge), sticky to the
-   viewport. Expanded it is 325 wide; collapsed, a 76 rail. */
-.sp-shell-sidebar {
-  box-sizing: border-box;
+/* ── The lockup and the marks (CJ's update in the Sidebar, 6243:8529;
+   the collapsed rail's mark, 6112:44073; the earlier mark, 61:467) ──
+   The lockup and its mark are drawn on currentColor in logo/ink, so they
+   are near-black on Light and off-white on Dark, and a nested
+   [data-theme] (the Light gate) recomputes it. The earlier mark alone
+   takes text/secondary from the theme it sits in. */
+.sp-brand-lockup {
+  display: block;
   flex: none;
-  width: 335px;
-  padding: 10px 0 10px 10px; /* the frame's inset, as drawn (56:76) */
+  color: var(--logo-ink);
 }
-.sp-shell-sidebar[data-collapsed] {
-  width: 86px;
+.sp-brand-lockup > svg,
+.sp-brand-lockup-mark {
+  display: block;
+}
+.sp-brand-lockup-mark {
+  flex: none;
+  color: var(--logo-ink);
+}
+.sp-brand-mark {
+  display: block;
+  flex: none;
+  color: var(--text-secondary);
+}
+
+/* ── Sidebar (2218:679; open 2218:577, collapsed 2218:633) ──────────────────
+   The frame's first part, flush against the window: 300 wide plus a
+   border/raised hairline on its right (301 in all), or a 76 rail with its
+   edge, as tall as the frame, on surface/shell. Its other edges are
+   stroke/shell-edge (0), its corners radius/shell (0), and it casts no
+   shadow. 20 around and 24 between its header, nav and account. */
+.sp-shell-sidebar {
+  display: flex;
+  flex: none;
 }
 .sp-shell-panel {
   box-sizing: border-box;
-  position: sticky;
-  top: 10px;
-  z-index: 30;
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
-  width: 325px;
-  /* --dev-banner-h: the local backend's warning bar (DevBackendBanner),
-     which the panel stops above; unset everywhere else. */
-  height: calc(100vh - 20px - var(--dev-banner-h, 0px));
-  padding: 20px; /* as drawn (56:77) */
-  border-radius: var(--radius-card);
-  background: var(--surface-raised);
-  box-shadow: var(--elevation-small);
-  color: var(--text-strong);
+  gap: var(--space-24);
+  width: calc(300px + var(--stroke-hairline));
+  height: 100%;
+  padding: var(--space-20);
+  border: var(--stroke-shell-edge) solid var(--border-raised);
+  border-right-width: var(--stroke-hairline);
+  border-radius: var(--radius-shell);
+  background: var(--surface-shell);
+  color: var(--text-primary);
 }
 .sp-shell-sidebar[data-collapsed] .sp-shell-panel {
   width: 76px;
-  padding: 20px var(--space-sm);
-  align-items: center;
 }
+/* The header row (2218:578), 28 tall: the lockup 24 tall, then the theme
+   toggle and Collapse (Outline Small) 8 apart. Collapsed (2218:634):
+   Expand (Ghost Medium) alone, centred, under the mark. */
 .sp-shell-panel__header {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: space-between;
-  min-height: 32px;
+  gap: var(--space-8);
+  height: var(--size-control-sm);
 }
 .sp-shell-sidebar[data-collapsed] .sp-shell-panel__header {
   justify-content: center;
+  height: var(--size-control-md);
 }
 .sp-shell-panel__utility {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-8);
 }
-.sp-shell-logo,
-.sp-shell-mark {
+.sp-shell-logo {
   display: inline-flex;
   padding: 0;
   border: 0;
+  border-radius: var(--radius-xs);
   background: transparent;
+  color: inherit;
   cursor: pointer;
 }
+/* Collapsed, the mark (21.16 square in the rail) sits centred over
+   Expand, in a 24 hit area. */
+.sp-shell-logo--mark {
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size-control-xs);
+  min-height: var(--size-control-xs);
+}
 
-/* The nav takes the free height and scrolls on short viewports, so the
-   account stays reachable. The 4px of padding keeps the rows' 2px-out
-   focus rings inside the scroll box. */
+/* The nav (2218:588): Nav Items 36 tall, 4 apart. It takes the free height
+   and scrolls on short viewports, so the account stays reachable; its 4 of
+   padding keeps the rows' 2px-out focus rings inside the scroll box.
+   Collapsed, each item fills the rail's 34 (2218:641). */
 .sp-shell-nav {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px; /* as drawn (56:98) */
-  margin: calc(-1 * var(--space-3xs));
-  padding: var(--space-3xs);
+  gap: var(--space-4);
+  margin: calc(-1 * var(--space-4));
+  padding: var(--space-4);
   overflow-y: auto;
 }
-.sp-shell-sidebar[data-collapsed] .sp-shell-nav {
-  align-items: center;
+.sp-shell-sidebar[data-collapsed] .sp-shell-nav .ui-nav-item {
+  width: 100%;
 }
 
-/* ── Account (56:1330; stacked in the collapsed rail, 189:2493) ── */
+/* ── Account (2218:620; the collapsed rail's avatar alone, 2218:673) ──
+   The avatar, the name (Label/M) over the email (Caption/M) 8 apart, and
+   Settings, 12 apart. Collapsed, the avatar is the Settings button. */
 .sp-shell-account {
   display: flex;
+  flex: none;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-12);
   min-width: 0;
 }
 .sp-shell-account[data-collapsed] {
-  flex-direction: column;
-  gap: var(--space-2xs);
+  justify-content: center;
 }
 .sp-shell-account__text {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: var(--space-8);
 }
+/* One line each. The text is trimmed to its capitals, so the clip box is
+   widened past the descenders without moving the line. */
 .sp-shell-account__text > * {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+}
+.sp-shell-account__name {
+  color: var(--text-primary);
 }
 .sp-shell-account__detail {
   color: var(--text-secondary);
 }
-
-/* ── Page header and page column (every screen; Part A §3) ──
-   The title alone (Title/Page) with the actions right, 36 tall, 24 above
-   the first content. */
-.sp-shell-pagehead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  min-height: 36px;
-  margin-bottom: var(--space-md);
-  color: var(--text-strong);
-}
-.sp-shell-pagehead > h1 {
-  margin: 0;
-  min-width: 0;
-}
-/* The breadcrumb in place of a title (156:748): 8 apart, Label/M; earlier
-   crumbs are links on text/secondary, the page itself on text/strong. */
-.sp-shell-crumbs {
-  min-width: 0;
-}
-.sp-shell-crumbs > ol {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2xs);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.sp-shell-crumbs li {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  min-width: 0;
-}
-.sp-shell-crumbs__sep,
-.sp-shell-crumbs__link {
-  color: var(--text-secondary);
-}
-.sp-shell-crumbs__link {
-  border-radius: var(--radius-control);
+.sp-shell-account__settings {
+  display: inline-flex;
+  border-radius: var(--radius-full);
   cursor: pointer;
 }
-.sp-shell-crumbs__link:hover {
-  color: var(--text-strong);
+/* Selected while Settings shows, as the open row's Settings button is. The
+   avatar fills the button, so no ground can show behind it: a border/strong
+   ring sits 2 out from it on the sidebar's ground instead, under the focus
+   ring's place. */
+.sp-shell-account__settings[aria-current="page"] {
+  box-shadow:
+    0 0 0 var(--space-2) var(--surface-shell),
+    0 0 0 var(--space-4) var(--border-strong);
 }
-.sp-shell-crumbs__current {
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-strong);
+
+/* ── The mobile bar (below 1024; no frame draws it) ──
+   The lockup, the theme toggle and the menu button in a 56 row, sticky
+   at the top, with the nav dropping down from under it over a scrim. At
+   rest it wears a frosted fade over the page (constant rather than
+   scroll-gated: on bare page it is invisible). The ramp is in px, solid
+   until 32 from the skirt's end, because the bar's height moves with the
+   safe-area inset. Open, the panel takes surface/raised and its hairline
+   and drops the fade. */
+.sp-mobilebar {
+  position: sticky;
+  top: 0;
+  z-index: 200; /* the drawer layer, as socialpaint.css's --z-drawer */
+  width: 100%;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  border-bottom: var(--stroke-hairline) solid transparent;
+  background: transparent;
 }
-.sp-shell-pagehead__actions {
+.sp-mobilebar::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -28px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--surface-page) calc(100% - 32px), transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to bottom, black calc(100% - 32px), transparent);
+}
+.sp-mobilebar[data-menu-open] {
+  background: var(--surface-raised);
+  border-bottom-color: var(--border-subtle);
+}
+.sp-mobilebar[data-menu-open]::before {
+  content: none;
+}
+/* One layer under the bar, so the open menu's scrim covers the page's
+   sticky chrome (the filter bar's 100, --z-sticky) too. */
+.sp-mobilebar__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+  background: var(--surface-scrim);
+}
+.sp-mobilebar__row {
   display: flex;
-  flex-shrink: 0;
   align-items: center;
-  gap: var(--space-2xs);
+  justify-content: space-between;
+  height: 56px;
+  padding-inline: var(--space-16);
 }
-/* At desktop width the page column starts 45 from the sidebar's edge and
-   45 from the top, as every frame draws it (13:5776; off the scale, kept as
-   drawn). Scoped to the page, so the pre-app shell's --page-pad is
-   untouched; the page's full-bleed bars read the same value. The narrower
-   tiers (32, 24, 16) stay as they are. */
-@media (min-width: 1280px) {
-  .sp-page {
-    --page-pad: 45px;
-    padding-top: 45px;
-  }
+.sp-mobilebar__end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+/* The menu button holds the 44 touch floor. */
+.sp-mobilebar__toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-control-lg);
+  height: var(--size-control-lg);
+  padding: 0;
+  border: var(--stroke-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+/* The drop-down: rows 0fr to 1fr. Shut, the nav is held visible until the
+   collapse finishes, and hidden at once on the way open. */
+.sp-mobilebar__drawer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--motion-duration-base) var(--motion-easing-standard);
+}
+.sp-mobilebar__drawer[data-open] {
+  grid-template-rows: 1fr;
+}
+.sp-mobilebar__clip {
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear var(--motion-duration-base);
+}
+.sp-mobilebar__drawer[data-open] .sp-mobilebar__clip {
+  visibility: visible;
+  transition: visibility 0s;
+}
+/* dvh, not vh: mobile browser chrome shrinks the visual viewport, and the
+   last nav item must stay reachable under the bar and the notch inset. */
+.sp-mobilebar__nav {
+  max-height: calc(100dvh - 72px - env(safe-area-inset-top, 0px));
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-12) var(--space-12);
+}
+.sp-mobilebar__account {
+  margin-top: var(--space-12);
+  padding-top: var(--space-12);
+  border-top: var(--stroke-hairline) solid var(--border-subtle);
 }
 
 /* ── Settings: the rail (8:678) and the section column ──
@@ -218,7 +541,7 @@
 .sp-shell-settings {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-24);
 }
 .sp-shell-settings__rail {
   display: flex;
@@ -233,7 +556,7 @@
   .sp-shell-settings {
     flex-direction: row;
     align-items: flex-start;
-    gap: var(--space-lg);
+    gap: var(--space-32);
   }
   .sp-shell-settings__rail {
     flex: none;

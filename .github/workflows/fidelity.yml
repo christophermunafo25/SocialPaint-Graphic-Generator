@@ -1,8 +1,8 @@
 # Render fidelity (docs/brand-system/PHASE-0.md, Step 6): every fixture in
 # test/fidelity/fixtures rendered through the real export path in Chromium,
-# Firefox and WebKit and compared with its golden. Fails when a fixture gets
-# worse than its approved baseline, errors, or changes size. Kept out of
-# `npm run verify` so verify stays fast; see docs/CI.md.
+# Firefox, WebKit and an older WebKit, and compared with its golden. Fails
+# when a fixture gets worse than its approved baseline, errors, or changes
+# size. Kept out of `npm run verify` so verify stays fast; see docs/CI.md.
 name: Fidelity
 
 on:
@@ -29,7 +29,9 @@ jobs:
     # The baselines were recorded on macOS. Text rasterizes differently on
     # Linux, so a Linux runner would report glyph edges as regressions.
     runs-on: macos-latest
-    timeout-minutes: 20
+    # It was 20 with three engines, when the job took 5 to 10 minutes. The
+    # fourth adds about 2.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
 
@@ -44,7 +46,16 @@ jobs:
       - name: Browser engines
         run: npx playwright install --with-deps chromium firefox webkit
 
-      # Starter fixtures load Google Fonts, so the run needs network access.
+      # The fourth engine: an older WebKit that draws as Safari before 26
+      # does. It has an install of its own, because the old Playwright's
+      # stalls under Node 26 (scripts/fidelity/webkit18.mjs). The limit
+      # keeps a download that hangs from using up the job.
+      - name: WebKit 18.5
+        timeout-minutes: 3
+        run: node scripts/fidelity/webkit18.mjs install
+
+      # Google's fonts come from the recording in test/fidelity/google-fonts,
+      # so the run asks Google for nothing.
       - name: Render and compare
         run: node scripts/fidelity/fidelity.mjs run
 

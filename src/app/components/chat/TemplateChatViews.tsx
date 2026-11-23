@@ -1,4 +1,5 @@
 import React, { memo, useCallback, useId, useMemo, useRef } from "react";
+import { Plus } from "lucide-react";
 import type { TemplateSchema } from "@/lib/types";
 import type { AssistantTurn, ChatDraft, ChatPhoto } from "@/lib/generate/chat";
 import { isRunningTurn } from "@/lib/generate/chatReducer";
@@ -7,8 +8,16 @@ import { PHOTO_ANSWER, type InterviewStep } from "@/lib/generate/interview";
 import { progressLabel, provenanceSentence } from "@/lib/generate/runCopy";
 import { defaultVariant, hasVariants } from "@/lib/templates/variants";
 import { TemplateThumbnail } from "../TemplateThumbnail";
-import { Button, Chip, LookTile, Progress, ResultCard, Tag } from "../primitives";
-import { CaptionCard } from "./CaptionCard";
+import {
+  Button,
+  Chip,
+  VariationTile,
+  Progress,
+  ResultCard,
+  ResultCardArt,
+  ResultCardSkeleton,
+  Tag,
+} from "../primitives";
 import { AssistantMessage, MessageBubble, UserMessage } from "./Messages";
 
 /** The result card's preview height (13:7871): 264, the width following
@@ -24,7 +33,7 @@ function Answer({ children, note }: { children: React.ReactNode; note?: React.Re
   return (
     <div className="sp-tchat-user">
       <MessageBubble>{children}</MessageBubble>
-      {note && <p className="t-caption-s sp-tchat-user__note">{note}</p>}
+      {note && <p className="tu-caption-m sp-tchat-user__note">{note}</p>}
     </div>
   );
 }
@@ -36,7 +45,7 @@ function PhotoAnswer({ photo, note }: { photo?: string | null; note?: React.Reac
   return (
     <div className="sp-tchat-user">
       <img src={photo} alt="Attached photo" className="sp-tchat-user__photo" />
-      {note && <p className="t-caption-s sp-tchat-user__note">{note}</p>}
+      {note && <p className="tu-caption-m sp-tchat-user__note">{note}</p>}
     </div>
   );
 }
@@ -157,7 +166,7 @@ export function TemplateInterviewLive({
       <div className="sp-tchat-ask" aria-live="polite">
         {question && <AssistantMessage mark={false} message={question} />}
         {error && (
-          <p className="t-caption-s sp-tchat-ask__error" role="alert">
+          <p className="tu-caption-m sp-tchat-ask__error" role="alert">
             {error}
           </p>
         )}
@@ -199,7 +208,7 @@ export interface TemplateTurnHandlers {
   onRetry(turnId: string): void;
 }
 
-/** The Look picker card (13:7899): the draft in each look as Look tiles on
+/** The Look picker card (13:7899): the draft in each look as Variation Tiles on
  * a sunken well, then "Look" and the chosen look's name. A radio group;
  * the arrows move the choice. Switching is instant and never calls the
  * model. */
@@ -243,7 +252,7 @@ function LookCard({
         {looks.map((v) => {
           const on = v.id === selected;
           return (
-            <LookTile
+            <VariationTile
               key={v.id}
               ref={(el) => {
                 if (el) refs.current.set(v.id, el);
@@ -274,46 +283,32 @@ function LookCard({
         })}
       </div>
       <div className="sp-tchat-looks__meta">
-        <span id={titleId} className="t-label-l">
+        <span id={titleId} className="tu-label-m">
           Look
         </span>
-        <span className="t-caption-s sp-tchat-looks__name">{name}</span>
+        <span className="tu-caption-m sp-tchat-looks__name">{name}</span>
       </div>
     </div>
   );
 }
 
-/** The result, the Looks card and the caption while the draft builds
- * (13:7358): their shapes in sunken bones. Decoration only; the status
- * sentence carries the progress. */
+/** The Result card and the Looks card while the draft builds: the card's
+ * Loading state (one draft, so no switch) and the Looks card's shape.
+ * Decoration only; the status sentence carries the progress. */
 function BuildingSkeleton({ template }: { template: TemplateSchema }) {
-  const width = Math.round(PREVIEW_H * (template.canvasWidth / template.canvasHeight));
   const looks = template.variants?.length ?? 0;
   return (
-    <>
-      <div className="sp-tchat-results" aria-hidden>
-        <div className="ui-result-card sp-tchat-skeleton" style={{ width: width + 16 }}>
+    <div className="sp-tchat-results" aria-hidden>
+      <ResultCardSkeleton withSizes={false} />
+      {looks > 1 && (
+        <div className="sp-tchat-looks sp-tchat-skeleton">
           <span className="sp-tchat-skeleton__preview" style={{ height: PREVIEW_H }} />
           <span className="sp-tchat-skeleton__meta">
-            <span className="sp-tchat-skeleton__bar" style={{ width: 90 }} />
-            <span className="sp-tchat-skeleton__bar" style={{ width: 130, height: 8 }} />
+            <span className="sp-tchat-skeleton__bar" style={{ width: 56 }} />
           </span>
         </div>
-        {looks > 1 && (
-          <div className="sp-tchat-looks sp-tchat-skeleton">
-            <span className="sp-tchat-skeleton__preview" style={{ height: PREVIEW_H }} />
-            <span className="sp-tchat-skeleton__meta">
-              <span className="sp-tchat-skeleton__bar" style={{ width: 56 }} />
-            </span>
-          </div>
-        )}
-      </div>
-      <div className="sp-tchat-caption sp-tchat-skeleton" aria-hidden>
-        <span className="sp-tchat-skeleton__bar" style={{ width: 56 }} />
-        <span className="sp-tchat-skeleton__bar" style={{ width: "100%", height: 12 }} />
-        <span className="sp-tchat-skeleton__bar" style={{ width: "50%", height: 12 }} />
-      </div>
-    </>
+      )}
+    </div>
   );
 }
 
@@ -334,16 +329,27 @@ export const TemplateTurn = memo(function TemplateTurn({
   photo,
   canRetry,
   busyDraftId,
+  downloadedCount,
   handlers,
 }: {
   turn: AssistantTurn;
   photo: ChatPhoto | null;
   canRetry: boolean;
   busyDraftId: string | null;
+  /** Finished downloads of this turn's drafts, for the card's check. */
+  downloadedCount?: number;
   handlers: TemplateTurnHandlers;
 }) {
   const statusId = useId();
   const running = isRunningTurn(turn);
+  // The card arrives (PROMPT.md section 7.6) only for a run this view saw
+  // finish: a revisit or a reload shows the art at once.
+  const sawRun = useRef(running);
+  if (running) sawRun.current = true;
+  // A template chat's card mounts as soon as its draft resolves, while the
+  // run is still going, so the card arrives when the view saw the run at
+  // all.
+  const arrive = sawRun.current;
   const draft = turn.drafts[0] as ChatDraft | undefined;
   const values = useMemo(() => (draft ? previewValues(draft, photo) : {}), [draft, photo]);
   const entries = useMemo(() => (draft ? fillInEntries(draft, values) : []), [draft, values]);
@@ -372,12 +378,13 @@ export const TemplateTurn = memo(function TemplateTurn({
 
       {draft && entries.length > 0 && (
         <div className="sp-tchat-fillin">
-          <span className="t-caption-m sp-tchat-fillin__label">Fill in</span>
+          <span className="tu-body-s sp-tchat-fillin__label">Fill in</span>
           <ul className="sp-tchat-fillin__tags" aria-label="Fill in">
             {entries.map((e) => (
               <li key={e.fieldKey}>
                 <Tag
-                  kind="missing"
+                  kind="outline"
+                  icon={Plus}
                   aria-label={`Add ${e.label}${e.optional ? " (optional)" : ""}`}
                   onClick={() => handlers.onFillIn(turn.id, draft.id, e.fieldKey)}
                 >
@@ -392,32 +399,39 @@ export const TemplateTurn = memo(function TemplateTurn({
       {draft && (
         <div className="sp-tchat-results">
           <ResultCard
-            title={draftName(draft)}
             meta={`${draft.canvas.width} × ${draft.canvas.height}`}
-            previewStyle={{
-              width: Math.round(PREVIEW_H * (draft.canvas.width / draft.canvas.height)) + 16,
-            }}
-            preview={
-              <span className="sp-tchat-preview" style={{ height: PREVIEW_H }}>
-                {schema ? (
+            art={
+              schema ? (
+                <ResultCardArt ratio={schema.canvasWidth / schema.canvasHeight}>
                   <TemplateThumbnail
                     template={schema}
                     values={values}
                     variantId={draft.variantId}
                     emptyFields="chat"
                   />
-                ) : (
-                  <span className="t-caption-s">{draftName(draft)} is no longer available.</span>
-                )}
-              </span>
+                </ResultCardArt>
+              ) : (
+                <span className="t-caption-m sp-gen-result__gone">
+                  {draftName(draft)} is no longer available.
+                </span>
+              )
             }
             onEdit={schema ? () => handlers.onEditDraft(turn.id, draft.id) : undefined}
             editLabel={`Edit ${draftName(draft)}`}
             editRef={previewRef}
-            onDownload={schema ? () => handlers.onDownloadDraft(turn.id, draft.id) : undefined}
-            downloadLabel={`Download ${draftName(draft)}`}
-            downloadBusy={busyDraftId === draft.id}
-            className="sp-tchat-result"
+            downloadedKey={downloadedCount}
+            arrive={arrive}
+            caption={running ? "" : caption}
+            downloadAll={
+              schema
+                ? {
+                    label: "Download",
+                    onClick: () => handlers.onDownloadDraft(turn.id, draft.id),
+                    busy: busyDraftId === draft.id,
+                  }
+                : undefined
+            }
+            description={description}
           />
           {schema && hasVariants(schema) && (
             <LookCard
@@ -426,26 +440,23 @@ export const TemplateTurn = memo(function TemplateTurn({
               onPick={(variantId) => handlers.onChangeLook(turn.id, draft.id, variantId)}
             />
           )}
-          {description && <span className="sr-only">{description}</span>}
         </div>
       )}
 
       {!running && turn.warnings.length > 0 && (
         <div className="sp-tchat-warnings">
           {turn.warnings.map((w, i) => (
-            <p key={i} className="t-caption-s">
+            <p key={i} className="tu-caption-m">
               {w}
             </p>
           ))}
         </div>
       )}
 
-      {draft && !running && caption && <CaptionCard caption={caption} />}
-
       {turn.phase === "error" && (
         <div>
           <Button
-            kind="neutralOnPage"
+            kind="neutral"
             size="sm"
             disabled={!canRetry}
             onClick={() => handlers.onRetry(turn.id)}

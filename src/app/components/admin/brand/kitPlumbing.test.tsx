@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import type { BrandKit } from "@/lib/types";
-import { useBrandDraft } from "./kitPlumbing";
+import { kitShape, useBrandDraft } from "./kitPlumbing";
 import { useInPlaceEdit } from "./primitives/useInPlaceEdit";
 
 const KIT: BrandKit = {
@@ -74,5 +74,16 @@ describe("useBrandDraft (PHASE-6 §9)", () => {
     expect(result.current.brand.draft.primaryLogoAssetId).toBe("logo-b");
     expect(result.current.brand.draft.primaryLogoDarkAssetId).toBe("logo-b");
     expect(result.current.brand.draft.allowOffPalette).toBe(true);
+  });
+});
+
+describe("kitShape and the design system", () => {
+  it("carries the system through every autosave", () => {
+    const system = { version: 1 as const, color: { roles: { inkOnLight: "primary" } } };
+    expect(kitShape({ ...KIT, system }).system).toEqual(system);
+  });
+
+  it("adds no system to a kit that has none", () => {
+    expect("system" in kitShape(KIT)).toBe(false);
   });
 });

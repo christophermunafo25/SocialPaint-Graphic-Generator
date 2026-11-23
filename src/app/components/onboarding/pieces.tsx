@@ -47,17 +47,17 @@ export function Question({
     <div className="sp-onb-question">
       {label &&
         (htmlFor ? (
-          <label id={labelId} htmlFor={htmlFor} className="t-label-l">
+          <label id={labelId} htmlFor={htmlFor} className="t-label-m">
             {label}
           </label>
         ) : (
-          <p id={labelId} className="t-label-l">
+          <p id={labelId} className="t-label-m">
             {label}
           </p>
         ))}
       {children}
       {error && (
-        <p id={errorId} className="t-caption-s sp-onb-question__error">
+        <p id={errorId} className="t-caption-m sp-onb-question__error">
           {error}
         </p>
       )}
@@ -170,7 +170,7 @@ export function WorkspacePreview({ state }: { state: PreviewState }) {
       <PreviewRow eyebrow="You">
         {person ? (
           <Lead
-            lead={<Avatar initials={initials(person.name)} size="lg" />}
+            lead={<Avatar initials={initials(person.name)} />}
             name={person.name}
             detail={person.detail}
           />
@@ -220,7 +220,7 @@ export function WorkspacePreview({ state }: { state: PreviewState }) {
               ),
           )}
           {brand?.font && (
-            <span className="t-caption-s sp-onb-muted sp-onb-preview__font">{brand.font}</span>
+            <span className="t-caption-m sp-onb-muted sp-onb-preview__font">{brand.font}</span>
           )}
         </div>
       </PreviewRow>
@@ -256,7 +256,7 @@ function Lead({ lead, name, detail }: { lead: React.ReactNode; name: string; det
       {lead}
       <span className="sp-onb-preview__lead-text">
         <span className="t-label-m">{name}</span>
-        {detail && <span className="t-caption-s sp-onb-muted">{detail}</span>}
+        {detail && <span className="t-caption-m sp-onb-muted">{detail}</span>}
       </span>
     </div>
   );

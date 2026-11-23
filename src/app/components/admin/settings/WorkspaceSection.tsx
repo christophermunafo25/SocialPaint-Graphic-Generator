@@ -31,7 +31,7 @@ export function WorkspaceSection() {
   return (
     <div className="sp-st-section">
       {error && (
-        <p role="alert" className="t-body-s sp-st-error">
+        <p role="alert" className="t-body-m sp-st-error">
           {error}
         </p>
       )}
@@ -284,7 +284,6 @@ function TimezoneField({ onError }: { onError(msg: string | null): void }) {
     <Field label="Timezone">
       <Select
         ariaLabel="Timezone"
-        size="lg"
         value={zones.includes(current) ? current : "UTC"}
         options={zones.map((z) => ({ value: z, label: z }))}
         onSelect={(z) => void save(z)}

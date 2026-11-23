@@ -1,0 +1,99 @@
+import { useEffect, type RefObject } from "react";
+
+/** How far an arrow key moves the content. */
+const LINE = 40;
+const FIELD = "input, textarea, select, [contenteditable]:not([contenteditable='false'])";
+
+/** Whether a region between `from` and the app shell, other than the page
+ * frame, scrolls on its own: the sidebar's nav on a short window, or a
+ * list inside the content. The browser scrolls that region itself. */
+function inOwnScroller(from: Element, content: HTMLElement): boolean {
+  for (let node: Element | null = from; node; node = node.parentElement) {
+    if (node === content || node.classList.contains("sp-appshell")) return false;
+    const { overflowY } = getComputedStyle(node);
+    if ((overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** The keys that scroll a page, for the page frame when nothing in it has
+ * focus. At 1024 and wider the frame scrolls (layout/Page.tsx) and the
+ * document does not, so Page Down on the page itself or in the sidebar
+ * would move nothing. This hands the key to the frame, the way the
+ * document took it before.
+ *
+ * Left alone: a key from inside the frame (the browser scrolls it), from
+ * a field, or from anything outside the app shell (a dialog, a menu or a
+ * popover in a portal); a key from inside a region that scrolls on its own,
+ * or, with nothing focused, after a click into one; a key a handler already
+ * took; any key held with Alt, Control or Meta, and Shift with anything but
+ * Space. Space scrolls only from the page itself, since on a control it
+ * presses the control. Below 1024 the frame does not scroll and the
+ * browser keeps the key. The jump is instant, as reduced motion wants it
+ * anyway. */
+export function useFrameKeys(ref: RefObject<HTMLElement | null>, active: boolean): void {
+  useEffect(() => {
+    if (!active) return;
+    // With nothing focused the browser scrolls what was last clicked, so a
+    // key from the page itself starts where the pointer last went down.
+    let pressed: Element | null = null;
+    const onPointer = (e: PointerEvent) => {
+      pressed = e.target instanceof Element ? e.target : null;
+    };
+    const onKey = (e: KeyboardEvent) => {
+      const el = ref.current;
+      if (!el || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.shiftKey && e.key !== " ") return;
+      const target = e.target instanceof Element ? e.target : null;
+      const onPage = !target || target === document.body || target === document.documentElement;
+      if (target && !onPage) {
+        if (!target.closest(".sp-appshell") || el.contains(target) || target.closest(FIELD)) {
+          return;
+        }
+      }
+      const origin = onPage ? (pressed?.isConnected ? pressed : null) : target;
+      if (origin && inOwnScroller(origin, el)) return;
+      const page = Math.max(el.clientHeight - LINE, LINE);
+      let delta: number;
+      switch (e.key) {
+        case "PageDown":
+          delta = page;
+          break;
+        case "PageUp":
+          delta = -page;
+          break;
+        case "ArrowDown":
+          delta = LINE;
+          break;
+        case "ArrowUp":
+          delta = -LINE;
+          break;
+        case "Home":
+          delta = -el.scrollHeight;
+          break;
+        case "End":
+          delta = el.scrollHeight;
+          break;
+        case " ":
+          if (!onPage) return;
+          delta = e.shiftKey ? -page : page;
+          break;
+        default:
+          return;
+      }
+      const { overflowY } = getComputedStyle(el);
+      if (overflowY !== "auto" && overflowY !== "scroll") return;
+      if (el.scrollHeight <= el.clientHeight) return;
+      e.preventDefault();
+      el.scrollTop += delta;
+    };
+    document.addEventListener("pointerdown", onPointer, true);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer, true);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [ref, active]);
+}

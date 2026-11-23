@@ -130,7 +130,7 @@ function TransferCard({ onError }: { onError: OnError }) {
           no real accounts.
         </DevBackendNotice>
       ) : membersState.status === "ready" && others.length === 0 ? (
-        <p className="t-body-s sp-st-empty">
+        <p className="t-body-m sp-st-empty">
           There is nobody to transfer to because you are the only member. Invite someone in People
           first.
         </p>
@@ -138,7 +138,6 @@ function TransferCard({ onError }: { onError: OnError }) {
         <div className="sp-st-transfer">
           <Select
             ariaLabel="Transfer ownership to"
-            size="lg"
             placeholder="Choose a member…"
             value={targetId || undefined}
             options={others.map((m) => ({ value: m.userId, label: who(m) }))}

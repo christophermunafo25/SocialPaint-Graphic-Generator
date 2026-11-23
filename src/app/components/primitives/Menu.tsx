@@ -1,13 +1,15 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Check, ChevronRight } from "lucide-react";
+import { Check, ChevronRight, Ellipsis } from "lucide-react";
 import { cx, type DemoStateAttr, type IconComponent } from "./cx";
-import { RowMenuTrigger } from "./IconButton";
+import { IconButton } from "./IconButton";
+import { trackInputModality } from "./inputModality";
 
 export interface MenuProps {
-  /** The control that opens it (a RowMenuTrigger, an AttachButton, a
-   * Filter). It gets aria-haspopup and aria-expanded from Radix. */
+  /** The control that opens it (an IconButton, a Button). It gets
+   * aria-haspopup and aria-expanded from Radix, and holds its selected look
+   * while the menu is open. */
   trigger: React.ReactElement;
   children: React.ReactNode;
   align?: "start" | "center" | "end";
@@ -19,9 +21,10 @@ export interface MenuProps {
   "aria-label"?: string;
 }
 
-/** Menu (Figma 57:423) on Radix dropdown-menu: Enter, Space or ArrowDown
- * open it, the arrows move (focus is the hover look), Escape closes it and
- * hands focus back to the trigger. */
+/** Menu (Figma 2213:159) on Radix dropdown-menu: Enter, Space or ArrowDown
+ * open it, the arrows move, Escape closes it and hands focus back to the
+ * trigger. The item under the pointer or the keyboard takes state/hover,
+ * and the keyboard's also takes the ring. */
 export function Menu({
   trigger,
   children,
@@ -32,6 +35,7 @@ export function Menu({
   minWidth,
   "aria-label": ariaLabel,
 }: MenuProps) {
+  useEffect(trackInputModality, []);
   return (
     <DropdownMenu.Root open={open} onOpenChange={onOpenChange} modal={false}>
       <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
@@ -66,9 +70,9 @@ export interface MenuItemContentProps {
 function MenuItemContent({ icon: Icon, children, meta, chevron, selected }: MenuItemContentProps) {
   return (
     <>
-      {Icon && <Icon size={18} className="ui-icon" aria-hidden />}
-      <span className="ui-menu-item__label t-body-s t-trim">{children}</span>
-      {meta && <span className="ui-menu-item__meta t-caption-s t-trim">{meta}</span>}
+      {Icon && <Icon size={16} className="ui-icon" aria-hidden />}
+      <span className="ui-menu-item__label t-body-m">{children}</span>
+      {meta && <span className="ui-menu-item__meta t-caption-m">{meta}</span>}
       {chevron && <ChevronRight size={16} className="ui-icon ui-menu-item__chevron" aria-hidden />}
       {selected && <Check size={16} className="ui-icon" aria-hidden />}
     </>
@@ -81,8 +85,9 @@ export interface MenuItemProps extends MenuItemContentProps {
   className?: string;
 }
 
-/** Menu item (Figma 96:507): 34 tall, hover and keyboard focus take
- * state/hover, the current choice state/selected with a check. */
+/** Menu item (Figma 2213:157): 36 tall in Body/M with a 16 icon. Hover
+ * and keyboard focus take state/hover, the keyboard's item also takes the
+ * ring, and the current choice state/selected with a check. */
 export function MenuItem({ onSelect, disabled, className, ...content }: MenuItemProps) {
   return (
     <DropdownMenu.Item
@@ -96,14 +101,14 @@ export function MenuItem({ onSelect, disabled, className, ...content }: MenuItem
   );
 }
 
-/** Menu label (Figma 57:419): a group's heading inside a menu. */
+/** A group's heading inside a menu, in Mono/Eyebrow. */
 export function MenuLabel({ children }: { children: React.ReactNode }) {
   return (
-    <DropdownMenu.Label className="ui-menu-label t-label-xs t-trim">{children}</DropdownMenu.Label>
+    <DropdownMenu.Label className="ui-menu-label t-mono-eyebrow">{children}</DropdownMenu.Label>
   );
 }
 
-/** Menu divider (Figma 57:421). */
+/** The hairline between a menu's groups. */
 export function MenuDivider() {
   return <DropdownMenu.Separator className="ui-menu-divider" />;
 }
@@ -121,13 +126,19 @@ export function MenuPanel({
 }
 export function MenuItemStatic({
   className,
+  disabled = false,
   "data-demo-state": demoState,
   ...content
-}: MenuItemContentProps & { className?: string; "data-demo-state"?: DemoStateAttr }) {
+}: MenuItemContentProps & {
+  className?: string;
+  disabled?: boolean;
+  "data-demo-state"?: DemoStateAttr;
+}) {
   return (
     <div
       className={cx("ui-menu-item", className)}
       data-selected={content.selected || undefined}
+      data-disabled={disabled ? "" : undefined}
       data-demo-state={demoState}
     >
       <MenuItemContent {...content} />
@@ -135,15 +146,20 @@ export function MenuItemStatic({
   );
 }
 export function MenuLabelStatic({ children }: { children: React.ReactNode }) {
-  return <div className="ui-menu-label t-label-xs t-trim">{children}</div>;
+  return <div className="ui-menu-label t-mono-eyebrow">{children}</div>;
+}
+export function MenuDividerStatic() {
+  return <div className="ui-menu-divider" />;
 }
 
 /** One action in a row's menu. `checked` present (true or false) makes it a
- * radio item with a check on the current one; `destructive` draws it in the
- * error red (an action Undo can't bring back, PHASE-6 §9 D6). */
+ * radio item with a check on the current one; `destructive` draws it in
+ * feedback/error-text (an action Undo can't bring back, PHASE-6 §9 D6). */
 export interface RowMenuAction {
   label: string;
   onSelect(): void;
+  /** A leading 16 icon (the Template Builder's row menu, 329:2206). */
+  icon?: IconComponent;
   disabled?: boolean;
   destructive?: boolean;
   checked?: boolean;
@@ -182,7 +198,7 @@ function RowMenuItems({
       {groups.map((g, gi) => (
         <React.Fragment key={gi}>
           {gi > 0 && <kit.Separator className="ui-menu-divider" />}
-          {g.label && <kit.Label className="ui-menu-label t-label-xs t-trim">{g.label}</kit.Label>}
+          {g.label && <kit.Label className="ui-menu-label t-mono-eyebrow">{g.label}</kit.Label>}
           {g.items.map((item) => (
             <kit.Item
               key={item.label}
@@ -200,7 +216,9 @@ function RowMenuItems({
                 item.onSelect();
               }}
             >
-              <MenuItemContent selected={item.checked}>{item.label}</MenuItemContent>
+              <MenuItemContent icon={item.icon} selected={item.checked}>
+                {item.label}
+              </MenuItemContent>
             </kit.Item>
           ))}
         </React.Fragment>
@@ -209,9 +227,10 @@ function RowMenuItems({
   );
 }
 
-/** A row's "More actions" menu (Row menu trigger 44:29 and Menu 57:423):
- * the ellipsis trigger, shown at rest, and its menu, aligned to the
- * trigger's end. Wrap the row in `RowContextMenu` with the same groups so
+/** A row's "More actions" menu: a ghost Small icon button with the
+ * ellipsis, shown at rest, and its menu, aligned to the trigger's end. The
+ * trigger holds its selected look while the menu is open, and keeps the
+ * .ui-rowmenu class as a hook for the rows that place or refocus it. Wrap the row in `RowContextMenu` with the same groups so
  * a right-click opens the same menu at the pointer (PHASE-6 §9 D7). */
 export function RowMenu({
   groups,
@@ -223,14 +242,22 @@ export function RowMenu({
   /** Names the trigger and the menu: "More actions for Montserrat". */
   label: string;
   className?: string;
-  /** The trigger at 40%, with no menu (the viewer's own row in People). */
+  /** The trigger disabled, with no menu (the viewer's own row in People). */
   disabled?: boolean;
 }) {
   const chosen = useRef<RowMenuAction | null>(null);
+  useEffect(trackInputModality, []);
   return (
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger asChild>
-        <RowMenuTrigger label={label} className={className} disabled={disabled} />
+        <IconButton
+          variant="ghost"
+          size="sm"
+          icon={Ellipsis}
+          label={label}
+          className={cx("ui-rowmenu", className)}
+          disabled={disabled}
+        />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content
@@ -267,6 +294,7 @@ export function RowContextMenu({
   disabled?: boolean;
 }) {
   const chosen = useRef<RowMenuAction | null>(null);
+  useEffect(trackInputModality, []);
   return (
     <ContextMenu.Root modal={false}>
       <ContextMenu.Trigger asChild disabled={disabled}>

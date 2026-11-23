@@ -175,7 +175,7 @@ describe("materializeStarter", () => {
       sourceKind: "starter",
       source: "starter",
       starterKey: "launch-01",
-      starterVersion: 1,
+      starterVersion: 2,
       seededAt: "2026-09-18T00:00:00.000Z",
     });
   });
@@ -249,7 +249,7 @@ describe("materializeStarter", () => {
   });
 
   it("ships Light as the default variant and Dark with only appearance keys", () => {
-    const appearance = new Set(["colorHex", "plateColor", "strokeColor"]);
+    const appearance = new Set(["colorHex", "plateColor", "strokeColor", "effects"]);
     for (const blueprint of STARTER_BLUEPRINTS) {
       const input = materializeStarter(blueprint, ctx());
       expect(input.variants).toHaveLength(2);
@@ -262,6 +262,40 @@ describe("materializeStarter", () => {
         for (const key of Object.keys(over)) {
           expect(appearance.has(key), `${blueprint.starterKey}:${fieldKey}:${key}`).toBe(true);
         }
+      }
+    }
+  });
+
+  it("bakes every effect color as hex, never a slot name", () => {
+    const hex = /^#[0-9A-F]{8}$/;
+    for (const blueprint of STARTER_BLUEPRINTS) {
+      const input = materializeStarter(blueprint, ctx());
+      const lists = [
+        input.canvasEffects,
+        ...input.fields.map((f) => f.effects),
+        ...input.variants!.flatMap((v) => [
+          v.canvasEffects,
+          ...Object.values(v.overrides).map((o) => o.effects),
+        ]),
+      ];
+      for (const e of lists.flat()) {
+        if (e && "color" in e) expect(e.color, blueprint.starterKey).toMatch(hex);
+      }
+    }
+  });
+
+  it("keeps shadows off in Dark and keeps the grain", () => {
+    for (const blueprint of STARTER_BLUEPRINTS) {
+      const input = materializeStarter(blueprint, ctx());
+      const dark = input.variants!.find((v) => v.id === "dark")!;
+      for (const f of input.fields) {
+        if (!f.effects?.some((e) => e.type === "dropShadow" && (e.x || e.y))) continue;
+        const darkFx = dark.overrides[f.fieldKey]?.effects;
+        expect(darkFx, `${blueprint.starterKey}:${f.fieldKey}`).toBeDefined();
+        expect(darkFx!.some((e) => e.type === "dropShadow" && (e.x || e.y))).toBe(false);
+      }
+      if (input.canvasEffects) {
+        expect((dark.canvasEffects ?? input.canvasEffects).map((e) => e.type)).toEqual(["noise"]);
       }
     }
   });

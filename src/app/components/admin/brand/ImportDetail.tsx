@@ -158,13 +158,13 @@ export function ImportDetail({ brand }: { brand: BrandDraft }) {
                   </Button>
                 </div>
                 {figmaError && (
-                  <p className="t-caption-s sp-bs-error-line" role="alert">
+                  <p className="t-caption-m sp-bs-error-line" role="alert">
                     {figmaError}
                   </p>
                 )}
               </>
             ) : (
-              <p className="t-body-s sp-bs-import__note">
+              <p className="t-body-m sp-bs-import__note">
                 <a
                   href={routeToUrl(settingsRoute)}
                   onClick={linkClick(settingsRoute)}
@@ -187,7 +187,7 @@ export function ImportDetail({ brand }: { brand: BrandDraft }) {
             data-active={tokensDrop.active}
             className="ui-tint sp-bs-import__choose"
           >
-            <span className="t-button-m">Choose tokens.json</span>
+            <span className="t-label-m">Choose tokens.json</span>
             <input
               type="file"
               accept=".json,application/json"
@@ -203,7 +203,7 @@ export function ImportDetail({ brand }: { brand: BrandDraft }) {
       </div>
 
       {error && (
-        <p className="t-caption-s sp-bs-error-line" role="alert">
+        <p className="t-caption-m sp-bs-error-line" role="alert">
           {error}
         </p>
       )}
@@ -232,11 +232,11 @@ export function ImportDetail({ brand }: { brand: BrandDraft }) {
             <a
               href={routeToUrl({ name: "brandStudio", category: "colors" })}
               onClick={linkClick({ name: "brandStudio", category: "colors" })}
-              className="ui-reset ui-tint ui-ring ui-btn"
+              className="ui-reset ui-fill ui-ring ui-btn"
               data-kind="neutral"
               data-size="md"
             >
-              <span className="t-button-m">View colors</span>
+              <span className="t-label-m">View colors</span>
             </a>
             <button
               type="button"

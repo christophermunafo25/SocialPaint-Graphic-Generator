@@ -1,8 +1,7 @@
-// How a chat draft reads on screen (PROMPT.md §7.14, §7.16, §9.9): the
-// values its preview paints, its name and caption, the labels on the
-// caption card's platform switch, the compact card's platform meta, and the
-// chat's fallback title. Pure, so the thread, the caption card and the
-// editor all derive these from one place and the rules are unit-tested.
+// How a chat draft reads on screen (PROMPT.md §7.14, §9.9): the values its
+// preview paints, its name and caption, its platform, and the chat's
+// fallback title. Pure, so the thread, the Result Card and the editor all
+// derive these from one place and the rules are unit-tested.
 //
 // A draft's platform is always its canvas's PRIMARY platform: the first
 // entry classifySize gives for the size. One size can serve several
@@ -144,31 +143,6 @@ export function tally(labels: string[]): Map<string, number> {
   return counts;
 }
 
-/** The caption card's platform switch (PROMPT.md §7.16): one segment per
- * draft, in the turn's order, labelled with the draft's platform
- * (platformById of its primary platform, so a custom size reads "General").
- * Drafts that share a platform go by their template names instead, and the
- * rest keep theirs. Two labels can still tie (the same template twice, or a
- * template named like another draft's platform); tied labels are then
- * numbered in order, "Now hiring 1" and "Now hiring 2", so every segment
- * reads differently. The card hides the switch for a single draft. */
-export function captionTabs(drafts: ChatDraft[]): Array<{ id: string; label: string }> {
-  const platforms = drafts.map((d) => platformById(primaryPlatformOf(d.canvas)).label);
-  const perPlatform = tally(platforms);
-  const named = drafts.map((d, i) =>
-    (perPlatform.get(platforms[i]) ?? 0) > 1 ? draftName(d) : platforms[i],
-  );
-  const perLabel = tally(named);
-  const seen = new Map<string, number>();
-  return drafts.map((d, i) => {
-    const label = named[i];
-    if ((perLabel.get(label) ?? 0) < 2) return { id: d.id, label };
-    const n = (seen.get(label) ?? 0) + 1;
-    seen.set(label, n);
-    return { id: d.id, label: `${label} ${n}` };
-  });
-}
-
 /** A fallback title keeps this many of the brief's words. */
 const TITLE_WORDS = 6;
 /** And at most this many characters, ellipsis included: the server's own
@@ -257,7 +231,13 @@ export function fillInEntries(draft: ChatDraft, values: FieldValues): FillInEntr
   if (!schema) return [];
   const seen = new Set<string>();
   const empty = schema.fields.filter((f) => {
-    if (f.static || f.type === "shape" || values[f.fieldKey] || seen.has(f.fieldKey)) {
+    if (
+      f.static ||
+      f.type === "shape" ||
+      f.type === "icon" ||
+      values[f.fieldKey] ||
+      seen.has(f.fieldKey)
+    ) {
       return false;
     }
     seen.add(f.fieldKey);

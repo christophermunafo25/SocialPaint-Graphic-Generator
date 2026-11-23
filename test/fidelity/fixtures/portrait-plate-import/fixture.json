@@ -1,0 +1,14 @@
+{
+  "name": "portrait-plate-import",
+  "kind": "import",
+  "source": { "fileKey": "g9mjhQHoPVgYbBIPKR1VsT", "nodeId": "432:3" },
+  "figmaNode": "/test/fidelity/fixtures/portrait-plate-import/figma-node.json",
+  "assets": {
+    "64cb87445b8d74c592108b4e81d7c64c5331d2d8": "fill-photo.png",
+    "432:13": "r-432-13.png",
+    "432:4": "r-432-4.png"
+  },
+  "values": { "headline": "Is it time to drop the naps?", "call_to_action": "Read the answer" },
+  "baseline": { "chromium": 0.72, "firefox": 0.87, "webkit": 0.86, "webkit18": 0.86 },
+  "blurBaseline": { "chromium": 0.69, "firefox": 1.46, "webkit": 1.78, "webkit18": 1.78 }
+}

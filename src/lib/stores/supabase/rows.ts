@@ -60,6 +60,9 @@ export interface BrandKitRow {
   primary_logo_light_asset_id: string | null;
   allow_style_override: boolean | null;
   allow_off_palette: boolean | null;
+  /** Migration 0052. Optional: a row read before the column exists has no
+   * key. */
+  system?: import("../../types").BrandSystem | null;
 }
 
 /** A kit row as the app reads it, with its font roles in place (PHASE-6 §9
@@ -79,6 +82,7 @@ const toBrandKitRow = (r: BrandKitRow): BrandKit => ({
   primaryLogoLightAssetId: r.primary_logo_light_asset_id ?? undefined,
   allowStyleOverride: r.allow_style_override ?? false,
   allowOffPalette: r.allow_off_palette ?? true,
+  system: r.system ?? undefined,
 });
 
 export interface BrandAssetRow {
@@ -127,6 +131,10 @@ export interface TemplateFieldRow {
    * neither key. */
   stroke_align?: import("../../types").StrokeAlign | null;
   effects?: import("../../types").FieldEffect[] | null;
+  /** Migration 0049 (icon fields). Optional for the same reason. */
+  vector?: import("../../types").FieldVector | null;
+  /** Migration 0050 (image placement). Optional for the same reason. */
+  image_rect?: import("../../types").ImageRect | null;
   plate_color: string | null;
   plate_padding_x: number | null;
   plate_padding_y: number | null;
@@ -194,6 +202,8 @@ export const toTemplateField = (r: TemplateFieldRow): TemplateField => ({
   strokeWidthPx: opt(r.stroke_width_px) === undefined ? undefined : Number(r.stroke_width_px),
   strokeAlign: opt(r.stroke_align),
   effects: opt(r.effects),
+  vector: opt(r.vector),
+  imageRect: opt(r.image_rect),
   plateColor: opt(r.plate_color),
   platePaddingX: opt(r.plate_padding_x) === undefined ? undefined : Number(r.plate_padding_x),
   platePaddingY: opt(r.plate_padding_y) === undefined ? undefined : Number(r.plate_padding_y),
@@ -253,6 +263,8 @@ export const fieldToRow = (
   // it did before migration 0048.
   ...(f.strokeAlign !== undefined && { stroke_align: f.strokeAlign }),
   ...(f.effects !== undefined && { effects: f.effects }),
+  ...(f.vector !== undefined && { vector: f.vector }),
+  ...(f.imageRect !== undefined && { image_rect: f.imageRect }),
   plate_color: f.plateColor ?? null,
   plate_padding_x: f.platePaddingX ?? null,
   plate_padding_y: f.platePaddingY ?? null,

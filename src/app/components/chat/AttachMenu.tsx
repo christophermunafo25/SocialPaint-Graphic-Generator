@@ -9,7 +9,18 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { Calendar, ChevronLeft, ChevronRight, Link2, MapPin, Type } from "lucide-react";
+import {
+  Calendar,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Globe,
+  Link2,
+  MapPin,
+  Megaphone,
+  Plus,
+  Type,
+} from "lucide-react";
 import type { BrandAsset } from "@/lib/types";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { DOCUMENT_ACCEPT } from "@/lib/generate/documentText";
@@ -19,10 +30,10 @@ import {
   type DetailTagValue,
   type GenerateDetailKind,
 } from "@/lib/generate/details";
+import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
 import { ImageSourceDialog, pickableAssets } from "../ImageSourceChooser";
 import { BrandStudioGlyph, FileGlyph, PhotoGlyph } from "../generate/icons";
-import { AttachButton, Button, Input } from "../primitives";
-import { Tooltip } from "../Tooltip";
+import { Button, IconButton, Input, Tooltip } from "../primitives";
 
 /** The native picker's list for Photo: the three formats the upload
  * pipeline takes. The composer still checks the type and the size cap on
@@ -30,21 +41,25 @@ import { Tooltip } from "../Tooltip";
  * list). */
 const PICKER_ACCEPT = "image/png,image/jpeg,image/webp";
 
-/** The panel sits 10 under the composer box (13:1746), its left edge on
- * the plus's, and keeps 8 off the viewport's edges; flipped, 10 above the
- * box. Its height is capped at the room it opens into less 16, and it
- * scrolls inside. */
-const GAP = 10;
+/** The panel hangs 8 under the plus, its left edge on the plus's (13:1601),
+ * and keeps 8 off the viewport's edges; flipped, it sits 8 above the
+ * composer box. It is at most 320 tall, or the room it opens into less 16,
+ * and scrolls inside. */
+const GAP = 8;
 const VIEWPORT_GAP = 8;
 const EDGE_ROOM = 16;
-/** Below the box unless the room there is shorter than this; then above
+const MAX_HEIGHT = 320;
+/** Below the plus unless the room there is shorter than this; then above
  * the box when that has more room (the dock at the bottom of a thread). */
 const MIN_ROOM = 200;
 
 /** The plus's tooltip (PHASE-5 §9 D3): the menu holds details too. */
 export const ATTACH_TOOLTIP = "Add";
 
-/** A row's icon: a lucide icon or one of the chat's glyphs, drawn at 18. */
+/** The Platform row's value with no platform picked. */
+export const ANY_PLATFORM = "Any";
+
+/** A row's icon: a lucide icon or one of the chat's glyphs, drawn at 16. */
 type RowIcon = React.ComponentType<{ size?: number; className?: string; "aria-hidden"?: boolean }>;
 
 const DETAIL_ICONS: Record<GenerateDetailKind["fieldKey"], RowIcon> = {
@@ -55,45 +70,63 @@ const DETAIL_ICONS: Record<GenerateDetailKind["fieldKey"], RowIcon> = {
 };
 
 /** The row the menu opens on: the first, the last (ArrowUp on the closed
- * plus), or a detail's row (Back from its panel). */
+ * plus), or a named row (Back from its panel). */
 type Focus = "first" | "last" | { row: string };
 
 type View =
   | { kind: "menu"; focus: Focus }
-  | { kind: "detail"; detail: GenerateDetailKind; returnTo: HTMLElement | null };
+  | { kind: "detail"; detail: GenerateDetailKind; returnTo: HTMLElement | null }
+  | { kind: "platform"; returnTo: HTMLElement | null };
 
-const rowEls = (menu: HTMLElement): HTMLButtonElement[] =>
-  Array.from(menu.querySelectorAll<HTMLButtonElement>("[role=menuitem]"));
+const rowEls = (panel: HTMLElement): HTMLButtonElement[] =>
+  Array.from(panel.querySelectorAll<HTMLButtonElement>("[role=menuitem], [role=menuitemradio]"));
 
 const focusableIn = (panel: HTMLElement): HTMLElement[] =>
   Array.from(panel.querySelectorAll<HTMLElement>("button:not(:disabled), input:not(:disabled)"));
 
+export function platformLabel(id: PlatformId | null): string {
+  return PLATFORMS.find((p) => p.id === id)?.label ?? ANY_PLATFORM;
+}
+
 /** What the attach menu edits when the chat has details (Generate). */
 export interface AttachDetails {
-  /** The tags waiting beside the plus, one per kind. */
+  /** The tags waiting in the Details row, one per kind. */
   value: readonly DetailTagValue[];
   /** Adds the kind's tag, or replaces its value when it has one. */
   onSet(detail: GenerateDetailKind, value: string): void;
+}
+
+/** The platform the next message asks for, when the chat takes one
+ * (Generate): null is any platform. */
+export interface AttachPlatform {
+  value: PlatformId | null;
+  onChange(next: PlatformId | null): void;
 }
 
 export interface AttachMenuHandle {
   /** Opens Add a detail for this kind, filled in from its tag; focus goes
    * back to `returnTo` (the tag) when it closes. */
   editDetail(fieldKey: string, returnTo?: HTMLElement | null): void;
+  /** Opens the platform list; focus goes back to `returnTo` (the
+   * platform's tag) when it closes, or to the plus when Any takes the tag
+   * away. */
+  editPlatform(returnTo?: HTMLElement | null): void;
 }
 
-/** The composer's Attach button and the menu it opens (new look, Figma
- * 13:1746; PHASE-5 §9 D3 to D5). UPLOAD: Photo (the native picker, into the
- * composer's photo pipeline), File (a PDF, TXT or MD, read in the browser)
- * and Brand Studio (the shared image dialog on the brand grid; left out
- * when there is nothing to pick). DETAILS, when the chat takes them
- * (Generate): Headline, Date & time, Location and Link, each opening Add a
- * detail (13:2285) in the menu's place: Back, the row's name, an Input and
- * Add. A kind that already has a tag opens filled in, and Add replaces it.
+/** The composer's Attach button and the menu it opens (new brand, Figma
+ * 13:1601). OUTPUT, when the chat takes a platform (Generate): Platform,
+ * with the one picked, opening a list of every platform in the menu's
+ * place. UPLOAD: Photo (the native picker, into the composer's photo
+ * pipeline) and File (a PDF, TXT or MD, read in the browser). DETAILS, when
+ * the chat takes them (Generate): Headline, Date & time, Location and Link,
+ * each opening Add a detail (13:2140) in the menu's place: Back, the row's
+ * name, an Input and Add. A kind that already has a tag opens filled in,
+ * and Add replaces it. CONTEXT: Brand Studio (the shared image dialog on the
+ * brand grid; left out when there is nothing to pick).
  *
- * Portaled to <body> and fixed-positioned off the composer box, so it is
- * never a card nested in the composer card; it follows the box on scroll
- * and resize.
+ * Portaled to <body> and fixed-positioned off the plus, so it is never a
+ * card nested in the composer card; it follows the plus on scroll and
+ * resize.
  *
  * Keyboard: opening moves focus to the first row; ArrowUp and ArrowDown
  * (wrapping), Home and End move between rows, and the pointer moves focus
@@ -105,8 +138,8 @@ export interface AttachMenuHandle {
 export const AttachMenu = React.forwardRef<
   AttachMenuHandle,
   {
-    /** The composer card. The panel opens under it, or above it when there
-     * is no room below. */
+    /** The composer card. The panel opens above it when there is no room
+     * under the plus. */
     containerRef: React.RefObject<HTMLElement | null>;
     disabled?: boolean;
     /** A photo from the native picker (or from the dialog's "This
@@ -116,10 +149,14 @@ export const AttachMenu = React.forwardRef<
     onPickDocument(file: File): void;
     /** A logo or image from Brand Studio. */
     onPickAsset(asset: BrandAsset): void;
-    /** The DETAILS section and its panel; left out, the menu is UPLOAD
-     * only (the template chat). */
+    /** The OUTPUT section and its list; left out, the menu has none (the
+     * template chat). */
+    platform?: AttachPlatform;
+    /** The DETAILS section and its panel; left out, the menu has none (the
+     * template chat). */
     details?: AttachDetails;
-    /** Whether the menu or Add a detail is showing (Start blurs Recent). */
+    /** Whether the menu or one of its panels is showing (Start blurs
+     * Recent). */
     onOpenChange?(open: boolean): void;
   }
 >(function AttachMenu(
@@ -129,6 +166,7 @@ export const AttachMenu = React.forwardRef<
     onPickFile,
     onPickDocument,
     onPickAsset,
+    platform,
     details,
     onOpenChange,
   },
@@ -148,8 +186,10 @@ export const AttachMenu = React.forwardRef<
   const docRef = useRef<HTMLInputElement>(null);
   const buttonId = useId();
   const panelId = useId();
+  const outputLabelId = useId();
   const uploadLabelId = useId();
   const detailsLabelId = useId();
+  const contextLabelId = useId();
   const titleId = useId();
 
   const openChange = useRef(onOpenChange);
@@ -180,12 +220,14 @@ export const AttachMenu = React.forwardRef<
         const detail = GENERATE_DETAILS.find((d) => d.fieldKey === fieldKey);
         if (detail && !disabled) openDetail(detail, returnTo);
       },
+      editPlatform(returnTo = null) {
+        if (platform && !disabled) setView({ kind: "platform", returnTo });
+      },
     }),
-    [openDetail, disabled],
+    [openDetail, disabled, platform],
   );
 
-  // Fixed coordinates off the composer box, measured against the real
-  // panel box.
+  // Fixed coordinates off the plus, measured against the real panel box.
   const place = useCallback(() => {
     const panel = panelRef.current;
     const button = buttonRef.current;
@@ -194,17 +236,18 @@ export const AttachMenu = React.forwardRef<
     const c = containerRef.current?.getBoundingClientRect() ?? b;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const roomBelow = vh - (c.bottom + GAP) - EDGE_ROOM;
+    const roomBelow = vh - (b.bottom + GAP) - EDGE_ROOM;
     const roomAbove = c.top - GAP - EDGE_ROOM;
     const below = roomBelow >= MIN_ROOM || roomBelow >= roomAbove;
-    panel.style.maxHeight = `${Math.max(120, below ? roomBelow : roomAbove)}px`;
+    const room = Math.max(120, below ? roomBelow : roomAbove);
+    panel.style.maxHeight = `${Math.min(MAX_HEIGHT, room)}px`;
     const { offsetWidth: w, offsetHeight: h } = panel;
     panel.style.left = `${Math.max(VIEWPORT_GAP, Math.min(b.left, vw - w - VIEWPORT_GAP))}px`;
-    panel.style.top = `${below ? c.bottom + GAP : Math.max(VIEWPORT_GAP, c.top - GAP - h)}px`;
+    panel.style.top = `${below ? b.bottom + GAP : Math.max(VIEWPORT_GAP, c.top - GAP - h)}px`;
   }, [containerRef]);
 
-  // Position before paint, then focus the row the menu opened on, or the
-  // detail's input.
+  // Position before paint, then focus the row the menu opened on, the
+  // platform picked, or the detail's input.
   useLayoutEffect(() => {
     if (!view) return;
     place();
@@ -217,6 +260,10 @@ export const AttachMenu = React.forwardRef<
       return;
     }
     const items = rowEls(panel);
+    if (view.kind === "platform") {
+      (items.find((el) => el.getAttribute("aria-checked") === "true") ?? items[0])?.focus();
+      return;
+    }
     const f = view.focus;
     const target =
       f === "first"
@@ -227,7 +274,7 @@ export const AttachMenu = React.forwardRef<
     target?.focus();
   }, [view, place]);
 
-  // While open: follow the box through scrolls (any scroller, hence the
+  // While open: follow the plus through scrolls (any scroller, hence the
   // capture) and resizes; close on a pointer-down outside the plus and the
   // panel, without taking focus back (the pointer has put it somewhere).
   useEffect(() => {
@@ -282,7 +329,7 @@ export const AttachMenu = React.forwardRef<
     }
   };
 
-  const returnTarget = view?.kind === "detail" ? view.returnTo : null;
+  const returnTarget = view && view.kind !== "menu" ? view.returnTo : null;
 
   const onPanelKeyDown = (e: React.KeyboardEvent) => {
     const panel = panelRef.current;
@@ -305,6 +352,18 @@ export const AttachMenu = React.forwardRef<
       return;
     }
     if (e.key === "Tab") {
+      // In the platform list, Back and the list are one stop each: Tab
+      // from Back enters the list, Shift+Tab from the list goes to Back.
+      if (view?.kind === "platform") {
+        const onBack = document.activeElement === panel.querySelector(".sp-attach__back");
+        if (onBack && !e.shiftKey) {
+          e.preventDefault();
+          const items = rowEls(panel);
+          (items.find((el) => el.getAttribute("aria-checked") === "true") ?? items[0])?.focus();
+          return;
+        }
+        if (!onBack && e.shiftKey) return;
+      }
       // Focus moves to the plus and the Tab goes on from there, so the next
       // stop is the control after it, not the end of the page (where the
       // portaled menu sits in the document).
@@ -312,18 +371,22 @@ export const AttachMenu = React.forwardRef<
       return;
     }
     const items = rowEls(panel);
-    const i = items.indexOf(document.activeElement as HTMLButtonElement);
+    const n = items.length;
+    const at = items.indexOf(document.activeElement as HTMLButtonElement);
+    // From outside the rows (Back), ArrowDown goes to the first and ArrowUp
+    // to the last.
+    const i = at < 0 ? (e.key === "ArrowUp" ? 0 : -1) : at;
     const to =
       e.key === "ArrowDown"
-        ? (i + 1) % items.length
+        ? (i + 1) % n
         : e.key === "ArrowUp"
-          ? (i - 1 + items.length) % items.length
+          ? (i - 1 + n) % n
           : e.key === "Home"
             ? 0
             : e.key === "End"
-              ? items.length - 1
+              ? n - 1
               : null;
-    if (to === null) return;
+    if (to === null || n === 0) return;
     e.preventDefault();
     items[to]?.focus();
   };
@@ -333,7 +396,7 @@ export const AttachMenu = React.forwardRef<
     label: string,
     Icon: RowIcon,
     onChoose: () => void,
-    chevron = false,
+    { chevron = false, meta }: { chevron?: boolean; meta?: string } = {},
   ) => (
     <button
       key={key}
@@ -349,10 +412,40 @@ export const AttachMenu = React.forwardRef<
       }}
       onClick={onChoose}
     >
-      <Icon size={18} className="ui-icon" aria-hidden />
-      <span className="ui-menu-item__label t-body-s t-trim">{label}</span>
+      <Icon size={16} className="ui-icon" aria-hidden />
+      <span className="ui-menu-item__label t-body-m">{label}</span>
+      {meta && <span className="ui-menu-item__meta t-caption-m">{meta}</span>}
       {chevron && <ChevronRight size={16} className="ui-icon ui-menu-item__chevron" aria-hidden />}
     </button>
+  );
+
+  const section = (labelId: string, label: string, rows: React.ReactNode, first = false) => (
+    <React.Fragment key={labelId}>
+      {!first && <div role="separator" className="ui-menu-divider" />}
+      <div role="group" aria-labelledby={labelId} className="sp-attach__section">
+        <div id={labelId} className="ui-menu-label t-mono-eyebrow sp-attach__label">
+          {label}
+        </div>
+        {rows}
+      </div>
+    </React.Fragment>
+  );
+
+  /** Back and the panel's name, as Add a detail draws them (13:2140). */
+  const head = (label: string, onBack: () => void) => (
+    <div className="sp-attach__head">
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={ChevronLeft}
+        label="Back"
+        className="sp-attach__back"
+        onClick={onBack}
+      />
+      <h2 id={titleId} className="t-label-m sp-attach__title">
+        {label}
+      </h2>
+    </div>
   );
 
   const trimmed = draft.trim();
@@ -364,6 +457,56 @@ export const AttachMenu = React.forwardRef<
 
   let panel: React.ReactNode = null;
   if (view?.kind === "menu") {
+    const sections: React.ReactNode[] = [];
+    if (platform) {
+      sections.push(
+        section(
+          outputLabelId,
+          "Output",
+          row(
+            "platform",
+            "Platform",
+            Megaphone,
+            () => setView({ kind: "platform", returnTo: null }),
+            { chevron: true, meta: platformLabel(platform.value) },
+          ),
+          true,
+        ),
+      );
+    }
+    sections.push(
+      section(
+        uploadLabelId,
+        "Upload",
+        <>
+          {row("photo", "Photo", PhotoGlyph, () => chooseUpload("photo"))}
+          {row("file", "File", FileGlyph, () => chooseUpload("file"))}
+        </>,
+        sections.length === 0,
+      ),
+    );
+    if (details) {
+      sections.push(
+        section(
+          detailsLabelId,
+          "Details",
+          GENERATE_DETAILS.map((d) =>
+            row(d.fieldKey, d.label, DETAIL_ICONS[d.fieldKey], () => openDetail(d, null), {
+              chevron: true,
+            }),
+          ),
+        ),
+      );
+    }
+    if (brandAssets.length > 0) {
+      sections.push(
+        section(
+          contextLabelId,
+          "Context",
+          row("brand", "Brand Studio", BrandStudioGlyph, () => chooseUpload("brand")),
+        ),
+      );
+    }
     panel = (
       <div
         ref={panelRef}
@@ -373,28 +516,65 @@ export const AttachMenu = React.forwardRef<
         className="ui-menu sp-attach"
         onKeyDown={onPanelKeyDown}
       >
-        <div role="group" aria-labelledby={uploadLabelId} className="sp-attach__section">
-          <div id={uploadLabelId} className="ui-menu-label t-label-xs t-trim sp-attach__label">
-            Upload
-          </div>
-          {row("photo", "Photo", PhotoGlyph, () => chooseUpload("photo"))}
-          {row("file", "File", FileGlyph, () => chooseUpload("file"))}
-          {brandAssets.length > 0 &&
-            row("brand", "Brand Studio", BrandStudioGlyph, () => chooseUpload("brand"))}
+        {sections}
+      </div>
+    );
+  } else if (view?.kind === "platform" && platform) {
+    // Any leaves no tag to go back to (only a platform is one), so focus
+    // goes to the plus instead.
+    const choose = (next: PlatformId | null) => {
+      platform.onChange(next);
+      close(next === null ? null : view.returnTo);
+    };
+    const option = (
+      key: string,
+      label: string,
+      icon: React.ReactNode,
+      value: PlatformId | null,
+    ) => {
+      const checked = platform.value === value;
+      return (
+        <button
+          key={key}
+          type="button"
+          role="menuitemradio"
+          aria-checked={checked}
+          tabIndex={-1}
+          data-key={key}
+          data-selected={checked || undefined}
+          className="ui-reset ui-menu-item sp-attach__item"
+          onPointerMove={(e) => {
+            if (document.activeElement !== e.currentTarget) e.currentTarget.focus();
+          }}
+          onClick={() => choose(value)}
+        >
+          {icon}
+          <span className="ui-menu-item__label t-body-m">{label}</span>
+          {checked && <Check size={16} className="ui-icon ui-menu-item__check" aria-hidden />}
+        </button>
+      );
+    };
+    panel = (
+      <div
+        ref={panelRef}
+        id={panelId}
+        role="dialog"
+        aria-labelledby={titleId}
+        className="ui-menu sp-attach sp-attach--list"
+        onKeyDown={onPanelKeyDown}
+      >
+        {head("Platform", () => setView({ kind: "menu", focus: { row: "platform" } }))}
+        <div role="menu" aria-labelledby={titleId} className="sp-attach__section">
+          {option("any", ANY_PLATFORM, <Globe size={16} className="ui-icon" aria-hidden />, null)}
+          {PLATFORMS.map((p) =>
+            option(
+              p.id,
+              p.label,
+              <p.Icon width={16} height={16} className="ui-icon" aria-hidden />,
+              p.id,
+            ),
+          )}
         </div>
-        {details && (
-          <>
-            <div role="separator" className="ui-menu-divider" />
-            <div role="group" aria-labelledby={detailsLabelId} className="sp-attach__section">
-              <div id={detailsLabelId} className="ui-menu-label t-label-xs t-trim sp-attach__label">
-                Details
-              </div>
-              {GENERATE_DETAILS.map((d) =>
-                row(d.fieldKey, d.label, DETAIL_ICONS[d.fieldKey], () => openDetail(d, null), true),
-              )}
-            </div>
-          </>
-        )}
       </div>
     );
   } else if (view?.kind === "detail") {
@@ -408,19 +588,7 @@ export const AttachMenu = React.forwardRef<
         className="ui-menu sp-attach sp-attach--detail"
         onKeyDown={onPanelKeyDown}
       >
-        <div className="sp-attach__head">
-          <button
-            type="button"
-            aria-label="Back"
-            className="ui-reset ui-ring sp-attach__back"
-            onClick={() => setView({ kind: "menu", focus: { row: detail.fieldKey } })}
-          >
-            <ChevronLeft size={18} className="ui-icon" aria-hidden />
-          </button>
-          <h2 id={titleId} className="t-label-m t-trim sp-attach__title">
-            {detail.label}
-          </h2>
-        </div>
+        {head(detail.label, () => setView({ kind: "menu", focus: { row: detail.fieldKey } }))}
         <form
           className="sp-attach__body"
           onSubmit={(e) => {
@@ -448,10 +616,13 @@ export const AttachMenu = React.forwardRef<
 
   return (
     <>
-      <Tooltip content={ATTACH_TOOLTIP} placement="right" gap={4} suppressed={open}>
-        <AttachButton
+      <Tooltip label={ATTACH_TOOLTIP} placement="right" gap={4} suppressed={open}>
+        <IconButton
           ref={buttonRef}
           id={buttonId}
+          variant="ghost"
+          selected={open}
+          icon={Plus}
           label={ATTACH_TOOLTIP}
           aria-haspopup="menu"
           aria-expanded={open}

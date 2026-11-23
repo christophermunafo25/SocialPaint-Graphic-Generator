@@ -5,8 +5,14 @@ import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useColorScheme, type ColorScheme } from "@/lib/colorScheme";
-import { SkeletonLines } from "../../Skeleton";
-import { Button, Input, SegmentedControl, SettingsCard, Stat } from "../../primitives";
+import {
+  Button,
+  Input,
+  SegmentedControl,
+  SettingsCard,
+  SkeletonLines,
+  Stat,
+} from "../../primitives";
 import { DevBackendNotice, SwitchRow } from "./settingsShared";
 import { useSettingsToast } from "./settingsToast";
 
@@ -69,7 +75,7 @@ export function AccountSection() {
       {/* The way out, here since the sidebar lost its button (13:15828). */}
       {signOut && (
         <span>
-          <Button kind="neutralOnPage" icon={LogOut} onClick={() => void signOut()}>
+          <Button kind="neutral" icon={LogOut} onClick={() => void signOut()}>
             Sign out
           </Button>
         </span>
@@ -183,7 +189,7 @@ function NotificationRows({
   }
   if (state.status === "error") {
     return (
-      <p className="t-body-s sp-st-empty">
+      <p className="t-body-m sp-st-empty">
         We couldn't load your preferences.{" "}
         <button type="button" onClick={state.retry} className="ui-reset ui-ring sp-st-show-all">
           Try again

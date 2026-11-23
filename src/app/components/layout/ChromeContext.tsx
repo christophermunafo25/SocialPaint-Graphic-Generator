@@ -75,10 +75,11 @@ export function useChrome(): ChromeState {
 }
 
 /** Take the document out of the scroll business for as long as the calling
- * surface is mounted. Scoped to an attribute on `html` so every other route
- * keeps the normal document scroll — see the `[data-sp-fullscreen]` rules in
- * socialpaint.css. Reference-counted, so a remount mid-transition can't
- * leave the flag stuck on or clear it early. */
+ * surface is mounted, below 1024 (at desktop width the app frame already
+ * holds every page to the window). Scoped to an attribute on `html` so
+ * every other route keeps the normal document scroll — see the
+ * `[data-sp-fullscreen]` rules in socialpaint.css. Reference-counted, so a
+ * remount mid-transition can't leave the flag stuck on or clear it early. */
 let fullViewportCount = 0;
 
 export function useFullViewport(active: boolean): void {

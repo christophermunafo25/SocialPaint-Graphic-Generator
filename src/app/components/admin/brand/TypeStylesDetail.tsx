@@ -14,7 +14,7 @@ import { ruleSentences } from "@/lib/brand/resolveStyle";
 import { assignFontRole, type FontRole } from "@/lib/brand/fontRoles";
 import {
   Button,
-  ChoiceChip,
+  Chip,
   Field,
   Input,
   RowContextMenu,
@@ -267,7 +267,7 @@ function StyleRow({
               {s.name}
             </span>
           )}
-          <span className="t-body-xs sp-bs-style__face">
+          <span className="t-body-s sp-bs-style__face">
             <span>
               {s.font?.family ?? "Any face"}
               {s.weight ? ` · ${s.weight}` : ""}
@@ -317,7 +317,7 @@ function StyleRow({
         </div>
       </RowContextMenu>
       {blocked && !expanded && (
-        <p className="t-caption-s sp-bs-error-line sp-bs-style__blocked" role="alert">
+        <p className="t-caption-m sp-bs-error-line sp-bs-style__blocked" role="alert">
           {blocked}
         </p>
       )}
@@ -357,7 +357,7 @@ function cutLabel(style: FontStyle): string {
  * Every property of one style (13:11314): Name, Font, Weight (the cuts the
  * family ships, §9 D10), Color, Fixed size, Max characters, Letter spacing
  * and Line height on the Field primitive, then Use for (§9 D3), Always
- * uppercase and Shrink to fit the box as ChoiceChips, the rules the style
+ * uppercase and Shrink to fit the box as Chips, the rules the style
  * enforces, and Delete style (quiet: Undo brings it back) and Done.
  * "Not enforced" leaves a property for each template to set.
  */
@@ -459,7 +459,6 @@ function StyleEditor({
         <Field label="Font">
           <Select
             ariaLabel="Font"
-            size="lg"
             value={s.font ? `${s.font.source}:${s.font.family}` : NONE}
             options={fontOptions}
             onSelect={(v) => {
@@ -484,7 +483,6 @@ function StyleEditor({
         <Field label="Weight">
           <Select
             ariaLabel="Weight"
-            size="lg"
             value={s.weight === undefined ? NONE : styleKey(current)}
             options={weightOptions}
             onSelect={(v) => {
@@ -504,7 +502,6 @@ function StyleEditor({
         <Field label="Color">
           <Select
             ariaLabel="Color"
-            size="lg"
             value={s.colorKey ?? NONE}
             options={colorOptions}
             onSelect={(v) => update({ colorKey: v || undefined })}
@@ -547,42 +544,45 @@ function StyleEditor({
       </div>
 
       <div className="sp-bs-style__toggles">
-        <span id={useForId} className="t-label-xs sp-bs-style__toggle-label">
-          Use for
-        </span>
-        <div role="group" aria-labelledby={useForId} className="sp-bs-chips">
-          <ChoiceChip selected={!s.useFor} onClick={() => s.useFor && setRole(null)}>
-            None
-          </ChoiceChip>
-          {(["heading", "body"] as const).map((role) => (
-            <ChoiceChip
-              key={role}
-              selected={s.useFor === role}
-              onClick={() => s.useFor !== role && setRole(role)}
-            >
-              {ROLE_LABELS[role]}
-            </ChoiceChip>
-          ))}
+        <div className="sp-bs-style__toggle-group">
+          <span id={useForId} className="t-label-xs sp-bs-style__toggle-label">
+            Use for
+          </span>
+          <div role="group" aria-labelledby={useForId} className="sp-bs-chips">
+            <Chip selected={!s.useFor} onClick={() => s.useFor && setRole(null)}>
+              None
+            </Chip>
+            {(["heading", "body"] as const).map((role) => (
+              <Chip
+                key={role}
+                selected={s.useFor === role}
+                onClick={() => s.useFor !== role && setRole(role)}
+              >
+                {ROLE_LABELS[role]}
+              </Chip>
+            ))}
+          </div>
         </div>
-        <span className="sp-bs-style__toggle-gap" aria-hidden />
-        <ChoiceChip
-          selected={!!s.uppercase}
-          onClick={() => update({ uppercase: s.uppercase ? undefined : true })}
-        >
-          Always uppercase
-        </ChoiceChip>
-        <ChoiceChip
-          selected={s.textSizing === "shrink"}
-          onClick={() => update({ textSizing: s.textSizing === "shrink" ? undefined : "shrink" })}
-        >
-          Shrink to fit the box
-        </ChoiceChip>
+        <div className="sp-bs-chips">
+          <Chip
+            selected={!!s.uppercase}
+            onClick={() => update({ uppercase: s.uppercase ? undefined : true })}
+          >
+            Always uppercase
+          </Chip>
+          <Chip
+            selected={s.textSizing === "shrink"}
+            onClick={() => update({ textSizing: s.textSizing === "shrink" ? undefined : "shrink" })}
+          >
+            Shrink to fit the box
+          </Chip>
+        </div>
       </div>
 
       {rules.length > 0 && (
         <div className="sp-bs-style__rules">
           {rules.map((r) => (
-            <p key={r} className="t-body-xs sp-bs-style__rule">
+            <p key={r} className="t-body-s sp-bs-style__rule">
               <Lock size={12} className="ui-icon" aria-hidden />
               {r}
             </p>
@@ -591,7 +591,7 @@ function StyleEditor({
       )}
 
       {blocked && (
-        <p className="t-caption-s sp-bs-error-line" role="alert">
+        <p className="t-caption-m sp-bs-error-line" role="alert">
           {blocked}
         </p>
       )}

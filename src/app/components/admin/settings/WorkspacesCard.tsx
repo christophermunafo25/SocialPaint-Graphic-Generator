@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useRouter } from "../../../router";
-import { Avatar, Button, SettingsCard, Status } from "../../primitives";
+import { Avatar, Badge, Button, SettingsCard } from "../../primitives";
 
 /** Two letters for a workspace's tile: the first letters of its first two
  * words, or its first two letters. */
@@ -74,7 +74,7 @@ export function WorkspacesCard() {
                 )}
               </div>
               {current ? (
-                <Status tone="neutral">Current</Status>
+                <Badge tone="neutral">Current</Badge>
               ) : (
                 <Button
                   kind="neutral"

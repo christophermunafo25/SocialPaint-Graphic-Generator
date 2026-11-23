@@ -7,7 +7,7 @@ import type { EmptyFieldsMode } from "@/lib/render/emptyFields";
 import { STARTER_BLUEPRINTS } from "@/lib/templates/starters";
 import { materializeStarter } from "@/lib/templates/starters/materialize";
 
-export type FidelityEngine = "chromium" | "firefox" | "webkit";
+export type FidelityEngine = "chromium" | "firefox" | "webkit" | "webkit18";
 
 /** One font file a fixture renders with. `file` is a root-relative URL
  * ("/test/fidelity/fonts-private/Brand-Bold.woff2"), or a name beside the
@@ -23,15 +23,22 @@ export interface FixtureFont {
  * its schema and compares with a golden exported from `source`; a
  * "starter" fixture is materialized here from a blueprint and compares
  * with a blessed Chromium render; a "synthetic" fixture carries a schema
- * built in code and compares with a blessed Chromium render too. */
+ * built in code and compares with a blessed Chromium render too. An
+ * "import" fixture replays the Figma importer against a saved node tree
+ * (importReplay.ts) and compares with that frame's golden. */
 export interface FidelityFixture {
   name: string;
-  kind: "figma" | "starter" | "synthetic";
+  kind: "figma" | "starter" | "synthetic" | "import";
   /** starter: the blueprint's starterKey, for a fixture named on its own
    * (not starter-<key>). It carries `values` and `variantId` from the file;
    * a starter fixture without it takes its blueprint from its name. */
   starter?: string;
   source?: { fileKey: string; nodeId: string };
+  /** import: root-relative URL of the saved node tree the replay walks. */
+  figmaNode?: string;
+  /** import: each Figma render (by node id) and image fill (by image ref)
+   * the replay needs, as a file beside the fixture. */
+  assets?: Record<string, string>;
   schema?: TemplateSchema;
   values?: FieldValues;
   brandKit?: BrandKit | null;

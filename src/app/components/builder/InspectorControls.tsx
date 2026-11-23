@@ -1,16 +1,17 @@
-import React, { useRef, useState } from "react";
-import { ChevronDown, type LucideIcon } from "lucide-react";
+import React, { useId, useRef, useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import { IconButton, SegmentedControl, Switch } from "../primitives";
+import { parseHexInput } from "./inspectorValues";
 
 // ---------------------------------------------------------------------------
-// Inspector primitives — the Figma-style structure (sections, property rows,
-// scrubbabale numeric fields) built entirely in SocialPaint tokens. Shared by
-// every section of the field settings panel; nothing here hardcodes a color,
-// radius, or off-scale spacing value.
+// The inspector's structure, from the editor's frames (322:380): sections in
+// Mono/Eyebrow, each field a Label/XS over a 36 control, fields side by side
+// 8 apart, and the scrubbable numeric field on the Input's look. Shared by
+// every inspector (field, group, selection, canvas) and the effects list.
 // ---------------------------------------------------------------------------
 
-/** Section and field labels: ALL CAPS mono at the DS's sanctioned 0.04em
- * tracking, caption step, muted. One definition so headers, row labels, and
- * unit suffixes can never drift apart. */
+/** The fill picker's labels (FillPicker), which keeps the earlier look until
+ * its own pass. The inspector's labels are Label/XS and Mono/Eyebrow. */
 export const inspectorLabelStyle: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
   fontSize: "var(--type-caption-size)",
@@ -37,172 +38,111 @@ export const endInspectorGesture = (): void => {
 };
 export const inspectorGestureActive = (): boolean => gestureDepth > 0;
 
-/** Squeezes an .sp-input (select, text input) onto the compact row height.
- * The 38px form floor stays everywhere else; the inspector runs denser. */
+/** The fill picker's compact inputs (FillPicker), until its own pass. */
 export const compactControlStyle: React.CSSProperties = {
   height: "var(--row-h-compact)",
   padding: "0 var(--space-2xs)",
   fontSize: "var(--type-label-size)",
 };
 
-// Open/closed state persists per section across selections and sessions, so
-// the inspector stays the way the admin left it. (Same store the previous
-// inspector used — existing preferences carry over.)
-const SECTIONS_KEY = "sp-inspector-open";
-
-const readOpen = (id: string, fallback: boolean): boolean => {
-  try {
-    const m = JSON.parse(localStorage.getItem(SECTIONS_KEY) ?? "{}") as Record<string, boolean>;
-    return typeof m[id] === "boolean" ? m[id] : fallback;
-  } catch {
-    return fallback;
-  }
-};
-
-const writeOpen = (id: string, open: boolean): void => {
-  try {
-    const m = JSON.parse(localStorage.getItem(SECTIONS_KEY) ?? "{}") as Record<string, boolean>;
-    m[id] = open;
-    localStorage.setItem(SECTIONS_KEY, JSON.stringify(m));
-  } catch {
-    // persistence is best-effort
-  }
-};
-
-/** One collapsible section of the inspector: hairline top border, 12px
- * vertical padding, mono uppercase header. The panel is one flat surface —
- * no cards, no elevation inside. */
+/** One section (322:380): its name in Mono/Eyebrow, then its rows, 12
+ * apart. `headerExtra` sits at the end of the name's line (the add and
+ * remove of an optional property). */
 export function InspectorSection({
   id,
   title,
-  defaultOpen = true,
   headerExtra,
   children,
 }: {
+  /** Names the section for tests and captures (`data-section`). */
   id: string;
   title: string;
-  defaultOpen?: boolean;
-  /** Right-aligned header control (e.g. the Fill section's add button). */
   headerExtra?: React.ReactNode;
   children?: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(() => readOpen(id, defaultOpen));
+  const headingId = useId();
   return (
-    <div style={{ borderTop: "1px solid var(--border)", padding: "var(--space-xs) 0" }}>
-      <div className="flex items-center justify-between gap-2">
-        <button
-          onClick={() => {
-            setOpen(!open);
-            writeOpen(id, !open);
-          }}
-          aria-expanded={open}
-          className="flex-1 flex items-center justify-between text-left"
-          style={{ minHeight: 20 }}
-        >
-          <span style={inspectorLabelStyle}>{title}</span>
-          <ChevronDown
-            style={{
-              width: 12,
-              height: 12,
-              color: "var(--text-muted)",
-              transform: open ? undefined : "rotate(-90deg)",
-              transition: "transform var(--dur-state) var(--ease)",
-            }}
-          />
-        </button>
+    <section className="sp-insp-section" data-section={id} aria-labelledby={headingId}>
+      <div className="sp-insp-section__head">
+        <h3 id={headingId} className="t-mono-eyebrow">
+          {title}
+        </h3>
         {headerExtra}
       </div>
-      {open && children && (
-        <div
-          className="flex flex-col"
-          style={{ gap: "var(--space-2xs)", paddingTop: "var(--space-xs)" }}
-        >
-          {children}
-        </div>
-      )}
-    </div>
+      {children}
+    </section>
   );
 }
 
-/** One property line: label column + control column on a compact 32px row.
- * Rows with no label keep the empty column so controls align down the panel;
- * `full` opts a control (font family select, swatch grids) out of the split,
- * and `stack` keeps the label but drops it onto its own line so the control
- * gets the panel's whole width. */
+/** One field (322:380's "Field · Type style"): a Label/XS over its control,
+ * 6 apart. `full` drops the label for a row that names itself (a fill row,
+ * a list of effects). */
 export function PropertyRow({
   label,
   full,
-  stack,
-  align = "center",
   children,
 }: {
   label?: React.ReactNode;
-  /** Control spans both columns (no label gutter). */
   full?: boolean;
-  /** Label above, control across the full width. For a control whose own
-   * labels need more room than the 1fr column leaves — a segmented group of
-   * worded options, say, which otherwise wraps every word onto a second
-   * line and doubles the row's height. */
-  stack?: boolean;
-  /** "start" keeps the label on the first line of a tall control (textarea). */
-  align?: "center" | "start";
   children: React.ReactNode;
 }) {
-  if (stack) {
-    return (
-      <div style={{ display: "grid", gap: "var(--space-3xs)", paddingBlock: "var(--space-3xs)" }}>
-        <span style={inspectorLabelStyle}>{label}</span>
-        <div className="flex" style={{ gap: "var(--space-2xs)", minWidth: 0 }}>
-          {children}
-        </div>
-      </div>
-    );
-  }
-  if (full) {
-    return (
-      <div style={{ minHeight: "var(--row-h-compact)", display: "flex", alignItems: "center" }}>
-        {children}
-      </div>
-    );
-  }
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "var(--space-3xl) 1fr",
-        gap: "var(--space-2xs)",
-        alignItems: align,
-        minHeight: "var(--row-h-compact)",
-      }}
-    >
-      <span
-        style={{
-          ...inspectorLabelStyle,
-          ...(align === "start" ? { paddingTop: "var(--space-2xs)" } : {}),
-        }}
-      >
-        {label}
-      </span>
-      <div
-        className="flex"
-        style={{
-          gap: "var(--space-2xs)",
-          minWidth: 0,
-          alignItems: align === "center" ? "center" : "flex-start",
-          flexDirection: "row",
-        }}
-      >
-        {children}
-      </div>
+    <div className="sp-insp-row">
+      {label !== undefined && !full && (
+        <span className="t-label-xs sp-insp-row__label">{label}</span>
+      )}
+      <div className="sp-insp-row__control">{children}</div>
     </div>
   );
 }
 
-/** Segmented group in a shared hairline container (.sp-seg) — icon segments
- * (alignment, flips) or short text segments (resizing modes). Works as a
- * radio (pass `value`), as independent toggles (per-option `active`), or as
- * momentary action buttons (neither). `stretch` fills the row, segments
- * sharing the width equally. */
+/** Fields side by side, 8 apart: Font and Weight, or Size, Line height and
+ * Spacing. Equal columns unless `columns` says otherwise. */
+export function PropertyGrid({
+  columns,
+  children,
+}: {
+  /** A grid-template-columns value, for unequal columns. */
+  columns?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="sp-insp-grid" style={columns ? { gridTemplateColumns: columns } : undefined}>
+      {children}
+    </div>
+  );
+}
+
+/** A setting that is on or off, as the Field tab's Team fills in
+ * (2289:4772): its name in Label/S, then the switch at the row's end. The
+ * whole row is the switch's label. */
+export function SwitchRow({
+  label,
+  checked,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange(next: boolean): void;
+}) {
+  return (
+    <Switch
+      className="sp-insp-switch"
+      checked={checked}
+      disabled={disabled}
+      onChange={onChange}
+      label={<span className="t-label-s">{label}</span>}
+    />
+  );
+}
+
+/** A small set of choices. Icon options are Ghost Small icon buttons 2
+ * apart, as the frame's Align (322:380), working as a radio (pass `value`),
+ * as independent toggles (per-option `active`) or as momentary actions
+ * (neither). Worded options with a `value` are a Segmented Control, as the
+ * frame's Text sizing. */
 export function SegmentedIconGroup<T extends string>({
   options,
   value,
@@ -211,28 +151,47 @@ export function SegmentedIconGroup<T extends string>({
   stretch = false,
   onSelect,
 }: {
-  options: Array<{ key: T; Icon?: LucideIcon; label?: string; title: string; active?: boolean }>;
+  /** Icon options name themselves with `title`; worded ones show `label`. */
+  options: Array<{ key: T; Icon?: LucideIcon; label?: string; title?: string; active?: boolean }>;
   value?: T | null;
   ariaLabel: string;
   disabled?: boolean;
+  /** The worded control spans its row, its segments sharing the width. */
   stretch?: boolean;
   onSelect(key: T): void;
 }) {
+  if (value !== undefined && options.every((o) => !o.Icon && o.label)) {
+    return (
+      <fieldset className="sp-insp-choices" disabled={disabled} data-stretch={stretch || undefined}>
+        <SegmentedControl
+          aria-label={ariaLabel}
+          options={options.map((o) => ({ id: o.key, label: o.label ?? o.key }))}
+          selectedId={value}
+          onSelect={(id) => onSelect(id as T)}
+        />
+      </fieldset>
+    );
+  }
   return (
-    <div className="sp-seg" data-stretch={stretch || undefined} role="group" aria-label={ariaLabel}>
-      {options.map(({ key, Icon, label, title, active }) => (
-        <button
-          key={key}
-          type="button"
-          title={title}
-          disabled={disabled}
-          aria-pressed={active ?? (value != null ? value === key : undefined)}
-          data-active={(active ?? value === key) || undefined}
-          onClick={() => onSelect(key)}
-        >
-          {Icon ? <Icon style={{ width: 14, height: 14 }} strokeWidth={1.5} /> : label}
-        </button>
-      ))}
+    <div className="sp-insp-icons" role="group" aria-label={ariaLabel}>
+      {options.map(({ key, Icon, label, title, active }) => {
+        const on = active ?? (value != null ? value === key : undefined);
+        const name = title ?? label ?? key;
+        return (
+          <IconButton
+            key={key}
+            variant="ghost"
+            size="sm"
+            icon={Icon ?? (() => null)}
+            label={name}
+            title={name}
+            disabled={disabled}
+            aria-pressed={on}
+            selected={Boolean(on)}
+            onClick={() => onSelect(key)}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -258,6 +217,9 @@ interface NumericFieldProps {
   disabled?: boolean;
   /** Empty input commits undefined instead of reverting (optional values). */
   allowEmpty?: boolean;
+  /** No box: the value inside another control's row (a fill row's
+   * opacity, as drawn). */
+  bare?: boolean;
   ariaLabel: string;
   onCommit(next: number | undefined): void;
 }
@@ -279,6 +241,7 @@ export function NumericField({
   max,
   disabled = false,
   allowEmpty = false,
+  bare = false,
   ariaLabel,
   onCommit,
 }: NumericFieldProps) {
@@ -414,38 +377,19 @@ export function NumericField({
 
   return (
     <label
-      className="sp-numfield flex items-center flex-1"
-      data-disabled={disabled || undefined}
-      style={{
-        gap: "var(--space-2xs)",
-        height: "var(--row-h-compact)",
-        // Tight on purpose: two of these plus a link toggle share one row in
-        // Dimensions, and at 8px either side a four-digit value ("1440", the
-        // largest canvas dimension) clipped by a pixel.
-        padding: "0 var(--space-3xs)",
-        minWidth: 0,
-        background: "var(--bg-surface)",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-control)",
-        cursor: disabled ? "default" : "text",
-        transition: "border-color var(--dur-state) var(--ease)",
-      }}
+      className={
+        bare ? "sp-numfield sp-numfield--bare" : "ui-fill ui-input ui-input--box sp-numfield"
+      }
+      data-size={bare ? undefined : "md"}
     >
       {leading !== undefined && (
         <span
+          className="sp-numfield__lead"
           onPointerDown={onScrubDown}
           onPointerMove={onScrubMove}
           onPointerUp={onScrubUp}
           onPointerCancel={onScrubUp}
-          title={disabled ? undefined : "Drag to change"}
-          style={{
-            ...inspectorLabelStyle,
-            color: disabled ? "var(--text-disabled)" : "var(--text-secondary)",
-            flexShrink: 0,
-            cursor: disabled ? "default" : "ew-resize",
-            touchAction: "none",
-            userSelect: "none",
-          }}
+          data-disabled={disabled || undefined}
         >
           {leading}
         </span>
@@ -456,13 +400,7 @@ export function NumericField({
         inputMode="decimal"
         disabled={disabled}
         aria-label={ariaLabel}
-        className="w-full bg-transparent outline-none border-none"
-        style={{
-          fontSize: "var(--type-label-size)",
-          color: disabled ? "var(--text-disabled)" : "var(--text-primary)",
-          padding: 0,
-          minWidth: 0,
-        }}
+        className="ui-reset ui-input__control sp-numfield__input"
         value={shown}
         placeholder={mixed ? "Mixed" : placeholder}
         onFocus={(e) => {
@@ -480,18 +418,79 @@ export function NumericField({
         }}
         onKeyDown={onKeyDown}
       />
-      {suffix && (
-        <span
-          style={{
-            fontSize: "var(--type-label-size)",
-            color: disabled ? "var(--text-disabled)" : "var(--text-secondary)",
-            flexShrink: 0,
-            userSelect: "none",
-          }}
-        >
-          {suffix}
-        </span>
-      )}
+      {suffix && <span className="sp-numfield__suffix">{suffix}</span>}
     </label>
   );
 }
+
+interface HexRowProps {
+  /** The swatch's CSS background. */
+  swatch: string;
+  /** Names the swatch, which opens the picker ("Edit fill"). */
+  swatchLabel: string;
+  expanded?: boolean;
+  onSwatch(): void;
+  /** The colour as #RRGGBB or #RRGGBBAA. The row shows its six digits;
+   * the alpha belongs to the opacity after it. */
+  hex?: string;
+  /** Shown in place of a hex (a gradient's kind). */
+  text?: string;
+  /** Names the hex input ("Fill hex value"). */
+  hexLabel?: string;
+  disabled?: boolean;
+  /** A typed hex, as #RRGGBB, or #RRGGBBAA when eight digits were typed. */
+  onHex?(hex: string): void;
+  /** What follows the hex: the opacity, a stroke's width. */
+  children?: React.ReactNode;
+}
+
+/** A colour on one line, as the frame's fill row (322:380): 40 tall on
+ * surface/field, the swatch that opens the picker, the hex in Mono/S, and
+ * what follows it at the end. */
+export const HexRow = React.forwardRef<HTMLButtonElement, HexRowProps>(function HexRow(
+  { swatch, swatchLabel, expanded, onSwatch, hex, text, hexLabel, disabled, onHex, children },
+  ref,
+) {
+  const shown = hex?.replace(/^#/, "").slice(0, 6).toUpperCase() ?? "";
+  return (
+    <div className="sp-hexrow" data-disabled={disabled || undefined}>
+      <button
+        ref={ref}
+        type="button"
+        className="ui-reset ui-ring sp-hexrow__swatch"
+        style={{ background: swatch }}
+        aria-label={swatchLabel}
+        aria-expanded={expanded}
+        disabled={disabled}
+        onClick={onSwatch}
+      />
+      {hex !== undefined ? (
+        <input
+          key={shown}
+          type="text"
+          spellCheck={false}
+          aria-label={hexLabel}
+          disabled={disabled}
+          className="ui-reset sp-hexrow__hex"
+          defaultValue={shown}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            if (e.key === "Enter") e.currentTarget.blur();
+            if (e.key === "Escape") {
+              e.currentTarget.value = shown;
+              e.currentTarget.blur();
+            }
+          }}
+          onBlur={(e) => {
+            const hex = parseHexInput(e.target.value);
+            if (hex) onHex?.(hex);
+            else e.target.value = shown;
+          }}
+        />
+      ) : (
+        <span className="t-body-s sp-hexrow__text">{text}</span>
+      )}
+      {children}
+    </div>
+  );
+});

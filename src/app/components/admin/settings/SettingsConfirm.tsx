@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Button, Field, Input, Modal } from "../../primitives";
+import React, { useEffect, useRef, useState } from "react";
+import { Button, Field, Input, Modal, ModalActions, ModalBody } from "../../primitives";
 
 interface ConfirmProps {
   open: boolean;
@@ -11,6 +11,12 @@ interface ConfirmProps {
   destructive?: boolean;
   /** Disables the action while it runs; it then reads "Working…". */
   busy?: boolean;
+  /** Focus lands on Cancel when it opens, so a reflexive Enter cancels
+   * (ConfirmDialog's default). */
+  focusCancel?: boolean;
+  /** Where focus goes when it closes, when what opened it is gone by then
+   * (a row menu's item). */
+  returnFocus?: React.RefObject<HTMLElement | null>;
   onCancel(): void;
   onConfirm(): void;
 }
@@ -25,25 +31,36 @@ export function ConfirmModal({
   confirmLabel,
   destructive = true,
   busy = false,
+  focusCancel = false,
+  returnFocus,
   onCancel,
   onConfirm,
 }: ConfirmProps) {
+  const cancel = useRef<HTMLButtonElement>(null);
   return (
-    <Modal open={open} onOpenChange={(next) => !next && onCancel()} title={title}>
-      {body && <ConfirmBody>{body}</ConfirmBody>}
-      <div className="sp-st-confirm__actions">
-        <Button kind="neutral" size="lg" onClick={onCancel}>
+    <Modal
+      open={open}
+      onOpenChange={(next) => !next && onCancel()}
+      title={title}
+      returnFocus={returnFocus}
+      onOpenAutoFocus={
+        focusCancel
+          ? (e) => {
+              e.preventDefault();
+              cancel.current?.focus();
+            }
+          : undefined
+      }
+    >
+      {body && <ModalBody>{body}</ModalBody>}
+      <ModalActions>
+        <Button ref={cancel} kind="neutral" onClick={onCancel}>
           Cancel
         </Button>
-        <Button
-          kind={destructive ? "destructive" : "primary"}
-          size="lg"
-          disabled={busy}
-          onClick={onConfirm}
-        >
+        <Button kind={destructive ? "destructive" : "primary"} disabled={busy} onClick={onConfirm}>
           {busy ? "Working…" : confirmLabel}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }
@@ -67,7 +84,7 @@ export function TypedConfirmModal({
 
   return (
     <Modal open={props.open} onOpenChange={(next) => !next && props.onCancel()} title={props.title}>
-      {props.body && <ConfirmBody>{props.body}</ConfirmBody>}
+      {props.body && <ModalBody>{props.body}</ModalBody>}
       <Field label={`Type ${expected} to confirm`}>
         <Input
           value={typed}
@@ -77,27 +94,14 @@ export function TypedConfirmModal({
           spellCheck={false}
         />
       </Field>
-      <div className="sp-st-confirm__actions">
-        <Button kind="neutral" size="lg" onClick={props.onCancel}>
+      <ModalActions>
+        <Button kind="neutral" onClick={props.onCancel}>
           Cancel
         </Button>
-        <Button
-          kind="destructive"
-          size="lg"
-          disabled={!match || props.busy}
-          onClick={props.onConfirm}
-        >
+        <Button kind="destructive" disabled={!match || props.busy} onClick={props.onConfirm}>
           {props.busy ? "Working…" : props.confirmLabel}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
-  );
-}
-
-function ConfirmBody({ children }: { children: React.ReactNode }) {
-  return typeof children === "string" ? (
-    <p className="t-body-s sp-st-confirm__body">{children}</p>
-  ) : (
-    <div className="t-body-s sp-st-confirm__body">{children}</div>
   );
 }

@@ -1,51 +1,76 @@
 import React from "react";
-import { useColorScheme } from "@/lib/colorScheme";
-import mark from "@/assets/socialpaint/mark.svg";
-import logoOnLight from "@/assets/socialpaint/logo-on-light.svg";
-import logoOnDark from "@/assets/socialpaint/logo-on-dark.svg";
+import { LOCKUP_MARK, LOCKUP_MARK_SIZE, LOCKUP_VIEWBOX, LOCKUP_WORDMARK, MARK } from "./brandArt";
 
-/** The SocialPaint mark — the monogram from the brand refresh (2026-08-17),
- * redrawn in Slime #17FF7E for the 2026-09 palette (a 40×40 cut of the
- * same path the lockups carry). One file for both themes: the mark reads
- * in Slime on light and dark alike, so it does not flip with the colour
- * scheme. Used where the full lockup doesn't fit (collapsed nav, dashboard
- * watermark, the Generate chat's assistant byline, sign-in, onboarding,
- * public footer). */
-export function BrandMark({ width = 28 }: { width?: number }) {
-  return <img src={mark} alt="" aria-hidden style={{ width, height: "auto", display: "block" }} />;
+/** The SocialPaint mark alone (Logo Mark, 61:467): the four-field mark, 20
+ * square in the file, in text/secondary. Drawn inline on currentColor, so
+ * it follows the theme it sits in. Generate's assistant byline and the
+ * public link page's footer place it; each keeps its size. */
+export function BrandMark({ width = 20 }: { width?: number }) {
+  return (
+    <svg
+      className="sp-brand-mark"
+      width={width}
+      height={width}
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden
+      focusable="false"
+    >
+      <path d={MARK} fillRule="evenodd" clipRule="evenodd" />
+    </svg>
+  );
 }
 
-/** The official horizontal lockup (2026-09, 244×44) — Slime mark + wordmark,
- * the wordmark in near-black #0B0B0C on light chrome and white on dark.
- * Rendered by height with width auto, so the aspect ratio lives in the
- * file. Shared by the sidebar, the sign-in gate and onboarding. */
+/** The lockup (CJ's update in the Sidebar, 6243:8529): the mark beside the
+ * wordmark, drawn inline on currentColor in --logo-ink, so one lockup is
+ * near-black on Light and off-white on Dark. Sized by height. Shared by
+ * the sidebar, the mobile bar, the sign-in gate and onboarding. */
 export function BrandLockup({
   height = 16,
   scheme,
 }: {
   height?: number;
   /** A surface that keeps one theme whatever the app's (the Light gate,
-   * PHASE-8B §9 D1) names it; otherwise the lockup follows the app. */
+   * PHASE-8B §9 D1) names it; the nested theme recomputes --logo-ink.
+   * Otherwise the lockup follows the theme it sits in. */
   scheme?: "light" | "dark";
 }) {
-  return scheme ? (
-    <LockupImage height={height} scheme={scheme} />
-  ) : (
-    <ThemedLockup height={height} />
+  const { width: w, height: h } = LOCKUP_VIEWBOX;
+  const width = Math.round(((height * w) / h) * 100) / 100;
+  return (
+    <span className="sp-brand-lockup" data-theme={scheme}>
+      <svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${w} ${h}`}
+        fill="currentColor"
+        role="img"
+        aria-label="SocialPaint"
+        focusable="false"
+      >
+        <path d={LOCKUP_MARK} />
+        {LOCKUP_WORDMARK.map((d, i) => (
+          <path key={i} d={d} />
+        ))}
+      </svg>
+    </span>
   );
 }
 
-function ThemedLockup({ height }: { height: number }) {
-  const { resolved } = useColorScheme();
-  return <LockupImage height={height} scheme={resolved === "dark" ? "dark" : "light"} />;
-}
-
-function LockupImage({ height, scheme }: { height: number; scheme: "light" | "dark" }) {
+/** The lockup's mark alone (the collapsed rail's Logo mark, 6112:44073),
+ * the same path at the size the rail draws it, in --logo-ink. */
+export function BrandLockupMark() {
   return (
-    <img
-      src={scheme === "dark" ? logoOnDark : logoOnLight}
-      alt="SocialPaint"
-      style={{ height, width: "auto", display: "block" }}
-    />
+    <svg
+      className="sp-brand-lockup-mark"
+      width={LOCKUP_MARK_SIZE}
+      height={LOCKUP_MARK_SIZE}
+      viewBox={`0 0 ${LOCKUP_MARK_SIZE} ${LOCKUP_MARK_SIZE}`}
+      fill="currentColor"
+      aria-hidden
+      focusable="false"
+    >
+      <path d={LOCKUP_MARK} />
+    </svg>
   );
 }

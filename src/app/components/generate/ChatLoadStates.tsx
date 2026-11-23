@@ -2,15 +2,12 @@ import React, { useEffect, useRef } from "react";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
-import { MessageSquarePlus } from "lucide-react";
-import { CaptionCardSkeleton } from "../chat/CaptionCard";
+import { Plus } from "lucide-react";
 import { ChatComposer } from "../chat/ChatComposer";
 import { GenerateHeader } from "../chat/GenerateHeader";
-import { ResultCardSkeleton } from "../chat/GenerateTurn";
 import { AssistantMessage } from "../chat/Messages";
-import { Button } from "../primitives";
-import { LegalLinks } from "./LegalLinks";
-import { useScrollFades } from "./ScrollFade";
+import { Button, ResultCardSkeleton, Skeleton } from "../primitives";
+import { useScrollFades } from "../layout/useScrollFades";
 import { takeComposerFocus } from "./composerFocus";
 
 /** The thread's composer placeholder (PROMPT §7.9), here and on the page. */
@@ -30,9 +27,9 @@ interface ChatPageActions {
  * thread states' own layout stands in, so nothing moves when the chat
  * lands: the header (the breadcrumb is "Generate" until the title is
  * known; History and New chat already work), then a sketch of an exchange
- * in the thread (the member's bubble, the mark, a status line, a Result
- * card skeleton and the caption card's, all plain sunken wells), and the
- * dock with its composer inert. The sketch is decoration; the thread
+ * in the thread (the member's bubble, the mark, a status line and the
+ * Result card's Loading state, all Skeletons), and the dock with its
+ * composer inert. The sketch is decoration; the thread
  * announces itself once as busy.
  */
 export function ChatLoading({ onNewChat, onHistory }: ChatPageActions) {
@@ -42,8 +39,11 @@ export function ChatLoading({ onNewChat, onHistory }: ChatPageActions) {
   const threadRef = useRef<HTMLDivElement>(null);
   const { gutter } = useScrollFades(threadRef);
   return (
-    <Page layout={{ className: "sp-chat-page", state: "thread" }}>
-      <GenerateHeader title={null} onNewChat={onNewChat} onHistory={onHistory} />
+    <Page
+      kind="self"
+      layout={{ className: "sp-chat-page", state: "thread" }}
+      header={<GenerateHeader title={null} onNewChat={onNewChat} onHistory={onHistory} />}
+    >
       <div className="sp-chat-split">
         <div className="sp-chat-split__chat">
           <div className="sp-chat-thread-frame">
@@ -55,17 +55,12 @@ export function ChatLoading({ onNewChat, onHistory }: ChatPageActions) {
               aria-label="Loading chat"
             >
               <div className="sp-chat-thread__column" aria-hidden>
-                <div className="sp-tchat-user sp-tchat-skeleton">
-                  <span className="sp-gen-loading__bubble" />
+                {/* A one-line bubble: 12 around a line of Body/L. */}
+                <div className="sp-tchat-user">
+                  <Skeleton shape="block" width="min(320px, 70%)" height={36} radius="lg" />
                 </div>
-                <AssistantMessage>
-                  <span className="sp-tchat-skeleton sp-gen-loading__status">
-                    <span className="sp-tchat-skeleton__bar" style={{ width: "min(360px, 80%)" }} />
-                  </span>
-                  <div className="sp-gen-results">
-                    <ResultCardSkeleton aspect={4 / 5} />
-                  </div>
-                  <CaptionCardSkeleton />
+                <AssistantMessage message={<Skeleton width={360} />}>
+                  <ResultCardSkeleton />
                 </AssistantMessage>
               </div>
             </div>
@@ -84,9 +79,6 @@ export function ChatLoading({ onNewChat, onHistory }: ChatPageActions) {
                 disabled
               />
             </div>
-            <p className="t-caption-s sp-tchat-legal">
-              <LegalLinks />
-            </p>
           </div>
         </div>
       </div>
@@ -113,8 +105,11 @@ export function ChatUnavailable({
     takeComposerFocus();
   }, []);
   return (
-    <Page layout={{ className: "sp-chat-page", state: "thread" }}>
-      <GenerateHeader title={null} onNewChat={onNewChat} onHistory={onHistory} />
+    <Page
+      kind="self"
+      layout={{ className: "sp-chat-page", state: "thread" }}
+      header={<GenerateHeader title={null} onNewChat={onNewChat} onHistory={onHistory} />}
+    >
       <div className="sp-chat-unavailable">
         {failure.reason === "error" ? (
           <ErrorState
@@ -129,16 +124,13 @@ export function ChatUnavailable({
               It may have been deleted, or it was started in another workspace or account.
             </p>
             <div className="sp-emptystate__actions">
-              <Button kind="primary" size="sm" icon={MessageSquarePlus} onClick={onNewChat}>
+              <Button kind="primary" size="sm" icon={Plus} onClick={onNewChat}>
                 New chat
               </Button>
             </div>
           </div>
         )}
       </div>
-      <footer className="sp-chat-footer">
-        <LegalLinks />
-      </footer>
     </Page>
   );
 }

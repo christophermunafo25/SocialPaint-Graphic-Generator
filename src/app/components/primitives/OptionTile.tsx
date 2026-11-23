@@ -51,7 +51,7 @@ export const OptionTile = React.forwardRef<HTMLButtonElement, TileProps>(functio
       ) : null}
       <span className="ui-option-tile__text">
         <span className="t-label-m">{label}</span>
-        {description && <span className="t-caption-s ui-option-tile__desc">{description}</span>}
+        {description && <span className="t-caption-m ui-option-tile__desc">{description}</span>}
       </span>
       <Check size={16} className="ui-icon ui-option-tile__check" aria-hidden />
     </button>

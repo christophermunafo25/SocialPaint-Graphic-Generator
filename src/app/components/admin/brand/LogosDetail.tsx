@@ -13,7 +13,7 @@ import {
   type LogoSurface,
 } from "./kitOps";
 import type { BrandDraft } from "./kitPlumbing";
-import { Button, ChoiceChip, Input, PreviewOverlay, SegmentedControl, Tag } from "../../primitives";
+import { Button, Chip, Input, PreviewOverlay, SegmentedControl, Tag } from "../../primitives";
 import { AddSlot } from "./primitives/AddSlot";
 import { useInPlaceEdit, type InPlaceEdit } from "./primitives/useInPlaceEdit";
 
@@ -132,7 +132,7 @@ export function LogosDetail({ brand, surface }: { brand: BrandDraft; surface?: L
           onFiles={(files) => {
             for (const f of files) void uploadRef.current(f);
           }}
-          style={{ minHeight: 213 }}
+          style={{ alignSelf: "stretch", minHeight: 206 }}
         />
       </div>
       {/* The setup strip's "Upload logo" opens the picker straight away. */}
@@ -308,7 +308,6 @@ function LogoEditingCard({ asset, logos, brand, edit, primaryFor }: LogoEditingP
 
       <div className="sp-bs-logo__fields">
         <Input
-          size="sm"
           aria-label="Logo name"
           value={name}
           autoFocus
@@ -323,17 +322,17 @@ function LogoEditingCard({ asset, logos, brand, edit, primaryFor }: LogoEditingP
           </span>
           <div role="group" aria-labelledby={`${asset.id}-show`} className="sp-bs-chips">
             {(["dark", "light"] as const).map((s) => (
-              <ChoiceChip
+              <Chip
                 key={s}
                 selected={surfaces.includes(s)}
                 onClick={() => void toggleSurface(s, !surfaces.includes(s))}
               >
                 {SURFACE_LABELS[s]}
-              </ChoiceChip>
+              </Chip>
             ))}
           </div>
           {note && (
-            <p className="t-caption-s sp-bs-note" role="status">
+            <p className="t-caption-m sp-bs-note" role="status">
               {note}
             </p>
           )}
@@ -345,20 +344,20 @@ function LogoEditingCard({ asset, logos, brand, edit, primaryFor }: LogoEditingP
           </span>
           <div role="group" aria-labelledby={`${asset.id}-primary`} className="sp-bs-chips">
             {(["dark", "light"] as const).map((s) => (
-              <ChoiceChip
+              <Chip
                 key={s}
                 selected={primaryFor(s) === asset.id}
                 disabled={!surfaces.includes(s)}
                 onClick={() => primaryFor(s) !== asset.id && makePrimary(s)}
               >
                 On {s}
-              </ChoiceChip>
+              </Chip>
             ))}
           </div>
         </div>
 
         {blocked && (
-          <p className="t-caption-s sp-bs-error-line" role="alert">
+          <p className="t-caption-m sp-bs-error-line" role="alert">
             {blocked}
           </p>
         )}

@@ -16,6 +16,7 @@ import {
   RowContextMenu,
   RowMenu,
   type RowMenuGroup,
+  Skeleton,
 } from "../../primitives";
 import { AddSlot } from "./primitives/AddSlot";
 import { useLinkClick } from "./useLinkClick";
@@ -138,7 +139,7 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
         ))}
         {pending.map((p) => (
           <div key={p.key} className="sp-bs-image" data-uploading>
-            <span className="sp-bs-image__plate sp-bs-bone" />
+            <Skeleton className="sp-bs-image__plate" />
             <span className="sp-bs-image__meta">
               <span className="sp-bs-image__row">
                 <span className="t-label-s sp-bs-image__name">{p.name}</span>
@@ -154,7 +155,7 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
           onFiles={(files) => {
             for (const f of files) void uploadRef.current(f);
           }}
-          style={{ minHeight: 207, alignSelf: "stretch" }}
+          style={{ alignSelf: "stretch" }}
         />
       </div>
       {hiddenPicker}
@@ -288,7 +289,7 @@ function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
           <span className="t-label-xs sp-bs-image__size">{meta}</span>
           {blocked && (
             <span role="alert" className="sp-bs-image__blocked">
-              <span className="t-caption-s sp-bs-error-line">{blocked}</span>
+              <span className="t-caption-m sp-bs-error-line">{blocked}</span>
               <a
                 href={routeToUrl({ name: "adminTemplates" })}
                 onClick={linkClick({ name: "adminTemplates" })}

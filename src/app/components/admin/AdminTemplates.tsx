@@ -1,15 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  CheckCircle2,
-  Copy,
-  Eye,
-  EyeOff,
-  Pencil,
-  Plus,
-  Proportions,
-  RotateCcw,
-  Trash2,
-} from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Copy, Eye, EyeOff, Frame, Pencil, Plus, Search, Trash2, Undo2 } from "lucide-react";
 import type { TemplateSchema, UsageSummary } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
@@ -18,33 +8,48 @@ import { useBrand } from "@/lib/brand/BrandContext";
 import { seedStarterTemplates } from "@/lib/templates/starters/seed";
 import { consumeSeedNotice } from "@/lib/templates/starters/seedNotice";
 import { useRouter } from "../../router";
-import { Page, PageHeader } from "../layout/Page";
+import { Page } from "../layout/Page";
 import { ConfirmDialog } from "../ConfirmDialog";
-import { InlineEdit } from "../InlineEdit";
-import { TemplateSearchField } from "../templates/TemplateSearchField";
+import { LibrarySearch } from "../templates/LibrarySearch";
 import { toCatalogTemplate } from "@/lib/templates/catalog";
+import { builderUsageLine } from "@/lib/templates/builderMeta";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { versionName } from "@/lib/templates/reflow";
 import type { CanvasSize } from "@/lib/templates/platforms";
-import { CanvasSizePicker } from "../builder/CanvasSizePicker";
+import type { AutoBuildResult, DesignImportResult } from "@/lib/types";
 import { ErrorState } from "../ErrorState";
-import { SkeletonCard } from "../templates/TemplateSkeleton";
-import { TemplateThumbnail } from "../TemplateThumbnail";
+import { AutoBuildDialog } from "../builder/AutoBuildDialog";
+import { CanvaImportDialog } from "../builder/CanvaImportDialog";
+import { FigmaImportDialog } from "../builder/FigmaImportDialog";
+import { NewTemplateDialog, type StartPath } from "../builder/NewTemplateDialog";
+import { ChooseSizeDialog, type SizesState } from "../builder/SizeGallery";
+import { handOffStart, takeNewTemplateRequest, type BuilderStart } from "../builder/startHandoff";
+import { BUILDER_MIN_VIEWPORT_PX, useViewportAtLeast } from "../builder/useViewportAtLeast";
+import { BuilderTemplateCard, BuilderTemplateCardSkeleton } from "./BuilderTemplateCard";
+import {
+  Button,
+  EmptyState,
+  PageHeader,
+  SegmentedControl,
+  Select,
+  Toast,
+  type RowMenuGroup,
+} from "../primitives";
+import { AREA_ICON } from "../areas";
 
 type StatusFilter = "all" | "published" | "draft";
 type SortKey = "recent" | "name" | "downloads";
 
-const lastUsed = (iso: string | null): string => {
-  if (!iso) return "";
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
-};
+/** Where New template has got to: its own dialog, then Choose a size or
+ * one import's dialog. */
+type StartStep = "new" | "size" | "figma" | "build" | "canva";
 
-/** Admin template list: drafts + published, search/filter/sort, usage on the
- * card, publish toggle, edit, duplicate, delete. */
+/** The Template Builder list (new brand, 328:1944): drafts and published
+ * templates under the status switch, the sort and the search, each card
+ * with its usage line and its row menu (329:2206): Edit, Duplicate, Make
+ * another size, then Publish or Unpublish, and Delete. New template starts
+ * here (329:2660 and the dialogs after it) and hands its result to the
+ * builder (startHandoff). */
 export function AdminTemplates() {
   const { company } = useAuth();
   const { navigate } = useRouter();
@@ -108,28 +113,23 @@ export function AdminTemplates() {
 
   /** Template pending delete confirmation. */
   const [deleting, setDeleting] = useState<TemplateSchema | null>(null);
-  /** Template whose name is open for inline rename. */
 
-  const confirmDelete = async () => {
-    if (!deleting) return;
-    await stores.templates.delete(deleting.id);
-    setDeleting(null);
-    reload();
-  };
-
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
+  // The Toast owns its time (PROMPT.md section 7.2); each message keeps its
+  // own length, and n restarts it for a repeat.
+  const [toast, setToast] = useState<{ message: string; ms: number; n: number } | null>(null);
+  const showToast = useCallback((message: string, ms: number) => {
+    setToast((prev) => ({ message, ms, n: (prev?.n ?? 0) + 1 }));
+  }, []);
+  // Duplicate hands over to the editor a moment after its toast.
+  const hopTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(hopTimer.current), []);
 
   // Onboarding's seeding runs right before it navigates here; if any starter
   // failed to create, the notice it left behind surfaces as a toast.
   useEffect(() => {
     const notice = consumeSeedNotice();
-    if (notice) {
-      setToast(notice);
-      toastTimer.current = window.setTimeout(() => setToast(null), 8000);
-    }
-  }, []);
+    if (notice) showToast(notice, 8000);
+  }, [showToast]);
 
   /** Restore starter templates: the same seeder onboarding ran. It skips
    * starterKeys that still exist, so it only recreates deleted ones and a
@@ -142,10 +142,7 @@ export function AdminTemplates() {
     setConfirmingRestore(false);
     if (!company || !kit) return;
     setRestoring(true);
-    const showToast = (message: string) => {
-      setToast(message);
-      toastTimer.current = window.setTimeout(() => setToast(null), 6000);
-    };
+    const showRestoreToast = (message: string) => showToast(message, 6000);
     try {
       const logoAsset =
         assets.find((a) => a.id === kit.primaryLogoAssetId) ??
@@ -157,13 +154,13 @@ export function AdminTemplates() {
       });
       if (result.failed.length) {
         console.error("Starter restore failed for:", result.failed);
-        showToast("Some starter templates could not be restored. Try again.");
+        showRestoreToast("Some starter templates could not be restored. Try again.");
       } else if (result.created.length) {
-        showToast(
+        showRestoreToast(
           `${result.created.length} starter template${result.created.length === 1 ? "" : "s"} restored.`,
         );
       } else {
-        showToast("All starter templates are already in place.");
+        showRestoreToast("All starter templates are already in place.");
       }
       if (result.created.length) reload();
     } finally {
@@ -171,26 +168,75 @@ export function AdminTemplates() {
     }
   };
 
-  /** Rename from the card. Throws on failure so the inline editor rolls the
-   *  name back instead of showing a change that never landed. */
-  const renameTemplate = async (t: TemplateSchema, name: string) => {
-    try {
-      await stores.templates.update(t.id, { name });
-      reload();
-    } catch (e) {
-      setToast("Couldn't rename. Try again.");
-      toastTimer.current = window.setTimeout(() => setToast(null), 4000);
-      throw e;
-    }
-  };
-
-  /** Template whose "Create a version for…" picker is open. */
+  /** Template whose Make another size is open (Choose a size). */
   const [versionFor, setVersionFor] = useState<TemplateSchema | null>(null);
-  // The workspace's enabled sizes, for the version picker.
+  // The workspace's enabled sizes, for Choose a size.
   const sizesState = useAsync<CanvasSize[]>(
     () => (company ? stores.companies.listCanvasSizes(company.id) : Promise.resolve([])),
     [company],
   );
+  const sizes: SizesState =
+    sizesState.status === "ready"
+      ? { status: "ready", sizes: sizesState.data }
+      : sizesState.status === "error"
+        ? { status: "error", retry: sizesState.retry }
+        : { status: "loading" };
+
+  // New template (329:2660). The builder works from 1024 wide; narrower,
+  // New template goes straight to it, which says so, rather than through
+  // dialogs whose result it couldn't open.
+  const viewportOk = useViewportAtLeast(BUILDER_MIN_VIEWPORT_PX);
+  const [startStep, setStartStep] = useState<StartStep | null>(null);
+  const newButton = useRef<HTMLButtonElement>(null);
+  const openNewTemplate = () =>
+    viewportOk ? setStartStep("new") : navigate({ name: "builder", templateId: null });
+  // The builder, opened on /template-builder/new with nothing to start
+  // from, sends New template back here.
+  useEffect(() => {
+    if (takeNewTemplateRequest()) setStartStep("new");
+  }, []);
+  // The imports need the Supabase backend. Import from Canva shows once
+  // the workspace has Canva; whether it's connected is its dialog's to say.
+  const importReady = stores.designImport.isConfigured();
+  const [canvaEnabled, setCanvaEnabled] = useState(false);
+  useEffect(() => {
+    if (!company || !importReady) return;
+    let cancelled = false;
+    stores.designImport
+      .canvaStatus(company.id)
+      .then((s) => !cancelled && setCanvaEnabled(s.enabled))
+      .catch(() => !cancelled && setCanvaEnabled(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [company, importReady]);
+  /** Where Choose a size and Delete hand focus back as they close: New
+   * template, or the row menu they came from (its item is gone by then). */
+  const dialogReturn = useRef<HTMLElement | null>(null);
+  const fromOpenRowMenu = () => {
+    dialogReturn.current = document.querySelector<HTMLElement>(
+      '.sp-tbcard .ui-rowmenu[aria-expanded="true"]',
+    );
+  };
+  const choosePath = (path: StartPath) => {
+    dialogReturn.current = newButton.current;
+    setStartStep(path === "blank" ? "size" : path);
+  };
+  /** Hand the start to the builder and open it. */
+  const startWith = (start: BuilderStart) => {
+    handOffStart(start);
+    navigate({ name: "builder", templateId: null });
+  };
+  const closeStart = () => setStartStep(null);
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    await stores.templates.delete(deleting.id);
+    // The card's menu goes with the card, so focus goes to New template.
+    dialogReturn.current = newButton.current;
+    setDeleting(null);
+    reload();
+  };
 
   /** Create a version for another platform: duplicate — the original is
    * never touched — then open the copy with the reflow handoff so the
@@ -211,8 +257,7 @@ export function AdminTemplates() {
       });
     } catch (e) {
       console.error("Version create failed", e);
-      setToast("Couldn't create the version. Try again.");
-      toastTimer.current = window.setTimeout(() => setToast(null), 4000);
+      showToast("Couldn't create the version. Try again.", 4000);
     }
   };
 
@@ -224,100 +269,153 @@ export function AdminTemplates() {
     for (let n = 2; names.has(name); n++) name = `${base} ${n}`;
     try {
       const copy = await stores.templates.duplicate(t.id, name);
-      setToast("Duplicated.");
+      showToast("Duplicated.", 4000);
       reload();
-      // The person duplicating is about to edit it — the toast covers the hop.
-      toastTimer.current = window.setTimeout(
+      // The person duplicating is about to edit it: the toast covers the hop.
+      window.clearTimeout(hopTimer.current);
+      hopTimer.current = window.setTimeout(
         () => navigate({ name: "builder", templateId: copy.id }),
         600,
       );
     } catch (e) {
       console.error("Duplicate failed", e);
-      setToast("Couldn't duplicate. Try again.");
-      toastTimer.current = window.setTimeout(() => setToast(null), 4000);
+      showToast("Couldn't duplicate. Try again.", 4000);
     }
   };
 
-  return (
-    <Page>
-      {toast && (
-        <div className="sp-toast" role="status" aria-live="polite">
-          <CheckCircle2
-            style={{
-              width: 16,
-              height: 16,
-              color: "var(--state-primary)",
-              flexShrink: 0,
-              marginTop: 1,
-            }}
-          />
-          <span
-            style={{
-              fontSize: "var(--type-label-size)",
-              fontWeight: 500,
-              color: "var(--text-primary)",
-            }}
+  const showBar = templatesState.status === "ready" && templates.length > 0;
+
+  /** A card's row menu (329:2206). */
+  const menuFor = (t: TemplateSchema): RowMenuGroup[] => [
+    {
+      items: [
+        {
+          label: "Edit",
+          icon: Pencil,
+          movesFocus: true,
+          onSelect: () => navigate({ name: "builder", templateId: t.id }),
+        },
+        { label: "Duplicate", icon: Copy, onSelect: () => void duplicateTemplate(t) },
+        {
+          label: "Make another size",
+          icon: Frame,
+          movesFocus: true,
+          onSelect: () => {
+            fromOpenRowMenu();
+            setVersionFor(t);
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        t.status === "published"
+          ? { label: "Unpublish", icon: EyeOff, onSelect: () => void toggleStatus(t) }
+          : { label: "Publish", icon: Eye, onSelect: () => void toggleStatus(t) },
+        {
+          label: "Delete",
+          icon: Trash2,
+          movesFocus: true,
+          onSelect: () => {
+            fromOpenRowMenu();
+            setDeleting(t);
+          },
+        },
+      ],
+    },
+  ];
+
+  const header = (
+    <PageHeader
+      icon={AREA_ICON.templateBuilder}
+      title="Template Builder"
+      actions={
+        <>
+          <Button
+            kind="neutral"
+            icon={Undo2}
+            onClick={() => setConfirmingRestore(true)}
+            disabled={restoring || !kit}
+            title="Recreate deleted starter templates"
           >
-            {toast}
-          </span>
-        </div>
-      )}
+            {restoring ? "Restoring…" : "Restore starters"}
+          </Button>
+          <Button ref={newButton} kind="primary" icon={Plus} onClick={openNewTemplate}>
+            New template
+          </Button>
+        </>
+      }
+    />
+  );
+
+  return (
+    <Page header={header}>
+      {/* The fill page's toast position: centred at the foot of the page. */}
+      <div className="sp-fill-toast" aria-live="polite">
+        <Toast
+          open={toast !== null}
+          message={toast?.message}
+          messageKey={toast?.n}
+          duration={toast?.ms}
+          onTimeout={() => setToast(null)}
+        />
+      </div>
       <ConfirmDialog
         open={deleting !== null}
         title={`Delete template "${deleting?.name ?? ""}"?`}
         description="This cannot be undone."
         confirmLabel="Delete template"
+        returnFocus={dialogReturn}
         onCancel={() => setDeleting(null)}
         onConfirm={() => void confirmDelete()}
       />
-      {versionFor && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Create a version of ${versionFor.name}`}
-          style={{ background: "color-mix(in srgb, var(--text-on-accent) 55%, transparent)" }}
-          onClick={() => setVersionFor(null)}
-        >
-          <div
-            className="w-full max-w-sm p-4 space-y-3"
-            style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border-strong)",
-              borderRadius: "var(--radius-card)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div>
-              <h2
-                style={{
-                  fontFamily: "var(--font-head)",
-                  fontWeight: "var(--weight-head)",
-                  fontSize: "var(--type-cardtitle-size)",
-                  letterSpacing: "var(--track-head)",
-                  color: "var(--text-primary)",
-                }}
-              >
-                Create a version for…
-              </h2>
-              <p
-                style={{
-                  fontSize: "var(--type-caption-size)",
-                  color: "var(--text-secondary)",
-                  marginTop: 2,
-                }}
-              >
-                "{versionFor.name}" stays untouched. The version lands as a reflowed draft copy you
-                review in the builder.
-              </p>
-            </div>
-            <CanvasSizePicker
-              sizes={sizesState.status === "ready" ? sizesState.data : []}
-              value={{ width: versionFor.canvasWidth, height: versionFor.canvasHeight }}
-              onPick={(next) => void createVersion(versionFor, next)}
-            />
-          </div>
-        </div>
+      <NewTemplateDialog
+        open={startStep === "new"}
+        onOpenChange={(next) => !next && closeStart()}
+        importReady={importReady}
+        canvaEnabled={canvaEnabled}
+        onChoose={choosePath}
+      />
+      {/* Choose a size: a blank template's size, or a template's other
+          size (Make another size), which marks its own. */}
+      <ChooseSizeDialog
+        open={startStep === "size" || versionFor !== null}
+        onOpenChange={(next) => {
+          if (next) return;
+          closeStart();
+          setVersionFor(null);
+        }}
+        state={sizes}
+        current={
+          versionFor ? { width: versionFor.canvasWidth, height: versionFor.canvasHeight } : null
+        }
+        onPick={(size) =>
+          versionFor ? void createVersion(versionFor, size) : startWith({ kind: "blank", size })
+        }
+        returnFocus={dialogReturn}
+      />
+      {startStep === "figma" && (
+        <FigmaImportDialog
+          onClose={closeStart}
+          onImported={(result: DesignImportResult) => startWith({ kind: "import", result })}
+          returnFocus={newButton}
+        />
+      )}
+      {startStep === "build" && (
+        <AutoBuildDialog
+          onClose={closeStart}
+          onBuilt={(result: AutoBuildResult | DesignImportResult) =>
+            startWith({ kind: "build", result })
+          }
+          returnFocus={newButton}
+        />
+      )}
+      {startStep === "canva" && (
+        <CanvaImportDialog
+          onClose={closeStart}
+          onBuilt={(result) => startWith({ kind: "build", result })}
+          returnFocus={newButton}
+        />
       )}
       <ConfirmDialog
         open={confirmingRestore}
@@ -328,83 +426,48 @@ export function AdminTemplates() {
         onCancel={() => setConfirmingRestore(false)}
         onConfirm={() => void restoreStarters()}
       />
-      <PageHeader
-        title="Template Builder"
-        actions={
-          <div className="flex items-center" style={{ gap: "var(--space-2xs)" }}>
-            <button
-              className="sp-btn"
-              onClick={() => setConfirmingRestore(true)}
-              disabled={restoring || !kit}
-              title="Recreate deleted starter templates"
-            >
-              <RotateCcw style={{ width: 13, height: 13 }} />
-              {restoring ? "Restoring…" : "Restore starters"}
-            </button>
-            <button
-              className="sp-btn sp-btn-primary"
-              onClick={() => navigate({ name: "builder", templateId: null })}
-            >
-              <Plus style={{ width: 13, height: 13 }} />
-              New template
-            </button>
-          </div>
-        }
-      />
 
-      {templatesState.status === "ready" && templates.length > 0 && (
-        <div
-          className="sp-admin-filterrow flex flex-wrap items-center mb-6"
-          style={{ gap: "var(--space-xs)" }}
-        >
-          <TemplateSearchField value={query} onChange={setQuery} />
-          <div
-            className="sp-tabstrip"
-            role="group"
-            aria-label="Filter by status"
-            style={{ height: 40 }}
-          >
-            {(
-              [
-                ["all", `All ${templates.length}`],
-                ["published", `Published ${publishedCount}`],
-                ["draft", `Drafts ${draftCount}`],
-              ] as [StatusFilter, string][]
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setStatusFilter(key)}
-                aria-pressed={statusFilter === key}
-                className="sp-tabstrip__tab px-3"
-                style={{ fontSize: "var(--type-caption-size)", fontWeight: 500 }}
-              >
-                {label}
-              </button>
-            ))}
+      {showBar && (
+        <>
+          <div className="sp-tb-filterbar">
+            <SegmentedControl
+              aria-label="Filter by status"
+              options={[
+                { id: "all", label: `All ${templates.length}` },
+                { id: "published", label: `Published ${publishedCount}` },
+                { id: "draft", label: `Drafts ${draftCount}` },
+              ]}
+              selectedId={statusFilter}
+              onSelect={(id) => setStatusFilter(id as StatusFilter)}
+            />
+            <div className="sp-tb-filterbar__end">
+              <Select<SortKey>
+                ariaLabel="Sort templates"
+                hug
+                value={sort}
+                options={[
+                  { value: "recent", label: "Recently edited" },
+                  { value: "name", label: "Name" },
+                  { value: "downloads", label: "Most downloaded" },
+                ]}
+                onSelect={setSort}
+              />
+              <LibrarySearch
+                size="md"
+                value={query}
+                onChange={setQuery}
+                label="Search templates"
+                placeholder="Search templates, platforms, or sizes"
+              />
+            </div>
           </div>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            aria-label="Sort templates"
-            className="sp-input"
-            style={{
-              width: "auto",
-              height: 40,
-              padding: "0 10px",
-              fontSize: "var(--type-caption-size)",
-            }}
-          >
-            <option value="recent">Recently edited</option>
-            <option value="name">Name</option>
-            <option value="downloads">Most downloaded</option>
-          </select>
-        </div>
+        </>
       )}
 
       {templatesState.status === "loading" ? (
-        <div className="sp-grid-media" aria-busy="true" aria-label="Loading templates">
+        <div className="sp-tb-grid" aria-busy="true" aria-label="Loading templates">
           {Array.from({ length: 8 }, (_, i) => (
-            <SkeletonCard key={i} />
+            <BuilderTemplateCardSkeleton key={i} />
           ))}
         </div>
       ) : templatesState.status === "error" ? (
@@ -414,167 +477,33 @@ export function AdminTemplates() {
           onRetry={templatesState.retry}
         />
       ) : templates.length === 0 ? (
-        <div
-          className="text-center py-24"
-          style={{
-            border: "1.5px dashed var(--border-strong)",
-            borderRadius: "var(--radius-card)",
-          }}
-        >
-          <p
-            style={{
-              fontFamily: "var(--font-head)",
-              fontWeight: "var(--weight-head)",
-              fontSize: "var(--type-cardtitle-size)",
-              letterSpacing: "var(--track-head)",
-              color: "var(--text-primary)",
-              marginBottom: 6,
-            }}
-          >
-            Create your first template
-          </p>
-          <p
-            className="max-w-md mx-auto"
-            style={{ fontSize: "var(--type-label-size)", color: "var(--text-secondary)" }}
-          >
-            Upload a PNG or import a Figma frame, map the editable fields, and publish it for your
-            team.
-          </p>
-        </div>
+        <EmptyState icon={Frame} title="Create your first template" className="sp-tb-empty" />
       ) : visible.length === 0 ? (
-        <p className="text-center py-20" style={{ fontSize: 14, color: "var(--text-secondary)" }}>
-          {query.trim()
-            ? "No templates match that search."
-            : statusFilter === "draft"
-              ? "No drafts."
-              : "Nothing published yet."}
-        </p>
+        <EmptyState
+          icon={query.trim() ? Search : Frame}
+          title={
+            query.trim()
+              ? "No templates match that search."
+              : statusFilter === "draft"
+                ? "No drafts."
+                : "Nothing published yet."
+          }
+          className="sp-tb-empty"
+        />
       ) : (
-        <div className="sp-grid-media">
-          {visible.map((t) => {
-            const iconBtn: React.CSSProperties = {
-              width: 32,
-              height: 32,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            };
-            return (
-              <div key={t.id} className="sp-card sp-media-card flex flex-col">
-                <button
-                  onClick={() => navigate({ name: "builder", templateId: t.id })}
-                  className="sp-media-card__preview"
-                  aria-label={`Edit ${t.name}`}
-                >
-                  <div
-                    style={{
-                      aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}`,
-                      // Contain, unlike the member gallery: an admin needs to see
-                      // the whole artwork, so pin the LONG axis and letterbox.
-                      ...(t.canvasWidth / t.canvasHeight >= 1
-                        ? { width: "100%" }
-                        : { height: "100%" }),
-                    }}
-                  >
-                    <TemplateThumbnail template={t} />
-                  </div>
-                </button>
-                <div className="sp-template-card__meta sp-template-card__meta--stack">
-                  {/* Line 1: the title, alone. Five 32px icons beside it left
-                      the rename field ~18px wide at four columns; the name
-                      and its input now own the whole line. */}
-                  <InlineEdit
-                    className="min-w-0"
-                    value={t.name}
-                    ariaLabel={`Rename ${t.name}`}
-                    inputAriaLabel="Template name"
-                    placeholder="Untitled template"
-                    valueStyle={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}
-                    onSave={(name) => renameTemplate(t, name)}
-                  />
-                  {/* Line 2: status (+ provenance when a model built the fields) */}
-                  <span
-                    className="sp-eyebrow inline-block"
-                    style={t.status === "published" ? { color: "var(--state-primary)" } : undefined}
-                  >
-                    {t.status}
-                  </span>
-                  {/* Starter templates carry autobuildMeta for provenance
-                      and idempotency but are seeded designs, not model
-                      output — labeling them AI-built would be wrong. */}
-                  {t.autobuildMeta && t.autobuildMeta.source !== "starter" && (
-                    <span
-                      className="sp-eyebrow inline-block ml-2"
-                      title={`Built by ${t.autobuildMeta.model} from ${t.autobuildMeta.sourceKind}`}
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      · AI-built
-                    </span>
-                  )}
-                  {/* Line 3: meta */}
-                  {usageState.status === "ready" && (
-                    <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-                      {(() => {
-                        const u = usageByTemplate.get(t.id);
-                        if (!u || u.downloads === 0) return "Not used yet";
-                        // An admin who sent a link out wants to know it is
-                        // working, and that only shows if public traffic is
-                        // counted apart from the team's own.
-                        const viaLink =
-                          u.publicDownloads > 0 ? ` · ${u.publicDownloads} via link` : "";
-                        return `${u.downloads} download${u.downloads === 1 ? "" : "s"}${viaLink} · last used ${lastUsed(u.lastUsedAt)}`;
-                      })()}
-                    </p>
-                  )}
-                  {/* Line 4: the actions, on a row of their own. Five 32px
-                      icons are 192px wide; at four columns the card offers 218,
-                      so they share a line with nothing — not the title (which
-                      they squeezed to ~18px) and not the status. */}
-                  <div
-                    className="flex items-center"
-                    style={{ gap: "var(--space-2xs)", marginTop: "var(--space-2xs)" }}
-                  >
-                    <button
-                      style={iconBtn}
-                      onClick={() => void toggleStatus(t)}
-                      title={t.status === "published" ? "Unpublish" : "Publish"}
-                    >
-                      {t.status === "published" ? (
-                        <EyeOff style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                      ) : (
-                        <Eye style={{ width: 16, height: 16, color: "var(--state-primary)" }} />
-                      )}
-                    </button>
-                    <button
-                      style={iconBtn}
-                      onClick={() => navigate({ name: "builder", templateId: t.id })}
-                      title="Edit"
-                    >
-                      <Pencil style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                    </button>
-                    <button
-                      style={iconBtn}
-                      onClick={() => void duplicateTemplate(t)}
-                      title="Duplicate"
-                    >
-                      <Copy style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                    </button>
-                    <button
-                      style={iconBtn}
-                      onClick={() => setVersionFor(t)}
-                      title="Create a version for another size"
-                    >
-                      <Proportions style={{ width: 16, height: 16, color: "var(--text-muted)" }} />
-                    </button>
-                    <button style={iconBtn} onClick={() => setDeleting(t)} title="Delete">
-                      <Trash2 style={{ width: 16, height: 16, color: "var(--state-danger)" }} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        <div className="sp-tb-grid">
+          {visible.map((t) => (
+            <BuilderTemplateCard
+              key={t.id}
+              template={t}
+              usage={builderUsageLine(
+                t,
+                usageState.status === "ready" ? (usageByTemplate.get(t.id)?.downloads ?? 0) : null,
+              )}
+              menu={menuFor(t)}
+              onOpen={() => navigate({ name: "builder", templateId: t.id })}
+            />
+          ))}
         </div>
       )}
     </Page>

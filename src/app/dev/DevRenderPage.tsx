@@ -68,6 +68,17 @@ async function resolveFixture(name: string, variant?: string): Promise<ResolvedF
     if (!keyed) throw new Error(`No starter blueprint for ${name}`);
     return keyed;
   }
+  if (file.kind === "import") {
+    if (!file.source || !file.figmaNode) throw new Error(`Fixture ${name} names no saved tree`);
+    const { replayImport } = await import("./importReplay");
+    const schema = await replayImport({
+      name,
+      source: file.source,
+      figmaNode: file.figmaNode,
+      assets: file.assets ?? {},
+    });
+    return resolveFileFixture({ ...file, schema }, variant)!;
+  }
   const resolved = resolveFileFixture(file, variant);
   if (!resolved) throw new Error(`Fixture ${name} has no schema`);
   return resolved;

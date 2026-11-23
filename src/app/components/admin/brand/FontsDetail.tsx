@@ -253,7 +253,7 @@ function FontRow({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
         }}
       />
       {blocked && (
-        <p className="t-caption-s sp-bs-error-line sp-bs-font__blocked" role="alert">
+        <p className="t-caption-m sp-bs-error-line sp-bs-font__blocked" role="alert">
           {blocked}
         </p>
       )}

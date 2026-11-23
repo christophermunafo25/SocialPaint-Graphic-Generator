@@ -4,6 +4,7 @@ import React, {
   useLayoutEffect,
   useMemo,
   useReducer,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -29,15 +30,16 @@ import { useRouter } from "../../router";
 import { ErrorState } from "../ErrorState";
 import { useFullViewport } from "../layout/ChromeContext";
 import { Page } from "../layout/Page";
-import { MessageSquarePlus } from "lucide-react";
-import { Button } from "../primitives";
+import { Plus } from "lucide-react";
+import { Button, PageHeader } from "../primitives";
 import { LibrarySearch } from "../templates/LibrarySearch";
 import { PlatformFilter } from "../templates/PlatformFilter";
 import { HistoryCard } from "./HistoryCard";
-import { LegalLinks } from "./LegalLinks";
-import { ScrollFade, useScrollFades } from "./ScrollFade";
+import { useScrollFades } from "../layout/useScrollFades";
+import { ScrollFade } from "./ScrollFade";
 import { requestComposerFocus, takeHistoryFocus } from "./composerFocus";
 import { useThreadPreviews } from "./useThreadPreviews";
+import { AREA_ICON } from "../areas";
 
 /** The sentinel asks for the next page this far before it scrolls into
  * view (PROMPT §8.6), so the loading row is rarely seen at a reading pace. */
@@ -189,7 +191,7 @@ export function GenerateHistoryPage() {
 
   const facets = useMemo<PlatformFacet[]>(() => {
     const ids = inUse ?? (inUseUnknown ? [...listed.ids, ...(platform ? [platform] : [])] : []);
-    // GroupChips draws no counts; the facet's count is the catalogue's.
+    // The chips draw no counts; the facet's count is the catalogue's.
     return PLATFORMS.filter((p) => ids.includes(p.id)).map((p) => ({ platform: p, count: 0 }));
   }, [inUse, inUseUnknown, listed, platform]);
 
@@ -263,12 +265,17 @@ export function GenerateHistoryPage() {
   const [gridRef, columns] = useGridColumns();
 
   // Arriving from a chat's History or View all, whose button unmounted with
-  // the chat page: focus lands on the title, so the next Tab reaches New
-  // chat, the search and the chips in order (§9.10).
-  const titleRef = useRef<HTMLHeadingElement>(null);
+  // the chat page: focus lands on the page's heading, the trail's last
+  // crumb (6023:3648 draws no title under the header row), so the next Tab
+  // reaches the search and the chips in order.
+  const titleId = useId();
   useEffect(() => {
-    if (takeHistoryFocus()) titleRef.current?.focus({ preventScroll: true });
-  }, []);
+    if (!takeHistoryFocus()) return;
+    const title = document.getElementById(titleId);
+    if (!title) return;
+    title.tabIndex = -1;
+    title.focus({ preventScroll: true });
+  }, [titleId]);
 
   // ── Actions ─────────────────────────────────────────────────────────────
   const newChat = useCallback(() => {
@@ -276,14 +283,13 @@ export function GenerateHistoryPage() {
     navigate({ name: "generate" });
   }, [navigate]);
 
-  // A template chat opens on its template's page (template-chat §12.1).
+  // Every chat opens at its Generate address. A saved template chat goes on
+  // from there to its template's fill page while the template is published
+  // (SavedChat; PLAN.md judgement call 8), and stays an ordinary chat once
+  // the template has gone.
   const openChat = (id: string, templateId: string | null) => {
-    requestComposerFocus();
-    navigate(
-      templateId
-        ? { name: "templateChat", templateId, threadId: id }
-        : { name: "generate", threadId: id },
-    );
+    if (!templateId) requestComposerFocus();
+    navigate({ name: "generate", threadId: id });
   };
 
   const retry = () => {
@@ -313,11 +319,8 @@ export function GenerateHistoryPage() {
     body = (
       <div className="sp-emptystate">
         <p className="sp-emptystate__title">{NO_CHATS}</p>
-        <p className="sp-emptystate__body">
-          Chats you start in Generate show up here, newest first.
-        </p>
         <div className="sp-emptystate__actions">
-          <Button kind="primary" size="sm" icon={MessageSquarePlus} onClick={newChat}>
+          <Button kind="primary" size="sm" icon={Plus} onClick={newChat}>
             New chat
           </Button>
         </div>
@@ -328,11 +331,7 @@ export function GenerateHistoryPage() {
       <div className="sp-emptystate">
         <p className="sp-emptystate__title">{noMatch(query)}</p>
         <div className="sp-emptystate__actions">
-          <Button
-            kind="neutralOnPage"
-            size="sm"
-            onClick={() => setFilter({ platform: null, q: "" })}
-          >
+          <Button kind="neutral" size="sm" onClick={() => setFilter({ platform: null, q: "" })}>
             Clear
           </Button>
         </div>
@@ -381,41 +380,24 @@ export function GenerateHistoryPage() {
   }
 
   return (
-    <Page layout={{ className: "sp-chat-page", state: "history" }}>
-      {/* The header (13:3433): "Generate" / "History", then the title in
-          Title/Page with New chat on its row. */}
-      <header className="sp-gen-history-head">
-        <nav aria-label="Breadcrumb" className="sp-shell-crumbs">
-          <ol>
-            <li>
-              <button
-                type="button"
-                className="ui-reset ui-ring t-label-m sp-shell-crumbs__link"
-                onClick={newChat}
-              >
-                Generate
-              </button>
-            </li>
-            <li>
-              <span className="t-body-s sp-shell-crumbs__sep" aria-hidden>
-                /
-              </span>
-              <span className="t-label-m sp-shell-crumbs__current" aria-current="page">
-                History
-              </span>
-            </li>
-          </ol>
-        </nav>
-        <div className="sp-gen-history-head__title">
-          <h1 ref={titleRef} tabIndex={-1} className="t-title-page">
-            History
-          </h1>
-          <Button kind="primary" icon={MessageSquarePlus} onClick={newChat}>
-            New chat
-          </Button>
-        </div>
-      </header>
-
+    <Page
+      kind="self"
+      layout={{ className: "sp-chat-page", state: "history" }}
+      // The trail (6023:3648), "Generate" / "History", with New chat
+      // (Neutral) at the row's end. Its last crumb is the page's heading.
+      header={
+        <PageHeader
+          icon={AREA_ICON.generate}
+          crumbs={[{ label: "Generate", onClick: newChat }, { label: "History" }]}
+          currentId={titleId}
+          actions={
+            <Button kind="neutral" icon={Plus} onClick={newChat}>
+              New chat
+            </Button>
+          }
+        />
+      }
+    >
       {!noChats && (
         <div className="sp-lib-filterbar">
           <LibrarySearch
@@ -455,10 +437,6 @@ export function GenerateHistoryPage() {
         <ScrollFade position="top" visible={fades.top} gutter={fades.gutter} />
         <ScrollFade position="bottom" visible={fades.bottom} gutter={fades.gutter} />
       </div>
-
-      <footer className="sp-chat-footer">
-        <LegalLinks />
-      </footer>
     </Page>
   );
 }

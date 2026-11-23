@@ -22,12 +22,20 @@ import { MAX_BULK_ROWS, runBulk, slugify, type BulkRunResult } from "@/lib/bulk/
 import { overCapLine, readyLine, rowStatus } from "@/lib/bulk/copy";
 import { useRouter } from "../../router";
 import { ErrorState } from "../ErrorState";
-import { Page, PageHeader } from "../layout/Page";
-import { Bone, SkeletonLines } from "../Skeleton";
-import { Select } from "../ui/Select";
-import { Switch } from "../Switch";
+import { Page } from "../layout/Page";
+import {
+  Button,
+  Checkbox,
+  PageHeader,
+  ProgressBar,
+  Select,
+  Skeleton,
+  SkeletonLines,
+  Switch,
+} from "../primitives";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 import { BulkExportStage, type BulkExportStageHandle } from "./BulkExportStage";
+import { AREA_ICON } from "../areas";
 
 // Bulk fill: one published template, one spreadsheet, one graphic per row.
 //
@@ -62,15 +70,10 @@ function downloadBlob(blob: Blob, fileName: string) {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-const labelText: React.CSSProperties = {
-  fontSize: "var(--type-label-size)",
-  color: "var(--text-secondary)",
-};
-const mutedText: React.CSSProperties = {
-  fontSize: "var(--type-label-size)",
-  color: "var(--text-muted)",
-};
-const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+// Chrome text colours: secondary and muted copy, and the tables' cells.
+const secondary: React.CSSProperties = { color: "var(--text-secondary)" };
+const muted: React.CSSProperties = { color: "var(--text-muted)" };
+const strong: React.CSSProperties = { color: "var(--text-primary)" };
 
 export function BulkFillPage({ templateId }: { templateId: string }) {
   const { kit } = useBrand();
@@ -78,11 +81,14 @@ export function BulkFillPage({ templateId }: { templateId: string }) {
   const templateState = useAsync(() => stores.templates.get(templateId), [templateId]);
   const template = templateState.status === "ready" ? templateState.data : null;
 
+  // Every state keeps the page's header row, so nothing jumps as the
+  // template loads.
+  const header = <PageHeader icon={AREA_ICON.brandTemplates} title="Bulk fill" />;
   if (templateState.status === "loading") {
     return (
-      <Page>
+      <Page header={header}>
         <div aria-busy="true" aria-label="Loading template">
-          <Bone w={148} h={13} style={{ marginBottom: 20 }} />
+          <Skeleton width={148} height={13} style={{ marginBottom: 20 }} />
           <div className="sp-card p-5">
             <SkeletonLines lines={4} />
           </div>
@@ -92,25 +98,29 @@ export function BulkFillPage({ templateId }: { templateId: string }) {
   }
   if (templateState.status === "error") {
     return (
-      <ErrorState
-        title="We couldn't load this template."
-        detail="Check your connection and try again."
-        onRetry={templateState.retry}
-      />
+      <Page header={header}>
+        <ErrorState
+          title="We couldn't load this template."
+          detail="Check your connection and try again."
+          onRetry={templateState.retry}
+        />
+      </Page>
     );
   }
   if (!template) {
     return (
-      <p className="text-center py-24" style={mutedText}>
-        Template not found.
-      </p>
+      <Page header={header}>
+        <p className="tu-body-s text-center py-24" style={muted}>
+          Template not found.
+        </p>
+      </Page>
     );
   }
   if (template.status !== "published") {
     return (
-      <Page>
+      <Page header={header}>
         <BackLink onClick={() => navigate({ name: "template", templateId })} />
-        <p className="text-center py-24" style={mutedText}>
+        <p className="tu-body-s text-center py-24" style={muted}>
           Publish this template before filling it in bulk.
         </p>
       </Page>
@@ -121,10 +131,9 @@ export function BulkFillPage({ templateId }: { templateId: string }) {
 
 function BackLink({ onClick }: { onClick(): void }) {
   return (
-    <button onClick={onClick} className="flex items-center gap-1.5 mb-5" style={labelText}>
-      <ArrowLeft style={{ width: 14, height: 14 }} />
+    <Button kind="neutral" size="sm" icon={ArrowLeft} onClick={onClick} className="mb-5">
       Back to the template
-    </button>
+    </Button>
   );
 }
 
@@ -289,9 +298,8 @@ function BulkFill({
   useEffect(() => () => abortRef.current?.abort(), []);
 
   return (
-    <Page>
+    <Page header={<PageHeader icon={AREA_ICON.brandTemplates} title="Bulk fill" />}>
       <BackLink onClick={() => navigate({ name: "template", templateId: template.id })} />
-      <PageHeader title="Bulk fill" />
 
       {/* The off-screen canvas is mounted for the whole visit, so the
           background and fonts are resolved once, before the first row. */}
@@ -310,8 +318,10 @@ function BulkFill({
       {step === "mapping" && csv && (
         <div className="sp-card p-5 space-y-4">
           <div className="space-y-1">
-            <h2 className="sp-panel-title">Match columns to fields</h2>
-            <p style={mutedText}>
+            <h2 className="tu-label-m" style={strong}>
+              Match columns to fields
+            </h2>
+            <p className="tu-body-s" style={muted}>
               Read {csv.rows.length} {csv.rows.length === 1 ? "row" : "rows"} and{" "}
               {csv.headers.length} {csv.headers.length === 1 ? "column" : "columns"} from {fileName}{" "}
               ({delimiterName(csv.delimiter)}-separated). Each column can fill one field; columns
@@ -320,11 +330,14 @@ function BulkFill({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full" style={{ fontSize: "var(--type-label-size)", minWidth: 560 }}>
+            <table className="tu-body-s w-full" style={{ minWidth: 560 }}>
               <thead>
-                <tr className="text-left" style={{ borderBottom: "1px solid var(--border)" }}>
+                <tr
+                  className="text-left"
+                  style={{ borderBottom: "1px solid var(--border-default)" }}
+                >
                   {["Column", "First row", "Fills"].map((h) => (
-                    <th key={h} className="sp-eyebrow px-3 py-2" style={{ fontWeight: 400 }}>
+                    <th key={h} className="sp-eyebrow px-3 py-2">
                       {h}
                     </th>
                   ))}
@@ -332,21 +345,15 @@ function BulkFill({
               </thead>
               <tbody>
                 {csv.headers.map((header, i) => (
-                  <tr key={i} style={{ borderTop: "1px solid var(--border)" }}>
-                    <td
-                      className="px-3 py-2"
-                      style={{ color: "var(--text-primary)", fontWeight: 500 }}
-                    >
-                      {header || <span style={mutedText}>(no heading)</span>}
+                  <tr key={i} style={{ borderTop: "1px solid var(--border-default)" }}>
+                    <td className="tu-label-s px-3 py-2" style={strong}>
+                      {header || (
+                        <span className="tu-body-s" style={muted}>
+                          (no heading)
+                        </span>
+                      )}
                     </td>
-                    <td
-                      className="px-3 py-2"
-                      style={{
-                        ...mono,
-                        fontSize: "var(--type-caption-size)",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
+                    <td className="tu-mono-s px-3 py-2" style={secondary}>
                       {truncate(csv.rows[0]?.[i] ?? "", 48)}
                     </td>
                     <td className="px-3 py-2" style={{ width: 240 }}>
@@ -362,9 +369,7 @@ function BulkFill({
                           })),
                           // Only when there is a choice of look: the column
                           // names a variation, not a field.
-                          ...(multiLook
-                            ? [{ value: VARIANT_COLUMN, label: "Look (which variation)" }]
-                            : []),
+                          ...(multiLook ? [{ value: VARIANT_COLUMN, label: "Variation" }] : []),
                         ]}
                         onSelect={(v) => setColumn(i, v)}
                       />
@@ -376,29 +381,29 @@ function BulkFill({
           </div>
 
           {requiredUnmapped.length > 0 && (
-            <p role="status" style={labelText}>
+            <p role="status" className="tu-body-s" style={secondary}>
               {requiredUnmapped.length === 1
                 ? `${requiredUnmapped[0].label} is required and has no column yet. Map a column to it before continuing.`
                 : `${requiredUnmapped.map((f) => f.label).join(", ")} are required and have no column yet. Map a column to each before continuing.`}
             </p>
           )}
           {requiredUnmapped.length === 0 && mappedCount === 0 && (
-            <p role="status" style={labelText}>
+            <p role="status" className="tu-body-s" style={secondary}>
               No column is mapped yet. Choose a field for at least one column.
             </p>
           )}
 
           <div className="flex items-center justify-between gap-3">
-            <button className="sp-btn sp-btn-ghost" onClick={reset}>
+            <Button kind="neutral" onClick={reset}>
               Choose a different file
-            </button>
-            <button
-              className="sp-btn sp-btn-primary"
+            </Button>
+            <Button
+              kind="primary"
               disabled={requiredUnmapped.length > 0 || mappedCount === 0}
               onClick={() => void review()}
             >
               Check rows
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -407,13 +412,15 @@ function BulkFill({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="sp-card p-5 space-y-4 lg:col-span-7">
             <div className="space-y-1">
-              <h2 className="sp-panel-title">{readyLine(readyCount, checks.length)}</h2>
+              <h2 className="tu-label-m" style={strong}>
+                {readyLine(readyCount, checks.length)}
+              </h2>
               {overCap ? (
-                <p role="status" style={labelText}>
+                <p role="status" className="tu-body-s" style={secondary}>
                   {overCapLine(checks.length, MAX_BULK_ROWS)}
                 </p>
               ) : (
-                <p style={mutedText}>
+                <p className="tu-body-s" style={muted}>
                   {readyCount === checks.length
                     ? "Every row fits its template. Export when you are ready."
                     : "Rows with problems are left out of the export unless you include them below. Hover a row to preview it."}
@@ -426,33 +433,35 @@ function BulkFill({
                 <Switch
                   checked={problemsOnly}
                   onChange={setProblemsOnly}
-                  label={<span style={labelText}>Show only rows with problems</span>}
+                  label={
+                    <span className="tu-body-s" style={secondary}>
+                      Show only rows with problems
+                    </span>
+                  }
                 />
-                <label className="flex items-start gap-2" style={labelText}>
-                  <input
-                    type="checkbox"
-                    className="mt-0.5"
+                <div>
+                  <Checkbox
                     checked={includeProblems}
-                    onChange={(e) => setIncludeProblems(e.target.checked)}
+                    onChange={setIncludeProblems}
+                    label="Include rows with problems anyway"
                   />
-                  <span>
-                    Include rows with problems anyway. They export as they are: text that overflows
-                    runs past the edge of the graphic, and an empty required field shows the field's
-                    placeholder.
-                  </span>
-                </label>
+                  <p className="tu-body-s pl-6 mt-1" style={secondary}>
+                    They export as they are: text that overflows runs past the edge of the graphic,
+                    and an empty required field shows the field's placeholder.
+                  </p>
+                </div>
               </div>
             )}
 
             <div className="overflow-x-auto">
-              <table
-                className="w-full"
-                style={{ fontSize: "var(--type-label-size)", minWidth: 480 }}
-              >
+              <table className="tu-body-s w-full" style={{ minWidth: 480 }}>
                 <thead>
-                  <tr className="text-left" style={{ borderBottom: "1px solid var(--border)" }}>
+                  <tr
+                    className="text-left"
+                    style={{ borderBottom: "1px solid var(--border-default)" }}
+                  >
                     {["Row", identifierField?.label ?? "Value", "Status"].map((h) => (
-                      <th key={h} className="sp-eyebrow px-3 py-2" style={{ fontWeight: 400 }}>
+                      <th key={h} className="sp-eyebrow px-3 py-2">
                         {h}
                       </th>
                     ))}
@@ -470,25 +479,15 @@ function BulkFill({
                         tabIndex={0}
                         aria-selected={selected}
                         style={{
-                          borderTop: "1px solid var(--border)",
-                          background: selected ? "var(--bg-hover)" : undefined,
+                          borderTop: "1px solid var(--border-default)",
+                          background: selected ? "var(--surface-sunken)" : undefined,
                           cursor: "default",
                         }}
                       >
-                        <td
-                          className="px-3 py-2"
-                          style={{
-                            ...mono,
-                            fontSize: "var(--type-caption-size)",
-                            color: "var(--text-secondary)",
-                          }}
-                        >
+                        <td className="tu-mono-s px-3 py-2" style={secondary}>
                           {c.index + 1}
                         </td>
-                        <td
-                          className="px-3 py-2"
-                          style={{ color: "var(--text-primary)", fontWeight: 500 }}
-                        >
+                        <td className="tu-label-s px-3 py-2" style={strong}>
                           {truncate(
                             identifierField ? (c.values[identifierField.fieldKey] ?? "") : "",
                             40,
@@ -505,7 +504,7 @@ function BulkFill({
                   })}
                   {visibleChecks.length === 0 && (
                     <tr>
-                      <td className="px-3 py-3" colSpan={3} style={mutedText}>
+                      <td className="px-3 py-3" colSpan={3} style={muted}>
                         No rows have problems.
                       </td>
                     </tr>
@@ -515,17 +514,17 @@ function BulkFill({
             </div>
 
             <div className="flex items-center justify-between gap-3">
-              <button className="sp-btn sp-btn-ghost" onClick={() => setStep("mapping")}>
+              <Button kind="neutral" onClick={() => setStep("mapping")}>
                 Back to columns
-              </button>
-              <button
-                className="sp-btn sp-btn-primary"
+              </Button>
+              <Button
+                kind="primary"
+                icon={Download}
                 disabled={overCap || toRender.length === 0}
                 onClick={() => void run()}
               >
-                <Download style={{ width: 14, height: 14 }} />
                 Export {toRender.length} {toRender.length === 1 ? "graphic" : "graphics"}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -542,45 +541,31 @@ function BulkFill({
 
       {step === "running" && (
         <div className="sp-card p-5 space-y-4">
-          <h2 className="sp-panel-title">
+          <h2 className="tu-label-m" style={strong}>
             Rendering {Math.min(progress.done + 1, progress.total)} of {progress.total}
           </h2>
-          <div
-            aria-hidden
-            style={{
-              height: 4,
-              borderRadius: "var(--radius-pill)",
-              background: "var(--bg-hover)",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                height: "100%",
-                width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%`,
-                background: "var(--state-primary)",
-                transition: "width var(--dur-state) var(--ease)",
-              }}
-            />
-          </div>
-          <p style={mutedText}>
+          <ProgressBar
+            value={progress.total ? progress.done / progress.total : 0}
+            label="Bulk export progress"
+          />
+          <p className="tu-body-s" style={muted}>
             Each graphic goes through the same export as a single download. Stopping keeps
             everything rendered so far.
           </p>
-          <button className="sp-btn sp-btn-ghost" onClick={() => abortRef.current?.abort()}>
+          <Button kind="neutral" onClick={() => abortRef.current?.abort()}>
             Stop after this row
-          </button>
+          </Button>
         </div>
       )}
 
       {step === "done" && outcome && (
         <div className="sp-card p-5 space-y-4">
-          <h2 className="sp-panel-title">
+          <h2 className="tu-label-m" style={strong}>
             {outcome.result.rendered === 0
               ? "Nothing rendered."
               : `${outcome.result.rendered} ${outcome.result.rendered === 1 ? "graphic" : "graphics"} rendered and downloaded as ${outcome.zipName}.`}
           </h2>
-          <div className="space-y-1" style={labelText}>
+          <div className="tu-body-s space-y-1" style={secondary}>
             {outcome.canceled && (
               <p>
                 Stopped after {outcome.result.rendered + outcome.result.failed.length} of{" "}
@@ -603,15 +588,15 @@ function BulkFill({
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <button className="sp-btn sp-btn-primary" onClick={reset}>
+            <Button kind="primary" onClick={reset}>
               Start over
-            </button>
-            <button
-              className="sp-btn sp-btn-ghost"
+            </Button>
+            <Button
+              kind="neutral"
               onClick={() => navigate({ name: "template", templateId: template.id })}
             >
               Back to the template
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -640,23 +625,22 @@ function UploadStep({
       <label
         {...drop.bind}
         data-active={drop.active}
-        className="sp-dropzone flex flex-col items-center justify-center gap-2 cursor-pointer text-center"
+        className="sp-dropzone tu-body-s flex flex-col items-center justify-center gap-2 cursor-pointer text-center"
         style={{
           minHeight: 160,
           padding: "var(--space-md)",
           border: "1.5px dashed var(--border-strong)",
           borderRadius: "var(--radius-control)",
           color: "var(--text-secondary)",
-          fontSize: "var(--type-label-size)",
         }}
       >
         <span className="sp-dropzone__icon flex">
           <FileSpreadsheet style={{ width: 22, height: 22 }} />
         </span>
-        <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>
+        <span className="tu-label-s" style={strong}>
           Drop a CSV here, or click to choose one
         </span>
-        <span style={mutedText}>One row per graphic. Comma, tab, or semicolon separated.</span>
+        <span style={muted}>One row per graphic. Comma, tab, or semicolon separated.</span>
         <input
           type="file"
           accept=".csv,.tsv,text/csv,text/tab-separated-values"
@@ -670,12 +654,12 @@ function UploadStep({
       </label>
 
       {error && (
-        <p role="alert" style={labelText}>
+        <p role="alert" className="tu-body-s" style={secondary}>
           {error}
         </p>
       )}
 
-      <div className="space-y-2" style={mutedText}>
+      <div className="tu-body-s space-y-2" style={muted}>
         <p>
           The first line is the column headings. Headings that match a field name are mapped
           automatically ({fields.join(", ")}); anything else you match by hand on the next step.
@@ -690,10 +674,9 @@ function UploadStep({
         )}
       </div>
 
-      <button className="sp-btn sp-btn-ghost" onClick={onStarter}>
-        <Download style={{ width: 14, height: 14 }} />
+      <Button kind="neutral" icon={Download} onClick={onStarter}>
         Download a starter CSV
-      </button>
+      </Button>
     </div>
   );
 }
@@ -712,7 +695,9 @@ function PreviewCard({
   return (
     <div className="sp-card p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="sp-panel-title">Row {row + 1}</h3>
+        <h3 className="tu-label-m" style={strong}>
+          Row {row + 1}
+        </h3>
         <span className="sp-eyebrow">
           {template.canvasWidth}×{template.canvasHeight} · live
         </span>
@@ -720,9 +705,9 @@ function PreviewCard({
       <div
         className="overflow-hidden"
         style={{
-          background: "var(--bg-hover)",
-          border: "1px solid var(--border)",
-          borderRadius: "var(--radius-media-inner)",
+          background: "var(--surface-sunken)",
+          border: "1px solid var(--border-default)",
+          borderRadius: "var(--radius-control-md)",
           aspectRatio: `${template.canvasWidth} / ${template.canvasHeight}`,
           maxWidth: `calc((100vh - 180px) * ${template.canvasWidth / template.canvasHeight})`,
           marginInline: "auto",

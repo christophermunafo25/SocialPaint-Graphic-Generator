@@ -4,6 +4,110 @@ Written by brand-system Phase 0 on 2026-10-25, against `main` at 4094a0b (PR 169
 
 Support levels: **live** means a field property draws it, **workaround** means an admin can approximate it with today's fields, and **missing** means it can't be drawn.
 
+## Since import intent
+
+Import intent, Phase 1 (2026-11-15) made the Figma importer read how a frame is made before it builds anything (`docs/import-intent/PHASE-1.md`): the keys a designer writes into layer names (`role · kind · key=value`), the auto layout around each element, and one model pass for what the names leave open. Import from Figma, auto build with a Figma link and a pasted layer now run one pipeline (`supabase/functions/_shared/figmaImportRun.ts`) and land the same result, with the member form filled in. No property was added: everything lands in fields as they already were, and every fixture recorded before is unchanged.
+
+| Fixture                 | Chromium (exact / blurred) | Firefox     | WebKit      |
+| ----------------------- | -------------------------- | ----------- | ----------- |
+| `portrait-plate-import` | 0.72 / 0.69                | 0.87 / 1.46 | 0.86 / 1.78 |
+
+These are the fixture's baseline, approved by CJ on 2026-11-16. They include pull request 184, which requests the optical size axis for the Google families that have one, so the Newsreader headline is drawn in the display cut Figma draws; before it the fixture measured 2.23, 2.25 and 2.27. What is left: the golden's first row is a darker band from Figma's export (about 0.07 points in every engine), the headline is about 0.3% lighter than Figma's with one-pixel differences in line placement between engines, and the browsers measure the call to action's label about 2px narrower than Figma, so the pill ends 2px short.
+
+What an import now carries:
+
+- **What members fill in.** A layer keyed `edit=member` lands as a member field by the rules the builder's Fixed switch follows: text gives up its fixed copy, keeps it as the sample and shrinks to stay in its box, and an image keeps its artwork, crop and mask as the sample. `max` becomes the character limit, `fit` the image fit and `align` the text alignment. A mask group reads the keys of the photo inside it. A pill reads its role from its container and its member keys from its text.
+- **Labels from roles.** `photo-fill` reads "Photo", and a role used several times is numbered in reading order.
+- **Growth anchors.** A hug-width pill holds the edge its row holds, so a longer call to action grows away from the headline's left edge instead of off it. A two-child space-between row lands as fixed positions with those anchors, not as a stack. Its measured limit stops it a padding short of its neighbour, and a centred pill may grow both ways to the margin the frame's other text and images keep.
+- **A pill at its designed height.** Its vertical padding comes from the container's height, so a cap-trimmed label no longer makes the pill taller than it was drawn.
+- **Member text takes its band.** Inside a fixed-height auto layout parent, a member text box takes the height the layout leaves it, anchored as drawn, so `shrink` has the room the design gives it.
+- **Cap trim from the face's own metrics.** When the import lands in the browser, text on a cap-trimmed layer is re-placed from the loaded face's ascent and descent and the cap height Figma trimmed to (`src/lib/figma/importPrepare.ts`). The fixture's Newsreader headline moves 8.6 px. A face whose rise above its capitals equals its descent, as Inter's does, stays where it was.
+- **Measured limits.** Each member text field's `maxLength` is measured in the browser from the designer's own copy at the field's shrink floor, inside `lines` when the layer names them. A field with no floor of its own shrinks to the 18px default, so its limit is measured at three quarters of its set size instead; the field still shrinks as far as before. A keyed `max` that is lower wins, and one that can't fit is lowered. Canva and image imports are measured the same way, in place of the estimate of 0.55 of the font size per character.
+- **The model pass.** One forced tool call per import, in `template-autobuild`, validated before use: labels, Fixed on unkeyed layers, a select, a type style only when the layer is drawn in it exactly, and the template's name, description, category, tags and caption. It never moves, resizes or recolors anything, and a declared `edit` or `max` is never overturned. If the call fails, times out, is declined or is cut off, the import lands on its keys.
+- **The kit's logo.** A logo keyed `variant=primary` with a `surface` takes the kit's primary logo for that surface, contained in the Figma logo's box. A logo drawn as vectors becomes a picture of the kit's.
+- **Form order apart from paint order.** The fields array is the order the form reads in; paint order stays the frame's, in `zIndex`.
+
+What it took to publish, counted as edits (Fixed the wrong way round on a field, a member field still carrying its layer's default name, or a caption to write) by `scripts/import-intent/eval.mjs` without the model pass:
+
+| Frames                                    | Before, at least | Keyed | Renamed to Figma's defaults |
+| ----------------------------------------- | ---------------- | ----- | --------------------------- |
+| 28 keyed frames from one client's library | 401              | 28    | 290                         |
+| Feature Highlight and the GTM composer    | 14               | n/a   | 12                          |
+
+A keyed frame needs one edit without the model: its caption. "Before" is a floor: Fixed off, a label and any limit per member field, then a name and a caption, with the repairs to a pill's height and anchor left out.
+
+What is still approximated or open:
+
+- **The model pass is unmeasured.** The eval's model half was not run (CJ, 2026-11-15). Edits on unkeyed frames with the model, and calls, tokens and seconds per import, are still to be read from live imports. Every import's response carries them in `intent`.
+- **Stacks and containers that hug.** A plate doesn't grow with its headline, and a row is not a stack. Both need new properties.
+- **Colour roles** (`fill=accent`, `text=on-card`) are parsed and reported, not stored. That waits for Phase 6.
+- **A swapped logo** is contained and centred in the Figma logo's box, so one narrower than the Figma logo doesn't sit on the edge its row holds.
+- **Character limits** aren't scored by the eval, which runs without a browser.
+
+## Since Phase 5
+
+Phase 5 (2026-10-28) added the brand system's model and resolvers (`docs/brand-system/PHASE-5.md`): colour roles, five schemes with contrast fixes and a per-canvas type scale, all pure and not yet read by the builder or Generate (Phases 6, 7 and 13). The one visible change is enforcement: with off-palette colours off, shapes, strokes, plates, icon paths and the canvas background now clamp to the palette, as text and gradients already did. Every fixture rendered before is unchanged.
+
+| Fixture               | Chromium (exact / blurred) | Firefox     | WebKit      |
+| --------------------- | -------------------------- | ----------- | ----------- |
+| `palette-enforcement` | 0.00 / 0.00                | 0.25 / 0.17 | 0.45 / 0.52 |
+
+Effect colours (shadows, glows, grain) are not clamped: they are almost always black or white at low alpha. A field or canvas that sets no colour is held too: the default ink and the white ground clamp like any other colour.
+
+Left for later phases:
+
+- **Public links.** They don't enforce. `public-template` doesn't send `allow_off_palette`, so a public link renders as if off-palette colours were allowed; text was unclamped there before this phase too. Closing it needs a function change and a deploy.
+- **Contrast-fixed colours (Phase 6).** Only the derived role colours pass enforcement untouched. A scheme's contrast-fixed colours (a walked accent, muted ink, dark and tonal mixes) don't yet, so Phase 6's colourways must widen that set or a strict kit will snap their fixes back.
+- **Monochrome brands.** A strict brand with no chromatic colour lets the ramp's fallback accent through, since it is a derived role colour.
+- **Builder contrast warnings** (`variantContrast.ts`) judge the authored colours, not the clamped ones a strict kit paints.
+
+## Since Phase 4
+
+Phase 4 (2026-10-27) carried the renderer's depth through the Figma importer (`docs/brand-system/PHASE-4.md`), and the harness now measures imports: an `import` fixture replays a saved node tree through the real importer offline (`src/app/dev/importReplay.ts`), the same code `figma-import`, `figma-layers` and the builder run, with Figma's renders and fills served from files.
+
+| Fixture                    | Chromium (exact / blurred) | Firefox       | WebKit        |
+| -------------------------- | -------------------------- | ------------- | ------------- |
+| `gtm-composer-import`      | 8.84 / 0.58                | 10.32 / 0.45  | 2.80 / 0.53   |
+| `feature-highlight-import` | 4.70 / 9.74                | 4.58 / 9.86   | 5.04 / 10.74  |
+| `crop-matrix`              | 0.00 / 0.00                | 7.50 / 0.00   | 2.01 / 0.00   |
+
+The WebKit column was re-recorded on 2026-11-17 with CJ's approval. Since pull request 202 the export has WebKit decode a snapshot's photos whole, inside the draw, where it used to decode each at the size it was drawn (`test/fidelity/README.md`). Before it the three rows read 6.19 / 0.54, 6.04 / 10.74 and 11.58 / 0.09.
+
+Before the phase the GTM import scored 27.39 / 27.55 on Chromium and Feature Highlight 4.29 / 10.75. What an import now carries:
+
+- **Effects as properties:** drop and inner shadows, layer blur and grain on lifted layers, and the root frame's effects as canvas effects. A container with one solid stroke and drawable effects lifts as a shape.
+- **Strokes keep their alignment and alpha** (`strokeAlign`, 8-digit hex) instead of growing the box.
+- **Radial gradients** land radial on fields and overlay units, and draw elliptically in the plate.
+- **Vectors as icon fields:** a pure vector subtree is rebuilt from its fill and stroke geometry in the root's space, one colour per path. Masks, clipping, inner opacity, translucent or image paints, blend modes and mixed gradients keep the raster lift.
+- **Photos with their position:** a mask group whose top image covers the mask lands as that image's fill with `imageRect` and the mask render; a cropped fill lands as its fill with `imageRect`. Members can replace both.
+- **Placement and type:** positions keep two decimals, cap-trimmed text grows back to whole lines, and fixed text keeps its designed size (it shrinks once Fixed is turned off).
+
+What is still approximated:
+
+- **Photo resampling.** A live photo is scaled by the browser, not pre-cut by Figma, so Firefox and WebKit differ on fine texture. WebKit's 6.04 on Feature Highlight was 1.1 points above the hand-built fixture, all in the photo, with the blurred share unchanged. It reads 5.04, 0.1 points above, now that the export has WebKit decode the photo whole and scale it in the draw.
+- **Cap trim** assumes a face's ascent above the cap height equals its descent; for other faces the line sits a pixel or two off.
+- **The condensed headline width** (the font catalog), background blur, a drop shadow's spread, duo and multi noise, angular and diamond gradients, and a rotated radial's tilt.
+
+## Since Phase 3
+
+Phase 3 (2026-10-27) added the icon field (`docs/brand-system/PHASE-3.md`): vector artwork drawn from path data that recolors like any field and per colourway. The GTM composer's five icons and the Feature Highlight logo are now icon fields in their -depth fixtures, built from their own SVG paths, and score exactly as the SVG images did. `icons-matrix` checks sizes, weights, both gradient kinds, shadow, glow, grain, flips, rotation, blur, a two-color mark and a colourway recolor.
+
+| Fixture        | Chromium (exact / blurred) | Firefox     | WebKit      |
+| -------------- | -------------------------- | ----------- | ----------- |
+| `icons-matrix` | 0.00 / 0.00                | 0.04 / 0.00 | 0.63 / 0.00 |
+
+The importer still lifts vectors as raster images; carrying them in as icon fields is Phase 4. Uploading an SVG set as recolorable icons comes later.
+
+## Since Phase 2
+
+Phase 2 (2026-10-26) gave the builder controls for everything Phase 1 can paint (`docs/brand-system/PHASE-2.md`), so an admin can now add depth without the importer. The six starters carry subtle depth: soft shadows on photo panels, logo cards and calls to action, a 4% grain on Feature and Stat, and a glow on Stat's rule; Dark keeps the grain and drops the shadows. All 12 were re-blessed with CJ's approval: 8 goldens moved, and the Dark Launch, Milestone, Partnership and Event render exactly as before, since Dark drops the shadows. `builder-roundtrip` holds every property the builder writes and renders its per-look effects.
+
+| Fixture | Chromium (exact / blurred) | Firefox     | WebKit      |
+| ------------------- | -------------------------- | ----------- | ----------- |
+| `builder-roundtrip` | 0.00 / 0.00                | 0.17 / 0.00 | 0.73 / 1.99 |
+
+WebKit's share sits in the outer tail of the badge's glow, the pattern `effects-matrix` shows. The list below is unchanged by Phase 2.
+
 ## Since Phase 1
 
 Phase 1 (2026-10-25) added grain, drop shadows and glows, inner shadows, layer blur, center and outside strokes, and radial gradients (`docs/brand-system/PHASE-1.md`, `docs/TEMPLATE_SCHEMA.md`). The Phase 0 sections below are kept as measured, and these are the same frames rebuilt with depth. Each comparison now also reports a **blurred share**: the same threshold after a 4px blur of both images, which keeps tone and shadow and drops grain speckle. Two grain patterns never match pixel for pixel, so even a perfect grain scores high on the exact share.
@@ -29,7 +133,7 @@ Still not expressible after Phase 1, in the order they now cost:
 
 - **The condensed headline width:** a font catalog gap, about 2 points on `feature-highlight`.
 - **Image placement inside the box:** the photo is pre-cropped.
-- **Icons that recolor and vector paths:** Phase 3.
+- **Icons that recolor and vector paths:** done in Phase 3.
 - **The importer carrying effects:** Phase 4.
 - **A drop shadow's spread.**
 - **Inner shadows on text and SVG shapes.**

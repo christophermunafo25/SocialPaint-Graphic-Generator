@@ -1,28 +1,10 @@
 import React, { useRef, useState } from "react";
-import {
-  AlignLeft,
-  ChevronDown,
-  ChevronRight,
-  Frame,
-  GripVertical,
-  Image as ImageIcon,
-  Pin,
-  Shapes,
-  Type as TypeIcon,
-} from "lucide-react";
-import type { FieldType, LayoutGroup, TemplateField, TemplateVariant } from "@/lib/types";
+import { ChevronDown, ChevronRight, GripVertical } from "lucide-react";
+import type { LayoutGroup, TemplateField } from "@/lib/types";
 import { groupChildRef, parseGroupChildRef } from "@/lib/types";
 import { outermostGroupOf, parentGroupOf } from "@/lib/render/layout";
-import { unstyledVariantCount } from "@/lib/templates/variants";
+import { isRequiredField } from "@/lib/templates/fieldRules";
 import { mergeVisibleOrder, mergeVisibleRefs } from "./formOrder";
-
-const ICONS: Record<FieldType, React.ComponentType<{ style?: React.CSSProperties }>> = {
-  text: TypeIcon,
-  multiline: AlignLeft,
-  image: ImageIcon,
-  select: ChevronDown,
-  shape: Shapes,
-};
 
 interface FieldListPanelProps {
   fields: TemplateField[];
@@ -34,10 +16,6 @@ interface FieldListPanelProps {
   /** Reorder a group's STACK order (a third ordering — not the form order). */
   onReorderChildren(groupId: string, children: string[]): void;
   onContextMenu(e: React.MouseEvent, fieldId: string): void;
-  /** The template's variations, for the "not styled in N variations" chip.
-   * A field with no override in a variation inherits its base styling
-   * there — often exactly right, so the chip informs and never auto-fills. */
-  variants?: TemplateVariant[];
 }
 
 type Row =
@@ -57,17 +35,18 @@ type DragSource =
 
 /** What the member actually sees a control for. Fixed elements and shapes
  * never reach the form. */
-const inForm = (f: TemplateField) => !f.static && f.type !== "shape";
+const inForm = (f: TemplateField) => !f.static && f.type !== "shape" && f.type !== "icon";
 
-/** The Form tab's list: the member-facing fields in member-form order, with
- * grouped fields nested under their stack (in STACK order — their form-step
- * numbers still read from the flat order, which grouping never changes).
- * Fixed elements and shapes are not listed; the Layers tab is where every
- * element lives. Click to select (canvas-synced), ⌘/Ctrl-click
- * multi-selects, drag the grip to reorder: an ungrouped row or a whole group
- * reorders the FORM; a row inside a group reorders the STACK. Filtering is
- * display only: every reorder still emits the complete array, with the
- * hidden elements exactly where they were (see formOrder.ts). */
+/** The Form tab's list, in Form Rows (321:64): the fields your team fills in,
+ * in the order they fill them in, each with its number and "Optional" when
+ * it may be left empty. Grouped fields nest under their stack (in STACK
+ * order; their numbers still read from the flat order, which grouping never
+ * changes). Fixed elements and shapes are not listed; the Layers tab is
+ * where every element lives. Click to select (canvas-synced), Cmd or Ctrl
+ * click multi-selects, and a drag reorders: an ungrouped row or a whole
+ * group reorders the FORM, a row inside a group reorders the STACK.
+ * Filtering is display only: every reorder still emits the complete array,
+ * with the hidden elements exactly where they were (see formOrder.ts). */
 export function FieldListPanel({
   fields,
   groups,
@@ -76,7 +55,6 @@ export function FieldListPanel({
   onReorder,
   onReorderChildren,
   onContextMenu,
-  variants,
 }: FieldListPanelProps) {
   const dragSrc = useRef<DragSource | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
@@ -234,242 +212,130 @@ export function FieldListPanel({
 
   const rowKey = (r: Row) => (r.kind === "group" ? `g:${r.group.id}` : r.field.id);
 
+  if (visible.length === 0) {
+    return <p className="t-body-s sp-form-rows__empty">Your team has nothing to fill in yet.</p>;
+  }
+
+  const dragProps = (r: Row, key: string, start: () => void) => ({
+    draggable: true,
+    onDragStart: start,
+    onDragOver: (e: React.DragEvent) => {
+      if (!dragSrc.current) return;
+      e.preventDefault();
+      setOverKey(key);
+    },
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      drop(r);
+    },
+    onDragEnd: () => drop(r),
+  });
+
   return (
-    <div className="sp-card sp-card--chrome p-3 space-y-2">
-      <div className="flex items-baseline justify-between">
-        <h3 className="sp-eyebrow">Form order</h3>
-        <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
-          The order your team fills these in.
-        </span>
-      </div>
-      {visible.length === 0 ? (
-        <p
-          className="py-4 text-center"
-          style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}
-        >
-          {fields.length === 0
-            ? "No elements yet. Drag one onto the canvas."
-            : "Every element is fixed, so your team has nothing to fill in. Switch an element off Fixed to add it to the form."}
-        </p>
-      ) : (
-        <div className="space-y-1">
-          {rows.map((r) => {
-            const key = rowKey(r);
-            const isOver = overKey === key && dragSrc.current !== null;
-            if (r.kind === "group") {
-              const gref = groupChildRef(r.group.id);
-              const isSelected = selectedIds.includes(gref);
-              const isCollapsed = collapsed.has(r.group.id);
-              return (
-                <div
-                  key={key}
-                  draggable
-                  onDragStart={() => {
-                    if (r.depth === 0) {
-                      dragSrc.current = { kind: "group", groupId: r.group.id };
-                    } else {
-                      // A nested group reorders within its PARENT's stack.
-                      const parent = parentGroupOf(r.group.id, groups);
-                      dragSrc.current = parent
-                        ? { kind: "child", groupId: parent.id, ref: gref }
-                        : { kind: "group", groupId: r.group.id };
-                    }
-                  }}
-                  onDragOver={(e) => {
-                    if (!dragSrc.current) return;
-                    e.preventDefault();
-                    setOverKey(key);
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    drop(r);
-                  }}
-                  onDragEnd={() => drop(r)}
-                  onClick={() => onSelect([gref])}
-                  className="flex items-center gap-2 px-2 py-2 cursor-pointer"
-                  style={{
-                    marginLeft: r.depth * 14,
-                    borderRadius: "var(--radius-control)",
-                    border: `1px solid ${isSelected ? "var(--state-primary)" : "var(--border)"}`,
-                    background: isSelected
-                      ? "var(--accent-wash)"
-                      : isOver
-                        ? "var(--bg-raised)"
-                        : "var(--bg-surface)",
-                  }}
-                >
-                  <GripVertical
-                    style={{
-                      width: 13,
-                      height: 13,
-                      color: "var(--text-disabled)",
-                      flexShrink: 0,
-                      cursor: "grab",
-                    }}
-                  />
-                  <button
-                    aria-label={isCollapsed ? "Expand group" : "Collapse group"}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCollapsed((prev) => {
-                        const next = new Set(prev);
-                        if (next.has(r.group.id)) next.delete(r.group.id);
-                        else next.add(r.group.id);
-                        return next;
-                      });
-                    }}
-                    className="flex items-center"
-                    style={{ width: 16, flexShrink: 0, color: "var(--text-muted)" }}
-                  >
-                    {isCollapsed ? (
-                      <ChevronRight style={{ width: 12, height: 12 }} />
-                    ) : (
-                      <ChevronDown style={{ width: 12, height: 12 }} />
-                    )}
-                  </button>
-                  <Frame
-                    style={{ width: 13, height: 13, color: "var(--text-muted)", flexShrink: 0 }}
-                  />
-                  <span
-                    className="flex-1 truncate"
-                    style={{ fontSize: 12.5, color: "var(--text-primary)" }}
-                  >
-                    {r.group.name}
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 9.5,
-                      color: "var(--text-muted)",
-                    }}
-                  >
-                    {r.group.mode === "free" ? "group" : "auto layout"}
-                  </span>
-                </div>
-              );
-            }
-            const f = r.field;
-            const Icon = ICONS[f.type];
-            const isSelected = selectedIds.includes(f.id);
-            return (
-              <div
-                key={key}
-                draggable
-                onDragStart={() => {
-                  dragSrc.current = r.group
-                    ? { kind: "child", groupId: r.group.id, ref: f.fieldKey }
-                    : { kind: "field", fieldId: f.id };
-                }}
-                onDragOver={(e) => {
-                  if (!dragSrc.current) return;
-                  e.preventDefault();
-                  setOverKey(key);
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  drop(r);
-                }}
-                onDragEnd={() => drop(r)}
+    <div className="sp-form-rows" role="list" aria-label="Form">
+      {rows.map((r) => {
+        const key = rowKey(r);
+        const isOver = overKey === key && dragSrc.current !== null;
+        if (r.kind === "group") {
+          const gref = groupChildRef(r.group.id);
+          const isSelected = selectedIds.includes(gref);
+          const isCollapsed = collapsed.has(r.group.id);
+          return (
+            <div
+              key={key}
+              role="listitem"
+              className="sp-form-row"
+              data-selected={isSelected || undefined}
+              data-over={isOver || undefined}
+              style={{ "--layer-depth": r.depth } as React.CSSProperties}
+              {...dragProps(r, key, () => {
+                if (r.depth === 0) {
+                  dragSrc.current = { kind: "group", groupId: r.group.id };
+                } else {
+                  // A nested group reorders within its PARENT's stack.
+                  const parent = parentGroupOf(r.group.id, groups);
+                  dragSrc.current = parent
+                    ? { kind: "child", groupId: parent.id, ref: gref }
+                    : { kind: "group", groupId: r.group.id };
+                }
+              })}
+              onClick={() => onSelect([gref])}
+            >
+              <GripVertical size={16} className="ui-icon sp-form-row__grip" aria-hidden />
+              <button
+                type="button"
+                className="ui-reset ui-ring sp-form-row__twisty"
+                aria-expanded={!isCollapsed}
+                aria-label={`${r.group.name}, ${isCollapsed ? "expand" : "collapse"}`}
                 onClick={(e) => {
-                  if (e.metaKey || e.ctrlKey) {
-                    onSelect(
-                      isSelected ? selectedIds.filter((id) => id !== f.id) : [...selectedIds, f.id],
-                    );
-                  } else {
-                    onSelect([f.id]);
-                  }
-                }}
-                onContextMenu={(e) => onContextMenu(e, f.id)}
-                className="flex items-center gap-2 px-2 py-2 cursor-pointer"
-                style={{
-                  marginLeft: r.depth * 14,
-                  borderRadius: "var(--radius-control)",
-                  border: `1px solid ${isSelected ? "var(--state-primary)" : "var(--border)"}`,
-                  background: isSelected
-                    ? "var(--accent-wash)"
-                    : isOver
-                      ? "var(--bg-raised)"
-                      : "var(--bg-surface)",
+                  e.stopPropagation();
+                  setCollapsed((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(r.group.id)) next.delete(r.group.id);
+                    else next.add(r.group.id);
+                    return next;
+                  });
                 }}
               >
-                <GripVertical
-                  style={{
-                    width: 13,
-                    height: 13,
-                    color: "var(--text-disabled)",
-                    flexShrink: 0,
-                    cursor: "grab",
-                  }}
-                />
-                <span
-                  className="flex items-center"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    color: "var(--text-muted)",
-                    width: 16,
-                    flexShrink: 0,
-                  }}
-                >
-                  {r.stepNo === null ? (
-                    <Pin style={{ width: 11, height: 11, color: "var(--state-primary)" }} />
-                  ) : (
-                    String(r.stepNo).padStart(2, "0")
-                  )}
-                </span>
-                <Icon
-                  style={{ width: 13, height: 13, color: "var(--text-muted)", flexShrink: 0 }}
-                />
-                <span
-                  className="flex-1 truncate"
-                  style={{ fontSize: 12.5, color: "var(--text-primary)" }}
-                >
-                  {f.label}
-                </span>
-                {(() => {
-                  const unstyled = unstyledVariantCount({ fields, variants }, f.fieldKey);
-                  if (!unstyled) return null;
-                  return (
-                    <span
-                      title={`This element has no styling of its own in ${unstyled} ${
-                        unstyled === 1 ? "variation" : "variations"
-                      }, so it inherits the base look there.`}
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 9,
-                        letterSpacing: "0.03em",
-                        color: "var(--text-secondary)",
-                        border: "1px solid var(--border-strong)",
-                        borderRadius: "var(--radius-pill)",
-                        padding: "1px 6px",
-                        whiteSpace: "nowrap",
-                        flexShrink: 0,
-                      }}
-                    >
-                      not styled in {unstyled}
-                    </span>
-                  );
-                })()}
-                <span
-                  className="truncate"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 9.5,
-                    color: "var(--text-muted)",
-                    maxWidth: 90,
-                  }}
-                >
-                  {f.static ? "fixed" : `{${f.fieldKey}}`}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-      <p style={{ fontSize: 10.5, color: "var(--text-muted)" }}>
-        Drag to reorder the form. Rows inside a stack reorder the stack instead. Layer order (what
-        sits on top on the graphic) is separate: use "To front / To back" in the inspector.
-      </p>
+                {isCollapsed ? (
+                  <ChevronRight size={16} className="ui-icon" aria-hidden />
+                ) : (
+                  <ChevronDown size={16} className="ui-icon" aria-hidden />
+                )}
+              </button>
+              <button
+                type="button"
+                className="ui-reset ui-ring sp-form-row__main"
+                aria-pressed={isSelected}
+              >
+                <span className="t-label-s sp-form-row__name">{r.group.name}</span>
+              </button>
+            </div>
+          );
+        }
+        const f = r.field;
+        const isSelected = selectedIds.includes(f.id);
+        return (
+          <div
+            key={key}
+            role="listitem"
+            className="sp-form-row"
+            data-selected={isSelected || undefined}
+            data-over={isOver || undefined}
+            style={{ "--layer-depth": r.depth } as React.CSSProperties}
+            {...dragProps(r, key, () => {
+              dragSrc.current = r.group
+                ? { kind: "child", groupId: r.group.id, ref: f.fieldKey }
+                : { kind: "field", fieldId: f.id };
+            })}
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey) {
+                onSelect(
+                  isSelected ? selectedIds.filter((id) => id !== f.id) : [...selectedIds, f.id],
+                );
+              } else {
+                onSelect([f.id]);
+              }
+            }}
+            onContextMenu={(e) => onContextMenu(e, f.id)}
+          >
+            <GripVertical size={16} className="ui-icon sp-form-row__grip" aria-hidden />
+            <button
+              type="button"
+              className="ui-reset ui-ring sp-form-row__main"
+              aria-pressed={isSelected}
+            >
+              <span className="t-mono-s sp-form-row__number">
+                {String(r.stepNo ?? 0).padStart(2, "0")}
+              </span>
+              <span className="t-label-s sp-form-row__name">{f.label}</span>
+              {!isRequiredField(f) && (
+                <span className="t-caption-m sp-form-row__meta">Optional</span>
+              )}
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

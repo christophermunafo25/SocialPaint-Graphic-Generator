@@ -58,6 +58,7 @@ import { PreAppShell } from "../PreAppShell";
 import { ColorControl } from "../ColorControl";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 import {
+  Badge,
   Button,
   IconButton,
   Input,
@@ -65,7 +66,6 @@ import {
   OptionRadioGroup,
   PlatformLogo,
   Select,
-  Status,
   Upload,
   type OptionTileOption,
 } from "../primitives";
@@ -508,7 +508,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
   );
 
   const fontSelects = (labelled: boolean) => (
-    <div className="sp-onb-fonts">
+    <div className="sp-onb-fonts" data-cards={labelled || undefined}>
       <FontPick
         role="Headings"
         label="Heading font"
@@ -548,6 +548,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
               errorId={`${ids.name}-e`}
             >
               <Input
+                size="lg"
                 id={ids.name}
                 value={answers.name}
                 autoComplete="name"
@@ -582,7 +583,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
       break;
 
     case "setupFor":
-      title = "Who are you setting SocialPaint up for?";
+      title = "Who are you setting this account up for?";
       onSubmit = () => check("setupFor") && go("team");
       body = (
         <>
@@ -601,6 +602,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
             <Question label="How did you hear about SocialPaint?" labelId={ids.heard}>
               <Select
                 ariaLabel="How did you hear about SocialPaint?"
+                className="sp-onb-select"
                 size="lg"
                 placeholder="Choose one"
                 value={answers.heardFrom}
@@ -632,6 +634,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
               errorId={`${ids.company}-e`}
             >
               <Input
+                size="lg"
                 id={ids.company}
                 value={answers.companyName}
                 autoComplete="organization"
@@ -729,6 +732,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
               errorId={`${ids.website}-e`}
             >
               <Input
+                size="lg"
                 id={ids.website}
                 value={answers.website}
                 autoComplete="url"
@@ -760,8 +764,8 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
       onSubmit = () => go("brand");
       body = (
         <>
-          {pullNote && <p className="t-body-s sp-onb-muted sp-onb-note">{pullNote}</p>}
-          <div className="sp-onb-questions" data-dense>
+          {pullNote && <p className="t-body-m sp-onb-muted sp-onb-note">{pullNote}</p>}
+          <div className="sp-onb-questions">
             <Question label="What does your logo look like?" labelId={ids.logo}>
               <Upload
                 placeholder="Upload your logo"
@@ -806,7 +810,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
       onSubmit = () => void confirmBrand();
       body = (
         <>
-          <div className="sp-onb-questions" data-dense>
+          <div className="sp-onb-questions">
             <Question label="Logos" labelId={ids.logo}>
               {brand.logoPreview ? (
                 <div className="sp-onb-logos">
@@ -837,7 +841,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
             </Question>
           </div>
           {failure && (
-            <p className="t-caption-s sp-onb-failure" role="alert">
+            <p className="t-caption-m sp-onb-failure" role="alert">
               {failure}
             </p>
           )}
@@ -863,6 +867,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
                   <div key={row.id} className="sp-onb-invite">
                     <div className="sp-onb-invite__row">
                       <Input
+                        size="lg"
                         type="email"
                         value={row.email}
                         aria-label={`Email ${i + 1}`}
@@ -902,7 +907,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
                     {row.error && (
                       <p
                         id={`${ids.invites}-${row.id}`}
-                        className="t-caption-s sp-onb-question__error"
+                        className="t-caption-m sp-onb-question__error"
                       >
                         {row.error}
                       </p>
@@ -912,7 +917,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
               </div>
               {invites.length < MAX_INVITES && (
                 <Button
-                  kind="neutralOnPage"
+                  kind="neutral"
                   size="sm"
                   icon={Plus}
                   className="sp-onb-add-invite"
@@ -971,7 +976,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
             </ul>
           )}
           {failure && (
-            <p className="t-caption-s sp-onb-failure" role="alert">
+            <p className="t-caption-m sp-onb-failure" role="alert">
               {failure}
             </p>
           )}
@@ -988,7 +993,6 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
 
   return (
     <PreAppShell width="wide" panel={<WorkspacePreview state={preview} />}>
-      {progress && <ProgressSegments done={progress.done} total={progress.total} />}
       <h1 ref={titleRef} id={titleId} tabIndex={-1} className="t-title-page sp-onb-title">
         {title}
       </h1>
@@ -1003,6 +1007,7 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
       >
         {body}
       </form>
+      {progress && <ProgressSegments done={progress.done} total={progress.total} />}
     </PreAppShell>
   );
 }
@@ -1042,7 +1047,7 @@ function PullRow({ label, status }: { label: string; status: PullStatus }) {
   return (
     <li className="sp-onb-pull__row" data-status={status}>
       <span className="t-label-m sp-onb-pull__label">{label}</span>
-      <Status tone={tone}>{word}</Status>
+      <Badge tone={tone}>{word}</Badge>
     </li>
   );
 }
@@ -1085,7 +1090,7 @@ function FontPick({
       </span>
       <span className="sp-onb-font-card__text">
         {select}
-        <span className="t-caption-s sp-onb-muted">{role}</span>
+        <span className="t-caption-m sp-onb-muted">{role}</span>
       </span>
     </div>
   );

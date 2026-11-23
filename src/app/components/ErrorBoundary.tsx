@@ -1,5 +1,6 @@
 import React from "react";
 import { captureError, type BoundaryLevel, type CaptureContext } from "@/lib/monitoring";
+import { Button } from "./primitives/Button";
 
 // Three containment levels (root / route / canvas+field), one class. Each
 // boundary reports what it caught with ids-only context, renders a fallback
@@ -9,7 +10,7 @@ import { captureError, type BoundaryLevel, type CaptureContext } from "@/lib/mon
 //
 // IMPORTANT: this module is imported by main.tsx BEFORE the app bundle, so
 // it must never import stores, auth, or anything that evaluates backend
-// config. React + monitoring only.
+// config. React, monitoring and the Button primitive only.
 
 interface ErrorBoundaryProps {
   level: BoundaryLevel;
@@ -71,9 +72,9 @@ export function RootCrashScreen() {
           Reloading brings you back to your last saved work. Published templates and saved drafts
           aren't affected.
         </p>
-        <button className="sp-btn sp-btn-primary" onClick={() => window.location.reload()}>
+        <Button kind="primary" onClick={() => window.location.reload()}>
           Reload SocialPaint
-        </button>
+        </Button>
       </div>
     </div>
   );

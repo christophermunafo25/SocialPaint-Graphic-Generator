@@ -12,7 +12,7 @@ exists anywhere. Source of truth: `src/lib/types.ts` (`TemplateSchema`,
 | `canvasWidth` / `canvasHeight` | Pixel size of the canvas. Chosen at creation — a `SIZE_CATALOG` preset (`src/lib/templates/platforms.ts`) or a custom size — and **every consumer reads from here** — renderer scale math, builder overlay, `toPng` export. New preset sizes = new catalogue entries, one file. |
 | `backgroundUrl` | Storage URL of the uploaded/imported PNG. Converted to a data URL before render/export. |
 | `fields` | Ordered `TemplateField[]`. **Array order is the member FORM order** (the sequence fields appear in the end-user's form — reordered by dragging in the builder's field list). Canvas paint order is the separate per-field `zIndex`. |
-| `captionTemplate` | Merge string with `{field_key}` placeholders, e.g. `"{name} celebrated {years} incredible years!"`. Members see the merged result, can edit it, and copy it. Image fields have no caption value. |
+| `captionTemplate` | Merge string with `{field_key}` placeholders, e.g. `"{name} celebrated {years} years with us."`. Members see the merged result, can edit it, and copy it. Image fields have no caption value. A caption the model writes (auto build, and Generate's posts and new designs) carries no emoji, exclamation points or em dashes: each prompt asks for that, and `plainCaption` (`supabase/functions/_shared/captionCopy.ts`) holds it after the answer (CJ, 2026-11-16). |
 | `backgroundColor` / `backgroundGradient` | Canvas base fill for blank-built templates: background image, then gradient, then color, then white. The gradient is the shared `TextGradient` shape (see **Gradients**). |
 | `canvasEffects` | Optional `FieldEffect[]` on the whole canvas (migration 0048, `templates.canvas_effects`). `noise` paints over every field, as a Figma frame effect does; `innerShadow` insets the canvas edge; other types are ignored here. See **Effects**. |
 | `variants` | Optional `TemplateVariant[]` — the template's colourways, sharing these fields and this geometry. See **Variations** below. Absent or a single entry means single-variant: no picker, no filmstrip, the pre-feature path byte for byte. |
@@ -91,6 +91,24 @@ Shape, plate and mask (migrations 0034 to 0036):
   the field's `cornerRadius` (unset radius renders a pill).
 - `maskUrl` — image fields only: an alpha mask image stretched over the
   field's box.
+- `imageRect` — image fields only (brand-system Phase 4, migration 0050):
+  `{ x, y, width, height }` as fractions of the box, where the image sits
+  inside it. The image is fitted into that rect with `objectFit` (cover by
+  default) and clipped by the box, its corners and its mask; a member's
+  replacement photo lands in the same rect. Fractions, so a resize keeps the
+  crop. Absent, the rect is the box. Structural: a colourway never moves it.
+
+Figma import (brand-system Phase 4) maps onto these properties: Figma's DROP_SHADOW, INNER_SHADOW, LAYER_BLUR and MONOTONE NOISE land in `effects` (the frame's own in `canvasEffects`); a stroke keeps `strokeAlign` and its alpha; GRADIENT_RADIAL lands as `kind: "radial"`; vector artwork lands as an `icon` field with `vector`; a masked or cropped photo lands with `imageRect`. Anything else keeps a Figma render.
+
+Import intent (Phase 1, `docs/import-intent/PHASE-1.md`) adds no property. It decides what an imported field starts as, from the frame itself:
+
+- **Keys in a layer's name** (`role · kind · key=value`): `edit` sets `static`, `max` sets `maxLength`, `fit` sets `objectFit`, `align` sets `align`, and the role gives the label.
+- **The auto layout around a layer:** a hug-width pill's `align` is the edge its row holds, its `platePaddingY` comes from its container's height, and a member text box takes the height its fixed-height parent leaves it.
+- **One model pass** for what the names leave open: `label`, `fieldKey`, `static` on unkeyed layers, `type: "select"` with `options` on a member's single line, `placeholder` where the layer has no copy of its own, and `typeStyleKey` only when the layer is drawn in that style exactly (limit included). It never sets geometry, color or a limit.
+- **A keyed logo** (`variant=primary` with a `surface`) lands as an `image` with the kit's primary logo for that surface as its `staticValue`, `objectFit: "contain"`.
+- **In the browser, as the import lands:** `maxLength` is measured from real glyphs at the field's shrink floor, or at three quarters of its set size when it has none, and text on a cap-trimmed layer is re-placed from the loaded face's metrics (`src/lib/figma/importPrepare.ts`).
+
+The fields array is the form's order, and `zIndex` keeps the frame's paint order.
 
 Gradients: `textGradient` (and `backgroundGradient` on the canvas) is
 `{ angle, stops[{ position 0..1, color }], kind?, center?, radius? }`.
@@ -123,9 +141,61 @@ px. A malformed entry is skipped at render time (`src/lib/render/effects.ts`).
   each `size` px. Seeded, so every export of a template paints the same
   grain.
 
+On an image the shadow and the blur are a filter on a wrapper around the box
+that clips the photo, so they follow the mask's shape. That box is its own
+stacking context: Safari before 26 draws a cropped photo whole under such a
+filter otherwise. For the same reason a field's inner shadow overlay is a
+stacking context when it holds a frame with no blur. And along an axis where
+no offset moves a blurred inner shadow's hole and no spread shrinks it, the
+hole's edges sit 0.02 px inside the box: Safari before 26 does not paint a
+blurred ring whose hole contains everything it was asked to paint
+(`test/fidelity/README.md`).
+
+In the builder (brand-system Phase 2) every field has an Effects section and
+the empty-selection rail has one for the canvas (grain and inner shadow).
+Rows list the effects in paint order and drag to reorder. What the builder
+writes goes through `normalizeEffects` (`src/app/components/builder/effectOps.ts`):
+offsets within ±500, blur 0 to 200, spread ±200, grain size 0.5 to 16 and
+coverage 0 to 1; kinds the target can't paint (an inner shadow on text or an
+ellipse) are dropped, and an empty list is stored as no key. The stroke row's
+Position control writes `strokeAlign` (Inside writes nothing). Colourways stay
+optional: these controls always edit the template, and a template with
+colourways can change a look's effects or stroke and plate colors on the
+"This variation" tab, each with "Use base" to drop the change. The edit canvas
+leaves a field unclipped when it paints beyond its box (a drop shadow, glow,
+layer blur, or a shape's center or outside stroke) and paints the canvas's
+inner shadow over the background and its grain over the fields, as the
+export does; the grain also lies lightly over a selected element's own
+handles, and the multi-selection box sits above it. A shadow or stroke cut
+off at the canvas edge raises one non-blocking builder warning.
+
+Icons (brand-system Phase 3, migration 0049):
+
+- `type: "icon"` — a static, design-only field that draws vector artwork.
+  Like a shape it is never member input and never required.
+- `vector` `{ viewBox: [minX, minY, w, h], paths, stroke?, source? }` — the
+  artwork, fitted inside the box with its aspect ratio kept (contain,
+  centred). Each path is `{ d, paint?: "fill" | "stroke", fillRule?,
+  colorHex? }`; a stroke path uses `stroke` `{ width, cap?, join? }`, whose
+  width is in viewBox units, so the line scales with the icon. A path's own
+  `colorHex` wins (multi-color art such as a logo); every other path paints
+  in the field's `colorHex` or `textGradient`, and a gradient runs across
+  the whole icon. `source` `{ set: "lucide", name }` records where the art
+  came from so the builder can swap it or change its weight. The renderer
+  reads it through `readVector` (`src/lib/render/vector.ts`), which drops
+  path data outside the SVG path grammar.
+- Icons take drop shadows, glows, layer blur and grain, but not inner
+  shadows. `vector` is structural; a colourway can change the color,
+  gradient, opacity, effects and visibility.
+- In the builder the Icon tile opens a searchable picker of Lucide icons
+  (loaded only when it opens). A new icon is 64 × 64 in the brand's text
+  color with a weight of 2. The inspector shows the icon with Change, its
+  Weight (0.5 to 4, line icons only), and Color in place of Fill; changing
+  the icon keeps the size, color and weight.
+
 Guardrails:
 
-- `maxLength` — hard char limit enforced by the input.
+- `maxLength` — hard char limit enforced by the input. An import measures it at the field's shrink floor (three quarters of the set size when the field has none), and a designer's keyed `max` wins when it is lower.
 - `textSizing` — how text responds to its content, always measured against
   real glyphs (`src/lib/render/autoFit.ts`):
   - `free` (or absent): the font size is fixed and the box grows taller as
@@ -136,7 +206,8 @@ Guardrails:
     fits, growing up from its floor.
 - `minFontScale` — the floor for `shrink` and `fill`, as a fraction of the
   set size (0.25 to 1; the builder's "Min text" shows it as a percentage).
-  New fields and imports get 0.75. It wins over `minFontSizePx`.
+  New fields and imports set none (CJ, 2026-10-04), so their text shrinks to
+  the 18px default. It wins over `minFontSizePx`.
 - `minFontSizePx` — the older absolute floor in px. Templates saved before
   `minFontScale` keep it and render exactly as before; with neither set the
   floor is 18px. Both are read through `minFontSizeFor` only.
@@ -149,7 +220,7 @@ Guardrails:
   gallery thumbnails keep painting its placeholder. Turning Fixed on clears
   it. In the caption an empty optional tag merges to nothing.
 - Requiredness is derived, never stored: a non-fixed field is required
-  unless it is `optional`; shapes never are (`isRequiredField` in
+  unless it is `optional`; shapes and icons never are (`isRequiredField` in
   `src/lib/templates/fieldRules.ts`, mirrored for the Edge Functions).
 - `required` — legacy column, never read. It stays in the table so old rows
   load; nothing sets it.
@@ -204,6 +275,13 @@ rendering the same draft, which is why moving an element moves it in every
 frame at once.
 
 ## Rendering contract
+
+Brand enforcement: when the kit's `allowOffPalette` is false, every colour a
+field paints (`colorHex`, `textGradient` stops, `strokeColor`, `plateColor`,
+an icon's per-path `colorHex`) and the canvas's `backgroundColor` and
+`backgroundGradient` render as the nearest palette colour, keeping any alpha
+(brand-system Phase 5). Colours the brand system derives for the kit pass
+untouched. The schema itself is never rewritten.
 
 `SchemaRenderer` renders any schema into a live-scaled canvas
 (`scale = min(containerW/canvasW, containerH/canvasH, 1)`), places each field

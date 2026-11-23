@@ -799,3 +799,47 @@ describe("effects geometry", () => {
     expect(units.length).toBe(0); // only the excluded text — nothing else
   });
 });
+
+describe("a lifted stroked, shadowed container (brand-system Phase 4)", () => {
+  // The walk lifts it as a shape with its stroke and shadow, and its text as
+  // its own field. The plate must hold neither the backdrop nor the stroke,
+  // and must still decompose what the walk didn't lift.
+  const card: LayerNode = {
+    id: "2:1",
+    name: "Card",
+    type: "FRAME",
+    absoluteBoundingBox: { x: 10, y: 10, width: 200, height: 100 },
+    fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
+    strokes: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }],
+    strokeWeight: 2,
+    effects: [{ type: "DROP_SHADOW" }],
+    children: [
+      {
+        id: "2:2",
+        name: "Title",
+        type: "TEXT",
+        absoluteBoundingBox: { x: 20, y: 20, width: 100, height: 20 },
+      },
+      {
+        id: "2:3",
+        name: "Rule",
+        type: "RECTANGLE",
+        absoluteBoundingBox: { x: 20, y: 60, width: 100, height: 2 },
+        fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }],
+      },
+    ],
+  };
+  const root: LayerNode = {
+    id: "1:1",
+    name: "Frame",
+    type: "FRAME",
+    absoluteBoundingBox: { x: 0, y: 0, width: 400, height: 300 },
+    children: [card],
+  };
+
+  it("paints nothing for the lifted card and still decomposes its other children", () => {
+    const { units } = decomposeFrame(root, ["2:1", "2:2"]);
+    expect(units.some((u) => u.name === "Card")).toBe(false);
+    expect(units.map((u) => u.name)).toEqual(["Rule"]);
+  });
+});

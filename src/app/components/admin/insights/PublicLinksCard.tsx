@@ -15,7 +15,7 @@ const CAP = 5;
 const NOT_COPYABLE =
   "Made before links could be copied. Use New address in Settings › Sharing to get one you can copy.";
 
-/** Public links (13:1076): the active links by exports in the window, five
+/** Public links (6095:1164): the active links by exports in the window, five
  * at most, each the link's name over its template, a bar of its exports,
  * Opens, Exports and Copy. Since migration 0033 the token is stored, so a
  * link copies its address; one made before 0033 has none (D1). */
@@ -63,7 +63,7 @@ export function PublicLinksCard({
   return (
     <section className="sp-in-card sp-in-links" aria-labelledby="sp-in-links-title">
       <div className="sp-in-card__head">
-        <h2 id="sp-in-links-title" className="t-title-panel">
+        <h2 id="sp-in-links-title" className="t-title-card">
           Public links
         </h2>
         <a
@@ -93,14 +93,14 @@ export function PublicLinksCard({
             <tr key={row.linkId}>
               <td>
                 <span className="sp-in-links__name">
-                  <span className="t-caption-m">{row.name}</span>
+                  <span className="t-body-s">{row.name}</span>
                   <span className="t-label-xs sp-in-muted">{row.templateName}</span>
                 </span>
               </td>
               <td className="sp-in-links__bar">
                 <BarTrack value={row.exports} max={max} />
               </td>
-              <td className="sp-in-links__num t-caption-m sp-in-muted">
+              <td className="sp-in-links__num t-body-s sp-in-muted">
                 {row.opens.toLocaleString("en-US")}
               </td>
               <td className="sp-in-links__num t-label-s">{row.exports.toLocaleString("en-US")}</td>

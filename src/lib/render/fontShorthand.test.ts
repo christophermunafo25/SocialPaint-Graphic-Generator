@@ -113,4 +113,15 @@ describe("the css2 axis query", () => {
   it("dedupes repeated faces", () => {
     expect(googleAxisQuery([face(400), face(400), face(700)])).toBe("wght@400;700");
   });
+
+  it("asks for the whole optical size range, in axis order", () => {
+    expect(googleAxisQuery([face(500)], [6, 72])).toBe("opsz,wght@6..72,500");
+    expect(googleAxisQuery([face(700), face(400)], [9, 40])).toBe("opsz,wght@9..40,400;9..40,700");
+    expect(googleAxisQuery([face(400), face(700, true)], [9, 40])).toBe(
+      "ital,opsz,wght@0,9..40,400;1,9..40,700",
+    );
+    expect(googleAxisQuery([face(400, true, "semi-condensed")], [18, 144])).toBe(
+      "ital,opsz,wdth,wght@1,18..144,87.5,400",
+    );
+  });
 });

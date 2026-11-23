@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React, { useState } from "react";
 import { describe, expect, it } from "vitest";
-import { CompactSelect, Select, type SelectOption } from "./Select";
+import { Select, type SelectOption } from "./Select";
 
 const OPTIONS: Array<SelectOption<string>> = [
   { value: "moss", label: "Moss" },
@@ -12,9 +12,15 @@ const OPTIONS: Array<SelectOption<string>> = [
 
 function Controlled({ compact = false }: { compact?: boolean }) {
   const [value, setValue] = useState("moss");
-  const Component = compact ? CompactSelect : Select;
   return (
-    <Component ariaLabel="Look" value={value} options={OPTIONS} onSelect={(v) => setValue(v)} />
+    <Select
+      size={compact ? "sm" : undefined}
+      hug={compact}
+      ariaLabel="Look"
+      value={value}
+      options={OPTIONS}
+      onSelect={(v) => setValue(v)}
+    />
   );
 }
 
