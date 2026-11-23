@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { ArrowLeft, Check, Images, Upload } from "lucide-react";
 import type { BrandAsset } from "@/lib/types";
 import { SignedImg } from "./SignedImg";
-import { Button, Modal, OptionTile } from "./primitives";
+import { Button, Modal, OptionTile, SegmentedControl } from "./primitives";
 
 /** The brand assets a picture can come from: logos and any uploaded images. */
 export const pickableAssets = (assets: BrandAsset[]): BrandAsset[] =>
@@ -47,28 +47,12 @@ export function ImageSourceChooser({
 
   return (
     <div className="space-y-2" style={{ minWidth: 0 }}>
-      <div role="tablist" aria-label="Where the image comes from" className="sp-tabstrip">
-        {tabs.map((t) => {
-          const on = source === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={on}
-              onClick={() => setSource(t.key)}
-              className="sp-tabstrip__tab"
-              style={{
-                padding: compact ? "3px 8px" : "5px 12px",
-                fontSize: "var(--type-caption-size)",
-                fontWeight: on ? 500 : 400,
-              }}
-            >
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
+      <SegmentedControl
+        aria-label="Where the image comes from"
+        options={tabs.map((t) => ({ id: t.key, label: t.label }))}
+        selectedId={source}
+        onSelect={(id) => setSource(id as "brand" | "device")}
+      />
       {source === "device" ? (
         device
       ) : (

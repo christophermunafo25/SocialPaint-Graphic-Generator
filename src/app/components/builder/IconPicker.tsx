@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { elementToPath, iconTitle, searchIconNames, type LucideElement } from "@/lib/icons/lucide";
+import { Input } from "../primitives";
 
 /** How many matches the grid shows at once; a search narrows the rest. */
 const MAX_SHOWN = 120;
@@ -128,30 +129,19 @@ export function IconPicker({ anchorRef, side, selected, onPick, onClose }: IconP
         gap: "var(--space-8)",
       }}
     >
-      <label className="relative flex items-center">
-        <Search
-          aria-hidden
-          style={{
-            position: "absolute",
-            left: "var(--space-4)",
-            width: 14,
-            height: 14,
-            color: "var(--text-secondary)",
-          }}
-        />
-        <input
-          autoFocus
-          className="sp-input w-full"
-          style={{ paddingLeft: "var(--space-24)" }}
-          placeholder="Search icons"
-          aria-label="Search icons"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && shown[0]) onPick(shown[0]);
-          }}
-        />
-      </label>
+      <Input
+        size="sm"
+        icon={Search}
+        autoFocus
+        className="w-full"
+        placeholder="Search icons"
+        aria-label="Search icons"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && shown[0]) onPick(shown[0]);
+        }}
+      />
       {!names.length ? null : shown.length ? (
         <div
           className="grid"

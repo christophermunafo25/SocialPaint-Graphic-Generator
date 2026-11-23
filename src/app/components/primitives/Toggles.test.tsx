@@ -124,6 +124,49 @@ describe("SegmentedControl", () => {
     expect(group.querySelectorAll("[data-selected]")).toHaveLength(1);
   });
 
+  it("disabled turns every segment off and selects nothing", async () => {
+    const onSelect = vi.fn();
+    render(
+      <SegmentedControl
+        aria-label="Fill type"
+        options={OPTIONS}
+        selectedId="instagram"
+        onSelect={onSelect}
+        disabled
+      />,
+    );
+    const group = screen.getByRole("radiogroup", { name: "Fill type" });
+    expect(group.getAttribute("aria-disabled")).toBe("true");
+    const radios = screen.getAllByRole("radio");
+    expect(radios.every((r) => (r as HTMLButtonElement).disabled)).toBe(true);
+    await userEvent.click(radios[1]);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("stretch marks the track, and neither prop renders by default", () => {
+    const { rerender } = render(
+      <SegmentedControl
+        aria-label="Source"
+        options={OPTIONS}
+        selectedId={null}
+        onSelect={() => {}}
+        stretch
+      />,
+    );
+    expect(screen.getByRole("radiogroup").hasAttribute("data-stretch")).toBe(true);
+    rerender(
+      <SegmentedControl
+        aria-label="Source"
+        options={OPTIONS}
+        selectedId={null}
+        onSelect={() => {}}
+      />,
+    );
+    const group = screen.getByRole("radiogroup");
+    expect(group.hasAttribute("data-stretch")).toBe(false);
+    expect(group.hasAttribute("aria-disabled")).toBe(false);
+  });
+
   it("draws a segment's dot, hidden from assistive tech", () => {
     render(
       <SegmentedControl
