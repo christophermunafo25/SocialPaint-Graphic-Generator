@@ -288,5 +288,5 @@ export const WebMark: PlatformIcon = (props) => (
   </svg>
 );
 
-export const EmailColor = accent(EmailMark, "var(--slime)");
+export const EmailColor = accent(EmailMark, "var(--accent-green)");
 export const WebColor = accent(WebMark, "var(--aqua)");

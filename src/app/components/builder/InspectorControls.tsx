@@ -41,7 +41,7 @@ export const inspectorGestureActive = (): boolean => gestureDepth > 0;
 /** The fill picker's compact inputs (FillPicker), until its own pass. */
 export const compactControlStyle: React.CSSProperties = {
   height: "var(--row-h-compact)",
-  padding: "0 var(--space-2xs)",
+  padding: "0 var(--space-8)",
   fontSize: "var(--type-label-size)",
 };
 

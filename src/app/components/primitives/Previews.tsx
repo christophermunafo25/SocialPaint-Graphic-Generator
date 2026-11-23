@@ -384,7 +384,7 @@ export const VariationTile = React.forwardRef<HTMLButtonElement, VariationTilePr
         <span className="ui-variation-tile__ring">
           <span className="ui-variation-tile__thumb">{thumbnail}</span>
         </span>
-        <span className="tu-label-s">{name}</span>
+        <span className="t-label-s">{name}</span>
       </button>
     );
   },

@@ -57,7 +57,7 @@ export function TemplateThumbnail({
             className="w-full h-full flex items-center justify-center"
             style={{ background: "var(--bg-hover)" }}
           >
-            <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-muted)" }}>
+            <span style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
               Preview unavailable
             </span>
           </div>

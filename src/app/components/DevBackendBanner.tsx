@@ -58,7 +58,7 @@ export function DevBackendBanner() {
         color: "var(--ink)",
         textAlign: "center",
         padding: "6px 16px",
-        fontFamily: "var(--font-ui)",
+        fontFamily: "var(--font-sans)",
         fontSize: "var(--type-caption-size)",
         fontWeight: "var(--weight-ui)",
       }}

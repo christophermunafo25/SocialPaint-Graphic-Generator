@@ -3655,7 +3655,8 @@ export function TemplateBuilder({
                                 defaultStops={[
                                   {
                                     position: 0,
-                                    color: kit?.colors[0]?.hex ?? platformPrimitive("--slime"),
+                                    color:
+                                      kit?.colors[0]?.hex ?? platformPrimitive("--accent-green"),
                                   },
                                   {
                                     position: 1,
@@ -3700,7 +3701,7 @@ export function TemplateBuilder({
                               defaultStops={[
                                 {
                                   position: 0,
-                                  color: kit?.colors[0]?.hex ?? platformPrimitive("--slime"),
+                                  color: kit?.colors[0]?.hex ?? platformPrimitive("--accent-green"),
                                 },
                                 {
                                   position: 1,

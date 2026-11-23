@@ -31,7 +31,12 @@ function Divider() {
   return (
     <span
       aria-hidden
-      style={{ width: 1, alignSelf: "stretch", background: "var(--border)", margin: "0 2px" }}
+      style={{
+        width: 1,
+        alignSelf: "stretch",
+        background: "var(--border-subtle)",
+        margin: "0 2px",
+      }}
     />
   );
 }
@@ -140,10 +145,10 @@ function FillButton({
             top: "calc(100% + 6px)",
             left: 0,
             zIndex: 1,
-            padding: "var(--space-2xs)",
-            background: "var(--bg-surface)",
+            padding: "var(--space-8)",
+            background: "var(--surface-raised)",
             border: "1px solid var(--border-strong)",
-            borderRadius: "var(--radius-control)",
+            borderRadius: "var(--radius-sm)",
             minWidth: 210,
           }}
         >
@@ -191,9 +196,9 @@ export function SelectionToolbar(props: SelectionToolbarProps) {
       aria-label="Selection actions"
       style={{
         padding: 3,
-        background: "var(--bg-surface)",
+        background: "var(--surface-raised)",
         border: "1px solid var(--border-strong)",
-        borderRadius: "var(--radius-control)",
+        borderRadius: "var(--radius-sm)",
       }}
     >
       {count >= 2 && (

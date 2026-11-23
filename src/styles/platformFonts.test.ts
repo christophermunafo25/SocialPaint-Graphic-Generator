@@ -43,7 +43,5 @@ describe("platform fonts", () => {
     for (const [name, stack] of stacks) {
       expect(/^["']([^"']+)["']/.exec(stack)?.[1], name).toMatch(/ Platform$/);
     }
-    // The older name follows the token through the bridge.
-    expect(declared(sheet("legacy-bridge.css"), "--font-ui")).toBe("var(--font-sans)");
   });
 });
