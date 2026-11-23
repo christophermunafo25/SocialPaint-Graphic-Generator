@@ -38,7 +38,7 @@ Made while building the system. Built as written unless CJ overturns one.
 3. **Search Field has two sizes.** Large is 46 and sits beside the Platform Chips. Medium is 36 and sits beside other controls in the builder's filter bars.
 4. **The filter bar is 46.** Platform Chips and the Large Search Field are `--size-control-lg` with a hairline edge included, so every state of the chip is 46. The selected chip draws its edge in its own fill color.
 5. **Logo plates are tokens.** `plate/dark` and `plate/light` stay the same in both themes, replacing the two hex values `socialpaint.css` declared. The Logo Card's light ground used `--surface-page`, which turned dark in Dark, and now reads `--plate-light`.
-6. **Bevels and the accent glow stay as transparent tokens** so the elevation composites keep one shape in code. Phase E9 decides whether to delete them.
+6. **Bevels and the accent glow stay as transparent tokens** so the elevation composites keep one shape in code. CJ kept them at Phase E9 (2026-11-23).
 7. **Field holds a Medium control** and its help text stays off.
 8. **Composer · Inline is the Composer.** The earlier Composer (`2216:222`) is deleted from the file. The new one is `6024:218`.
 9. **`LookTile` becomes `VariationTile`** when Phase E4 touches Generate. The Figma component is Variation Tile (`2216:315`).
@@ -96,8 +96,8 @@ One pull request per phase into `main`.
 | E5 | Template Builder | The list and its dialogs, the editor chrome, the stage, the variations bar, the 320 inspector | Same, and the fidelity checker passes | Done (#214) |
 | E6 | Brand Studio | Overview and the eighteen detail states, built from the ElevenLabs frames (replaces new-brand Phase 7) | Same | Done (#215) |
 | E7 | Settings and Insights | Seven sections and the dashboard with the Metrics' roll (`PROMPT.md` section 7.7), replacing new-brand Phase 8 | Same | Done (#217) |
-| E8 | Sign in and Create account | Eight gate screens and ten onboarding steps, Light only (replaces new-brand Phase 9) | Screens match their frames | Built, pull request open |
-| E9 | Cleanup | Everything new-brand Phase 10 owes, plus the transparent bevel and glow tokens if CJ agrees, and any bridged name the ElevenLabs phases stopped reading | Nothing legacy left | Not started |
+| E8 | Sign in and Create account | Eight gate screens and ten onboarding steps, Light only (replaces new-brand Phase 9) | Screens match their frames | Done (#218) |
+| E9 | Cleanup | Everything new-brand Phase 10 owes, plus the transparent bevel and glow tokens if CJ agrees, and any bridged name the ElevenLabs phases stopped reading | Nothing legacy left | Built, pull request open |
 
 ### What Phase E2 left for later phases
 

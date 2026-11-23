@@ -1,5 +1,7 @@
 # ElevenLabs: the bridge
 
+Phase E9 deleted `src/styles/legacy-bridge.css` (2026-11-23). Every older name it pointed at a token is now read as that token, and the `.tu-*` classes are gone. The tables below are the record of what moved.
+
 Every name that was added, changed, moved or removed between the new-brand export and the ElevenLabs export, and every component change, so a phase can tell a deliberate change from a regression. The new-brand bridge (`docs/design/new-brand/BRIDGE.md`) still holds the names from before that program, and both bridges empty out in Phase E9.
 
 ## 1. The source
