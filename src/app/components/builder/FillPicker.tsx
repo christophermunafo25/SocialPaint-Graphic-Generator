@@ -14,10 +14,10 @@ import {
   type HSV,
 } from "@/lib/color";
 import { useRouter } from "../../router";
+import { Input, SegmentedControl, Select } from "../primitives";
 import {
   NumericField,
   beginInspectorGesture,
-  compactControlStyle,
   endInspectorGesture,
   inspectorLabelStyle,
 } from "./InspectorControls";
@@ -361,20 +361,16 @@ export function FillPicker({
       }}
     >
       {/* Tabs */}
-      <div className="sp-tabstrip" data-stretch role="tablist">
-        {(["custom", "libraries"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            aria-selected={tab === t}
-            role="tab"
-            className="sp-tabstrip__tab"
-            style={{ ...inspectorLabelStyle, color: undefined, padding: "4px 8px" }}
-          >
-            {t === "custom" ? "Custom" : "Libraries"}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        aria-label="Fill source"
+        stretch
+        options={[
+          { id: "custom", label: "Custom" },
+          { id: "libraries", label: "Libraries" },
+        ]}
+        selectedId={tab}
+        onSelect={(id) => setTab(id as "custom" | "libraries")}
+      />
 
       {tab === "libraries" ? (
         <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
@@ -385,20 +381,17 @@ export function FillPicker({
           {/* Fill type — only what the pipeline renders: solid, linear
             gradient. Solid-only targets (a plate, a stroke) hide the switch. */}
           {!solidOnly && (
-            <div className="sp-seg" data-stretch role="group" aria-label="Fill type">
-              {(["solid", "gradient"] as const).map((t) => (
-                <button
-                  key={t}
-                  disabled={locked}
-                  aria-pressed={mode === t}
-                  data-active={mode === t || undefined}
-                  onClick={() => switchMode(t)}
-                  style={{ textTransform: "capitalize" }}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              aria-label="Fill type"
+              stretch
+              disabled={locked}
+              options={[
+                { id: "solid", label: "Solid" },
+                { id: "gradient", label: "Gradient" },
+              ]}
+              selectedId={mode}
+              onSelect={(id) => switchMode(id as "solid" | "gradient")}
+            />
           )}
 
           {mode === "gradient" && gradient && (
@@ -412,26 +405,23 @@ export function FillPicker({
                 onChange={setGradient}
                 onDragEnd={() => sortedCommit(gradient)}
               />
-              <div className="sp-seg" data-stretch role="group" aria-label="Gradient kind">
-                {(["linear", "radial"] as const).map((k) => (
-                  <button
-                    key={k}
-                    disabled={locked}
-                    aria-pressed={(gradient.kind ?? "linear") === k}
-                    data-active={(gradient.kind ?? "linear") === k || undefined}
-                    onClick={() =>
-                      setGradient(
-                        k === "radial"
-                          ? { ...gradient, kind: "radial" }
-                          : { angle: gradient.angle, stops: gradient.stops },
-                      )
-                    }
-                    style={{ textTransform: "capitalize" }}
-                  >
-                    {k}
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl
+                aria-label="Gradient kind"
+                stretch
+                disabled={locked}
+                options={[
+                  { id: "linear", label: "Linear" },
+                  { id: "radial", label: "Radial" },
+                ]}
+                selectedId={gradient.kind ?? "linear"}
+                onSelect={(k) =>
+                  setGradient(
+                    k === "radial"
+                      ? { ...gradient, kind: "radial" }
+                      : { angle: gradient.angle, stops: gradient.stops },
+                  )
+                }
+              />
               {gradient.kind === "radial" && (
                 <RadialFields gradient={gradient} disabled={locked} onChange={setGradient} />
               )}
@@ -646,22 +636,18 @@ export function FillPicker({
 
           {/* Format + value + alpha */}
           <div className="flex items-center" style={{ gap: "var(--space-8)" }}>
-            <select
-              className="sp-input"
-              style={{
-                ...compactControlStyle,
-                width: 58,
-                flexShrink: 0,
-                padding: "0 var(--space-4)",
-              }}
-              aria-label="Color format"
+            <Select
+              size="sm"
+              hug
+              ariaLabel="Color format"
               value={format}
-              onChange={(e) => setFormat(e.target.value as ColorFormat)}
-            >
-              <option value="hex">Hex</option>
-              <option value="rgb">RGB</option>
-              <option value="hsl">HSL</option>
-            </select>
+              options={[
+                { value: "hex", label: "Hex" },
+                { value: "rgb", label: "RGB" },
+                { value: "hsl", label: "HSL" },
+              ]}
+              onSelect={(v) => setFormat(v as ColorFormat)}
+            />
             <FormatValueInput
               rgba={rgba}
               format={format}
@@ -766,19 +752,13 @@ function FormatValueInput({
     setDraft(null);
   };
   return (
-    <input
+    <Input
+      size="sm"
       type="text"
       spellCheck={false}
       disabled={disabled}
       aria-label="Color value"
-      className="sp-input"
-      style={{
-        ...compactControlStyle,
-        fontFamily: "var(--font-mono)",
-        fontSize: "var(--type-caption-size)",
-        minWidth: 0,
-        flex: 1,
-      }}
+      className="sp-fill-value"
       value={draft ?? shown}
       onFocus={(e) => {
         setDraft(shown);

@@ -1198,6 +1198,16 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-segmented .ui-segment:focus-visible {
   z-index: 3;
 }
+/* Stretched, the track fills its row and the segments share it equally
+   (the builder's popovers). */
+.ui-segmented[data-stretch] {
+  display: flex;
+  width: 100%;
+}
+.ui-segmented[data-stretch] > .ui-segment {
+  flex: 1;
+  min-width: 0;
+}
 .ui-segmented__goo,
 .ui-segmented__thumb {
   position: absolute;

@@ -9,6 +9,7 @@ import {
   type CanvasSize,
 } from "@/lib/templates/platforms";
 import { sameAspect } from "@/lib/templates/rescale";
+import { Button, IconButton, Input, SegmentedControl } from "../primitives";
 
 /** Custom-size bounds. Below 200px nothing legible fits; above 4096px the
  * export path (original + crop + double toPng in memory) stops surviving on
@@ -116,20 +117,16 @@ export function CanvasSizePicker({
 
   return (
     <div className="space-y-2" style={{ minWidth: 280 }}>
-      <div role="tablist" className="sp-tabstrip" data-stretch>
-        {(["presets", "custom"] as const).map((t) => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
-            className="sp-tabstrip__tab px-3 py-1.5"
-            style={{ fontSize: "var(--type-label-size)" }}
-          >
-            {t === "presets" ? "Platform sizes" : "Custom"}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        aria-label="Size source"
+        stretch
+        options={[
+          { id: "presets", label: "Platform sizes" },
+          { id: "custom", label: "Custom" },
+        ]}
+        selectedId={tab}
+        onSelect={(id) => setTab(id as "presets" | "custom")}
+      />
 
       {aspectLock && (
         <p style={{ fontSize: "var(--type-caption-size)", color: "var(--text-secondary)" }}>
@@ -217,7 +214,8 @@ export function CanvasSizePicker({
                 <span className="sp-eyebrow block" style={{ marginBottom: 2 }}>
                   {label}
                 </span>
-                <input
+                <Input
+                  size="sm"
                   type="number"
                   inputMode="numeric"
                   min={MIN_SIDE}
@@ -229,31 +227,22 @@ export function CanvasSizePicker({
                     if (linked && Number.isFinite(n) && n > 0)
                       setOther(String(Math.round(other(n))));
                   }}
-                  className="w-full px-2 py-1.5"
-                  data-radius-control
-                  style={{
-                    border: "1px solid var(--border-strong)",
-                    background: "var(--surface-raised)",
-                    fontSize: "var(--type-label-size)",
-                    color: "var(--text-primary)",
-                  }}
+                  className="w-full"
                 />
               </label>
             ))}
-            <button
-              onClick={() => setLinked((v) => !v)}
-              aria-pressed={linked}
+            <IconButton
+              variant="ghost"
+              size="sm"
+              icon={linked ? Link2 : Link2Off}
+              label={linked ? "Unlock the aspect ratio" : "Lock the aspect ratio"}
               title={linked ? "Unlock the aspect ratio" : "Lock the aspect ratio while typing"}
-              aria-label={linked ? "Unlock the aspect ratio" : "Lock the aspect ratio"}
-              className="sp-icon-btn flex-shrink-0"
-              style={{ marginTop: 16, color: linked ? "var(--state-primary)" : undefined }}
-            >
-              {linked ? (
-                <Link2 style={{ width: 15, height: 15 }} />
-              ) : (
-                <Link2Off style={{ width: 15, height: 15 }} />
-              )}
-            </button>
+              aria-pressed={linked}
+              selected={linked}
+              onClick={() => setLinked((v) => !v)}
+              className="flex-shrink-0"
+              style={{ marginTop: "var(--space-16)" }}
+            />
           </div>
 
           {/* Live verdicts: the ratio and orientation as they type, and the
@@ -282,22 +271,22 @@ export function CanvasSizePicker({
                 : "That changes the aspect ratio, so it can’t apply here."}
             </p>
           )}
-          <button
+          <Button
+            kind="neutral"
             onClick={() => {
               if (customErr) return;
               if (customAspectBlocked) onPickVersion?.({ width: w, height: h });
               else onPick({ width: w, height: h });
             }}
             disabled={Boolean(customErr) || Boolean(customAspectBlocked && !onPickVersion)}
-            className="sp-btn w-full"
-            style={{ minHeight: 30 }}
+            className="w-full"
           >
             {customErr
               ? "Use custom size"
               : customAspectBlocked && onPickVersion
                 ? `Create a ${w}×${h} version`
                 : `Use ${w}×${h}`}
-          </button>
+          </Button>
         </div>
       )}
     </div>

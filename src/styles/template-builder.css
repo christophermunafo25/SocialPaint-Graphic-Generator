@@ -1390,3 +1390,11 @@
   min-height: 100%;
   padding: var(--space-24) var(--space-16);
 }
+
+/* The fill picker's value field: a color reads as code, in Mono, sharing
+   its row with the format Select. */
+.sp-fill-value {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+}
