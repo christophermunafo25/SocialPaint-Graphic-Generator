@@ -297,13 +297,14 @@ ElevenLabs program's Phase E1 (`docs/design/elevenlabs/`), itself the successor 
 "Master UX-UI" (`docs/design/new-brand/`). `design/tokens/master.tokens.json` is its export
 (made with the development plugin in `design/tokens/figma-export/`), and
 `npm run tokens` generates `src/styles/tokens.css` from it with `scripts/build-tokens.mjs`.
-Nobody edits either file by hand. Every stylesheet reads the semantic tokens and the
-trimmed `.t-*` text classes; the bridge that pointed older names at them was deleted in
-ElevenLabs Phase E9. `src/styles/socialpaint.css` still holds the first stylesheet's own
+Nobody edits either file by hand. Stylesheets read the semantic tokens and markup uses
+the trimmed `.t-*` text classes; the bridge that pointed older names at them was deleted
+in ElevenLabs Phase E9. `src/styles/socialpaint.css` still holds the first stylesheet's own
 theme layer for the builder popovers and dialogs no frame draws (its header lists what
 is left). `npm run tokens:check`, part of `npm run verify` and CI, fails when
 `tokens.css` is out of date or when a stylesheet redeclares a token it owns, and
-`npm run lint` fails a style prop that holds a raw hex or inline type.
+`npm run lint` fails a style prop holding a hex string literal or inline type, outside
+the exempt and ratchet lists in `eslint.config.js`.
 
 Interface controls are the primitives in `src/app/components/primitives/`, one per
 core component on the six component type pages (Actions, Inputs, Selection, Labels and

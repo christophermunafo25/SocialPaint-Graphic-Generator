@@ -37,20 +37,17 @@ if (!propsFile) {
 }
 
 const FOREGROUNDS = [
-  "--text-strong",
   "--text-primary",
-  "--text-subtle",
   "--text-secondary",
-  "--text-muted",
-  "--state-error",
-  "--ring",
+  "--feedback-error-text",
+  "--border-focus",
 ];
 const SURFACES = [
   "--surface-page",
   "--surface-raised",
   "--surface-sunken",
-  "--input-bg",
-  "--control-fill",
+  "--surface-field",
+  "--surface-card",
   "--state-selected",
 ];
 

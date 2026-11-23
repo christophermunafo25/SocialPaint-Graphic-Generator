@@ -1085,6 +1085,7 @@ function FontPick({
   return (
     <div className="sp-onb-font-card">
       {/* The brand's own face (content, PHASE-9 §9 D3) on the title step. */}
+      {/* eslint-disable-next-line no-restricted-syntax -- the tenant's font is content */}
       <span className="t-title-page" style={{ fontFamily: value }} aria-hidden>
         Aa
       </span>

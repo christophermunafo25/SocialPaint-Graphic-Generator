@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 
 /** The design system's motion tokens, read from the cascade so `motion`
  * animates on exactly the durations and easing every CSS transition uses —
- * --dur-state / --dur-panel / --dur-reveal and --ease — and collapses to a
+ * --motion-duration-fast / --motion-duration-base / --dur-reveal and
+ * --motion-easing-standard, and collapses to a
  * plain swap under prefers-reduced-motion, where the tokens themselves are
  * already 0ms. One source of timing; nothing hand-rolled. Durations are in
  * seconds, as `motion` expects. */
@@ -25,13 +26,13 @@ const seconds = (raw: string, fallback: number) => {
 function readTokens(): MotionTokens {
   if (typeof window === "undefined" || typeof getComputedStyle !== "function") return FALLBACK;
   const cs = getComputedStyle(document.documentElement);
-  const bezier = /cubic-bezier\(([^)]+)\)/.exec(cs.getPropertyValue("--ease"));
+  const bezier = /cubic-bezier\(([^)]+)\)/.exec(cs.getPropertyValue("--motion-easing-standard"));
   const ease = bezier
     ? (bezier[1].split(",").map((n) => parseFloat(n)) as MotionTokens["ease"])
     : FALLBACK.ease;
   return {
-    state: seconds(cs.getPropertyValue("--dur-state"), FALLBACK.state),
-    panel: seconds(cs.getPropertyValue("--dur-panel"), FALLBACK.panel),
+    state: seconds(cs.getPropertyValue("--motion-duration-fast"), FALLBACK.state),
+    panel: seconds(cs.getPropertyValue("--motion-duration-base"), FALLBACK.panel),
     reveal: seconds(cs.getPropertyValue("--dur-reveal"), FALLBACK.reveal),
     ease: ease.length === 4 ? ease : FALLBACK.ease,
   };

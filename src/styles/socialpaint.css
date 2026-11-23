@@ -104,7 +104,7 @@ html {
    working accent all draw from the same value, so there are no separate
    "-logo" cuts any more. */
 :root {
-  --aqua: var(--accent-blue); /* --aqua is the legacy name for Lapis — new code uses --lapis */
+  --aqua: var(--accent-blue); /* the earlier name for accent/blue; new code reads --accent-blue */
   --purple-legacy: #9f60ff; /* the earlier bright purple; --purple-kara is the new deep primitive */
   --white: #ffffff;
   --ink: #272727;
@@ -211,8 +211,9 @@ html {
 
   /* Layout. The page gutter (--page-pad) and the mobile bar's height
      (--chrome-top) are the shell's own measures, defined in shell.css. */
-  /* Tailwind reads these as its max-w-md and max-w-lg (the empty states and
-     the dialogs), so they are live though no stylesheet reads them. */
+  /* Tailwind reads this as its max-w-lg (BackgroundReflowDialog), so it is
+     live though no stylesheet reads it. */
+  --container-lg: 1024px;
   --z-sticky: 100;
   --z-popover: 500;
 
@@ -229,7 +230,7 @@ html {
 
 /* ── Semantic: dark ─────────────────────────────────────────────────────────
    The primary mode. #0B0B0C is the floor (lifted from #070708, 2026-09 Brand
-   Templates frames) and #171819 (--ink-800) is THE lifted surface —
+   Templates frames) and #171819 is THE lifted surface —
    chrome, anything that floats or takes input, and content cards all share
    it since the two-step Brand Studio frames (2026-09-15, at CJ's direction;
    chrome sat one rung higher at #18191A before that; #161617 until
@@ -295,14 +296,6 @@ html {
   --state-warning: #ffd900;
   --fill-warning: #ffd900;
 
-  /* Brand-templates platform chip (Figma 141:329; states from the
-     "Navigation" hover sheet 255:3, 2026-09-25). #252627 is the one value
-     with no rung — five units off both --bg-surface-raised and --bg-hover —
-     so it gets its own. Rest: the card fill with a #252627 tile and the
-     mono mark at 90%. Hover: the chip itself lifts to #252627 and the tile
-     drops to the canvas floor (#0b0b0c IS --bg-canvas) so the colour mark
-     reads on it. Selected inverts to a white chip with ink label and
-     chevron; the tile stays on the floor and the All glyph turns Slime. */
   --chip-raised: #252627;
   /* Selection controls not yet on the primitives (segments, chips, choice
      tiles, the builder's rails): hover is a neutral wash; active is a soft
@@ -335,7 +328,7 @@ html {
 /* ── Semantic: light ────────────────────────────────────────────────────────
    The brand board's pairing: an off-white field with #FFFFFF cards. The
    field was #F1F1F1 until 2026-09-25; the Figma "Navigation" page moved it
-   to #F9F9F8 (--paper-050). */
+   to #F9F9F8. */
 [data-theme="light"] {
   --accent-wash: color-mix(in srgb, var(--accent-green) 30%, transparent);
   --accent-wash-strong: color-mix(in srgb, var(--accent-green) 48%, transparent);
@@ -377,14 +370,6 @@ html {
   /* Functional signals, outside the brand palette. */
   --state-warning: #756200;
   --fill-warning: #ffd900;
-
-  /* Platform chip, light (Figma 141:858; states from the "Navigation"
-     hover sheet 253:3, 2026-09-25). Rest: a white chip on a soft shadow,
-     canvas tile, mono mark at 85%. Hover: the chip drops to the canvas
-     tone, the shadow deepens, and the tile goes to --ink-700 so the colour
-     mark reads on it. Selected inverts to an --ink-900 chip with a white
-     label and chevron, no shadow; the tile turns back to paper and the All
-     glyph turns Deep Moss. */
 
   /* See the dark block for these groups. */
   --nav-hover-bg: var(--state-hover);

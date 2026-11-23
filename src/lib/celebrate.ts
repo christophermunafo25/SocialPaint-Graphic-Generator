@@ -33,7 +33,7 @@ const DRAG = 0.986;
  * could drift. */
 function brandColors(): string[] {
   const style = getComputedStyle(document.documentElement);
-  return ["--slime", "--aqua", "--purple-legacy", "--fire"]
+  return ["--accent-green", "--aqua", "--purple-legacy", "--accent-warm"]
     .map((t) => style.getPropertyValue(t).trim())
     .filter(Boolean);
 }

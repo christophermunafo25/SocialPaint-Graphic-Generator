@@ -139,6 +139,17 @@ One pull request per phase into `main`.
 
 The new-brand program split tokens from primitives, and this one keeps them together in Phase E1. The ElevenLabs values turn the page and raised surfaces white in Light, so a token-only diff would leave fields, cards and progress tracks invisible on `main` until the next phase merged. Folding the primitives in keeps every screen whole at every merge.
 
+## What Phase E9 left
+
+Phase E9 deleted `legacy-bridge.css`, the `.tu-*` classes, the dead rules and custom properties in `socialpaint.css`, and 43 unused packages, and added a lint rule against raw hex and inline type in style props. Its gate, nothing legacy left, is met only in part. What a grep still finds:
+
+- The earlier control classes `.sp-btn`, `.sp-input`, `.sp-icon-btn`, `.sp-seg` and `.sp-tabstrip`, in the builder's popovers and dialogs (`BackgroundReflowDialog`, `CanvasSizePicker`, `FillPicker`, `IconPicker`, `ShortcutsPanel`) and `ImageSourceChooser`. No frame draws these surfaces.
+- `socialpaint.css`'s own theme layer (the `--bg-*`, `--nav-*`, `--icon-btn-*`, `--state-*` and edge names, some on raw values), which those surfaces and a few older rules still read. Its header lists it.
+- The lint rule's ratchet list in `eslint.config.js`: fourteen older files still on inline type. A file leaves the list when it moves onto the `.t-*` classes.
+- The contrast and keyboard pass new-brand Phase 10 owed.
+
+CJ's calls at E9 (2026-11-23): the `company_canvas_presets` table and the unread `brand_kits` font columns stay (no drop migrations), and the transparent bevel and glow tokens stay.
+
 ## Screen map
 
 Paths are under `src/app/components/` unless they start with `src/`. Routes and entry points are the ones the new-brand program confirmed (`docs/design/new-brand/PLAN.md`, Screen map). Frames are 1440 by 1053 and every Light frame has a Dark twin except the sign-in gate and Create account.

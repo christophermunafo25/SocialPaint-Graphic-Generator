@@ -56,13 +56,10 @@ export default tseslint.config(
     },
   },
   {
-    // Template content, not chrome: these draw a tenant's own type and
-    // colors, so inline type is how they work.
-    files: [
-      "src/app/components/SchemaRenderer.tsx",
-      "src/app/components/builder/FieldOverlayEditor.tsx",
-      "src/app/components/onboarding/OnboardingFlow.tsx",
-    ],
+    // Template content, not chrome: it draws a tenant's own type and colors,
+    // so inline type is how it works. A single content line elsewhere takes
+    // an eslint-disable-next-line comment instead.
+    files: ["src/app/components/SchemaRenderer.tsx"],
     rules: { "no-restricted-syntax": "off" },
   },
   {
@@ -80,6 +77,7 @@ export default tseslint.config(
       "src/app/components/builder/BackgroundReflowDialog.tsx",
       "src/app/components/builder/CanvasSizePicker.tsx",
       "src/app/components/builder/FieldContextMenu.tsx",
+      "src/app/components/builder/FieldOverlayEditor.tsx",
       "src/app/components/builder/FillPicker.tsx",
       "src/app/components/builder/ShortcutsPanel.tsx",
       "src/app/public/PublicLinkUnavailable.tsx",
