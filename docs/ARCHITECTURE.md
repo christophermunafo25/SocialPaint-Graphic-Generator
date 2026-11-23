@@ -597,12 +597,12 @@ one stray word (`typesetFieldText` in `src/lib/render/layout.ts`; the
 line-breaks-and-size-families program, Phase 1). A Shrink or Fill field
 first takes up to 8% more shrink, never below its floor; when that can't
 clear it, and always for Free, the last two words are joined with a
-no-break space if they fit the wrap width together. The joined string lives
-only in `LayoutResult.texts`, which the layout measures and `SchemaRenderer`
-paints. Stored values, captions and everything sent to the model keep what
-was typed, and Fixed text and placeholders paint as authored. Because
-`measureProposal` measures through the same function, a value can move from
-`fits` to `shrinks` but never to `overflows`.
+no-break space if they fit the wrap width together and the join adds no
+line. The joined string lives only in `LayoutResult.texts`, which the layout
+measures and `SchemaRenderer` paints. Stored values, captions and everything
+sent to the model keep what was typed, and Fixed text and placeholders paint
+as authored. Because `measureProposal` measures through the same function, a
+value can move from `fits` to `shrinks` but never to `overflows`.
 
 **One run at a time.** `chatReducer` owns every transition of the thread;
 components never mutate a turn. `runChat` sequences a run with every side

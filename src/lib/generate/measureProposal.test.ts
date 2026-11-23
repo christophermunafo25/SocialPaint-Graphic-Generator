@@ -284,6 +284,27 @@ describe("line breaks", () => {
     expect(plain.fields[0].fit).toBe("fits");
   });
 
+  it("keeps a fitting value that ends in a space as fits", () => {
+    // The last two words fill a line exactly, so the typed space after them
+    // has no room beside the pair. Joined, it would measure a third line.
+    const body = mkField({ fieldKey: "body", type: "multiline", height: 80 });
+    const value = `aaaa bbbb cccc dddd ${"e".repeat(15)} `;
+    const m = measureProposal(schema([body]), { body: value }, null, measure);
+    expect(m.fields[0].fit).toBe("fits");
+    expect(m.ok).toBe(true);
+    // In a stack it takes the same room as the value without the space.
+    const below = mkField({ fieldKey: "below", height: 40 });
+    const stack = mkGroup({ children: ["body", "below"] });
+    const heightOf = (v: string) =>
+      computeLayout(
+        schema([body, below], [stack]),
+        { body: v, below: "x" },
+        null,
+        measure,
+      ).groupRects.get(stack.id)?.height;
+    expect(heightOf(value)).toBe(heightOf(value.trimEnd()));
+  });
+
   it("hands repairs the member's own value, never the painted one", () => {
     const head = mkField({
       fieldKey: "head",

@@ -133,8 +133,12 @@ const fitStyleOf = (f: TemplateField, style: ResolvedFieldStyle): ResolvedFieldS
 const wrapWidthOf = (f: TemplateField): number => Math.max(1, f.width - platePad(f).x);
 
 /** Join each paragraph that ends on an orphan at this size, when its last
- * two words fit the wrap width together. A pair wider than that keeps its
- * orphan: joining it would only break the pair mid-word. */
+ * two words fit the wrap width together and the join adds no line. A pair
+ * wider than the wrap width keeps its orphan: joining it would only break
+ * the pair mid-word. So does a paragraph the join would make a line taller.
+ * That is one that ends in a typed space when the pair fills its line: the
+ * space has no room beside the pair, so wrapLines closes the line on it and
+ * counts an empty one below. */
 export function joinAtSize(
   field: TemplateField,
   style: ResolvedFieldStyle,
@@ -144,9 +148,12 @@ export function joinAtSize(
 ): string {
   const width = wrapWidthOf(field);
   const paragraphs = text.split("\n");
+  const lineCount = (paragraph: string) =>
+    wrapLines(paragraph, width, style, fontSizePx, measure).length;
   const joinable = orphanedParagraphs(text, width, style, fontSizePx, measure).filter((i) => {
     const pair = lastWordPair(paragraphs[i]);
-    return pair !== null && measuredTextWidth(style, pair, fontSizePx, measure) <= width;
+    if (pair === null || measuredTextWidth(style, pair, fontSizePx, measure) > width) return false;
+    return lineCount(joinLastWords(paragraphs[i], [0])) <= lineCount(paragraphs[i]);
   });
   return joinable.length ? joinLastWords(text, joinable) : text;
 }

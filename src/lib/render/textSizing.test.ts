@@ -507,6 +507,45 @@ describe("line breaks", () => {
       expect(out.text).toBe(tooWide);
     });
 
+    it("makes no join that would add a line: a value that ends in a space", () => {
+      // The pair is exactly one line wide (25 characters). With the typed
+      // space after it the line would close and leave an empty one below.
+      const full = `aaaa bbbb cccc dddd eeee ${"f".repeat(20)}`;
+      const free = multiline({ textSizing: "free" });
+      expect(typeset(free, full).text).toBe(`aaaa bbbb cccc dddd eeee${NB}${"f".repeat(20)}`);
+      const spaced = typeset(free, `${full} `);
+      expect(spaced.text).toBe(`${full} `);
+      expect(wrapLines(spaced.text, 600, {}, 48, measure)).toHaveLength(2);
+      // A pair with room for the space beside it is still joined.
+      const roomy = `aaaa bbbb cccc dddd eeee ${"f".repeat(19)} `;
+      expect(typeset(free, roomy).text).toBe(`aaaa bbbb cccc dddd eeee${NB}${"f".repeat(19)} `);
+    });
+
+    it("never wraps to more lines than the member's own text, whatever ends it", () => {
+      const bare = multiline({ textSizing: "free", height: 1000 });
+      const plated = multiline({
+        textSizing: "free",
+        height: 1000,
+        plateColor: "#000000",
+        platePaddingX: 50,
+      });
+      for (const [f, width] of [
+        [bare, 600],
+        [plated, 500],
+      ] as const) {
+        for (let last = 1; last <= 26; last++) {
+          for (const tail of ["", " ", "  ", "   "]) {
+            const value = `aaaa bbbb cccc dddd eeee ${"f".repeat(last)}${tail}`;
+            const painted = typeset(f, value).text;
+            expect(
+              wrapLines(painted, width, {}, 48, measure).length,
+              JSON.stringify(value),
+            ).toBeLessThanOrEqual(wrapLines(value, width, {}, 48, measure).length);
+          }
+        }
+      }
+    });
+
     it("joins a plated field at its narrower wrap width", () => {
       // 24 chars fit 600px on one line, but not the 500px inside the plate.
       const plated = multiline({ textSizing: "free", plateColor: "#000000", platePaddingX: 50 });
@@ -547,6 +586,14 @@ describe("line breaks", () => {
       const result = computeLayout({ fields: [f], ...canvas }, { body: stubborn }, null, measure);
       expect(result.texts.get(f.id)).toBe(`aaaa bbbb cccc dddd eeee${NB}ffffff`);
       expect(result.fontSizes.get(f.id)).toBe(48);
+      expect(result.fieldRects.get(f.id)?.height).toBe(96);
+    });
+
+    it("gives a value that ends in a space the height of its own lines", () => {
+      const f = multiline({ textSizing: "free", fieldKey: "body" });
+      const value = `aaaa bbbb cccc dddd eeee ${"f".repeat(20)} `;
+      const result = computeLayout({ fields: [f], ...canvas }, { body: value }, null, measure);
+      expect(result.texts.get(f.id)).toBe(value);
       expect(result.fieldRects.get(f.id)?.height).toBe(96);
     });
   });
