@@ -13,8 +13,8 @@
    upload chip, the dropzone, the toast, the card and empty-state recipes,
    and the theme layer that feeds them (the --bg-*, --icon-btn-bg-hover and
    edge names, some on raw values). The builder's popovers and dialogs read
-   the primitives since the follow-up to Phase E9. New code reads tokens.css and the primitives, never this
-   file's names. docs/design/elevenlabs/RULES.md wins where they disagree.
+   the primitives since the follow-up to Phase E9. New code reads tokens.css
+   and the primitives, never this file's names. docs/design/elevenlabs/RULES.md wins where they disagree.
    ========================================================================== */
 
 @import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap");
@@ -202,10 +202,6 @@ html {
   --gen-marker-bg: rgb(11 11 12 / 0.56);
   --gen-marker-edge: rgb(255 255 255 / 0.6);
   --gen-marker-fg: #ffffff;
-  /* Inspector density — the builder's property rows run tighter than the
-     38px form floor: label + control on a 32px line, Figma-inspector style.
-     Builder chrome only; member-facing forms keep the --control-* heights. */
-  --row-h-compact: 32px;
 
   /* Layout. The page gutter (--page-pad) and the mobile bar's height
      (--chrome-top) are the shell's own measures, defined in shell.css. */
@@ -292,11 +288,6 @@ html {
   --fill-warning: #ffd900;
 
   --chip-raised: #252627;
-  /* Selection controls not yet on the primitives (segments, chips, choice
-     tiles, the builder's rails): hover is a neutral wash; active is a soft
-     neutral pill with a white label (Figma 442:3563, 2026-09-28). The
-     sidebar moved to the NavItem primitive (new look, Phase 3). */
-
   /* Icon buttons (collapse, row menus, builder chrome): neutral hover. */
   --icon-btn-bg-hover: var(--bg-hover);
 
@@ -355,10 +346,6 @@ html {
   /* Functional signals, outside the brand palette. */
   --state-warning: #756200;
   --fill-warning: #ffd900;
-
-  /* See the dark block for these groups. */
-  /* Soft pill (Figma 442:3477, 2026-09-28): the sunken paper with an ink
-     label (an ink pill with a white label before). */
 
   --icon-btn-bg-hover: var(--state-hover);
 
@@ -1677,8 +1664,7 @@ input[type="radio"] {
    Appended after the platform's component rules so it wins on cascade order.
    Colour properties only — no geometry, no layout, no shadow. */
 
-/* Selection is neutral everywhere it appears — the nav's active pill on
-   every segment, chip, rail item, and choice tile (2026-09-25). The one
+/* Selection is neutral everywhere it appears (2026-09-25). The one
    selection exception: a swatch shows a colour, so a neutral marker can
    vanish against a black or white swatch. The editor blue is the marker colour and reads
    against every hue in the picker. */

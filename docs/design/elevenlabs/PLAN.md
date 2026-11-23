@@ -143,8 +143,8 @@ The new-brand program split tokens from primitives, and this one keeps them toge
 
 Phase E9 deleted `legacy-bridge.css`, the `.tu-*` classes, the dead rules and custom properties in `socialpaint.css`, and 43 unused packages, and added a lint rule against raw hex and inline type in style props. Its gate, nothing legacy left, is met only in part. What a grep still finds:
 
-- The earlier control classes `.sp-btn`, `.sp-input`, `.sp-icon-btn`, `.sp-seg` and `.sp-tabstrip`, in the builder's popovers and dialogs (`BackgroundReflowDialog`, `CanvasSizePicker`, `FillPicker`, `IconPicker`, `ShortcutsPanel`) and `ImageSourceChooser`. No frame draws these surfaces.
-- `socialpaint.css`'s own theme layer (the `--bg-*`, `--nav-*`, `--icon-btn-*`, `--state-*` and edge names, some on raw values), which those surfaces and a few older rules still read. Its header lists it.
+- The earlier control classes `.sp-btn`, `.sp-input`, `.sp-icon-btn`, `.sp-seg` and `.sp-tabstrip` are gone since the follow-up to E9: the builder's popovers and dialogs and `ImageSourceChooser` read Button, Input, Select, IconButton and SegmentedControl.
+- `socialpaint.css`'s own theme layer (the `--bg-*`, `--icon-btn-bg-hover`, `--state-*` and edge names, some on raw values), which the icon picker's cells, the upload chip, the dropzone, the toast and the card and empty-state recipes still read. Its header lists it.
 - The lint rule's ratchet list in `eslint.config.js`: fourteen older files still on inline type. A file leaves the list when it moves onto the `.t-*` classes.
 - The contrast and keyboard pass new-brand Phase 10 owed.
 

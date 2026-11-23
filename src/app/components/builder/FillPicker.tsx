@@ -283,6 +283,9 @@ export function FillPicker({
       }
     };
     const onKey = (e: KeyboardEvent) => {
+      // Escape inside an open menu (the format Select) closes that menu
+      // only, and its own handler returns focus to its trigger.
+      if (e.target instanceof Element && e.target.closest('[role="listbox"]')) return;
       if (e.key === "Escape") {
         // The builder also listens for Escape on window (clear selection) —
         // same node, so only the immediate variant actually stops it.
@@ -635,10 +638,9 @@ export function FillPicker({
           </div>
 
           {/* Format + value + alpha */}
-          <div className="flex items-center" style={{ gap: "var(--space-8)" }}>
+          <div className="flex items-center" style={{ gap: "var(--space-6)" }}>
             <Select
-              size="sm"
-              hug
+              className="sp-fill-format"
               ariaLabel="Color format"
               value={format}
               options={[
@@ -753,7 +755,6 @@ function FormatValueInput({
   };
   return (
     <Input
-      size="sm"
       type="text"
       spellCheck={false}
       disabled={disabled}

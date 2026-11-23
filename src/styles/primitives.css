@@ -1198,6 +1198,13 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-segmented .ui-segment:focus-visible {
   z-index: 3;
 }
+/* Disabled, the thumb loses its lift, so a locked switch reads as off. */
+.ui-segmented[aria-disabled="true"] .ui-segmented__thumb {
+  box-shadow: none;
+}
+.ui-segmented[aria-disabled="true"] .ui-segmented__goo {
+  filter: url(#sp-goo);
+}
 /* Stretched, the track fills its row and the segments share it equally
    (the builder's popovers). */
 .ui-segmented[data-stretch] {
