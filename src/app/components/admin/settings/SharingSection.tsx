@@ -204,7 +204,7 @@ export function SharingSection() {
 
       <SettingsCard className="sp-st-gap-16" title="Public links" action={filter}>
         {state.status === "loading" ? (
-          <SkeletonRows rows={3} inset="var(--space-xs) 0" label="Loading links" />
+          <SkeletonRows rows={3} inset="var(--space-12) 0" label="Loading links" />
         ) : state.status === "error" ? (
           <ErrorState
             title="We couldn't load your links."

@@ -72,7 +72,7 @@ function downloadBlob(blob: Blob, fileName: string) {
 
 // Chrome text colours: secondary and muted copy, and the tables' cells.
 const secondary: React.CSSProperties = { color: "var(--text-secondary)" };
-const muted: React.CSSProperties = { color: "var(--text-muted)" };
+const muted: React.CSSProperties = { color: "var(--text-secondary)" };
 const strong: React.CSSProperties = { color: "var(--text-primary)" };
 
 export function BulkFillPage({ templateId }: { templateId: string }) {
@@ -110,7 +110,7 @@ export function BulkFillPage({ templateId }: { templateId: string }) {
   if (!template) {
     return (
       <Page header={header}>
-        <p className="tu-body-s text-center py-24" style={muted}>
+        <p className="t-body-s text-center py-24" style={muted}>
           Template not found.
         </p>
       </Page>
@@ -120,7 +120,7 @@ export function BulkFillPage({ templateId }: { templateId: string }) {
     return (
       <Page header={header}>
         <BackLink onClick={() => navigate({ name: "template", templateId })} />
-        <p className="tu-body-s text-center py-24" style={muted}>
+        <p className="t-body-s text-center py-24" style={muted}>
           Publish this template before filling it in bulk.
         </p>
       </Page>
@@ -318,10 +318,10 @@ function BulkFill({
       {step === "mapping" && csv && (
         <div className="sp-card p-5 space-y-4">
           <div className="space-y-1">
-            <h2 className="tu-label-m" style={strong}>
+            <h2 className="t-label-m" style={strong}>
               Match columns to fields
             </h2>
-            <p className="tu-body-s" style={muted}>
+            <p className="t-body-s" style={muted}>
               Read {csv.rows.length} {csv.rows.length === 1 ? "row" : "rows"} and{" "}
               {csv.headers.length} {csv.headers.length === 1 ? "column" : "columns"} from {fileName}{" "}
               ({delimiterName(csv.delimiter)}-separated). Each column can fill one field; columns
@@ -330,11 +330,11 @@ function BulkFill({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="tu-body-s w-full" style={{ minWidth: 560 }}>
+            <table className="t-body-s w-full" style={{ minWidth: 560 }}>
               <thead>
                 <tr
                   className="text-left"
-                  style={{ borderBottom: "1px solid var(--border-default)" }}
+                  style={{ borderBottom: "1px solid var(--border-subtle)" }}
                 >
                   {["Column", "First row", "Fills"].map((h) => (
                     <th key={h} className="sp-eyebrow px-3 py-2">
@@ -345,15 +345,15 @@ function BulkFill({
               </thead>
               <tbody>
                 {csv.headers.map((header, i) => (
-                  <tr key={i} style={{ borderTop: "1px solid var(--border-default)" }}>
-                    <td className="tu-label-s px-3 py-2" style={strong}>
+                  <tr key={i} style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                    <td className="t-label-s px-3 py-2" style={strong}>
                       {header || (
-                        <span className="tu-body-s" style={muted}>
+                        <span className="t-body-s" style={muted}>
                           (no heading)
                         </span>
                       )}
                     </td>
-                    <td className="tu-mono-s px-3 py-2" style={secondary}>
+                    <td className="t-mono-s px-3 py-2" style={secondary}>
                       {truncate(csv.rows[0]?.[i] ?? "", 48)}
                     </td>
                     <td className="px-3 py-2" style={{ width: 240 }}>
@@ -381,14 +381,14 @@ function BulkFill({
           </div>
 
           {requiredUnmapped.length > 0 && (
-            <p role="status" className="tu-body-s" style={secondary}>
+            <p role="status" className="t-body-s" style={secondary}>
               {requiredUnmapped.length === 1
                 ? `${requiredUnmapped[0].label} is required and has no column yet. Map a column to it before continuing.`
                 : `${requiredUnmapped.map((f) => f.label).join(", ")} are required and have no column yet. Map a column to each before continuing.`}
             </p>
           )}
           {requiredUnmapped.length === 0 && mappedCount === 0 && (
-            <p role="status" className="tu-body-s" style={secondary}>
+            <p role="status" className="t-body-s" style={secondary}>
               No column is mapped yet. Choose a field for at least one column.
             </p>
           )}
@@ -412,15 +412,15 @@ function BulkFill({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="sp-card p-5 space-y-4 lg:col-span-7">
             <div className="space-y-1">
-              <h2 className="tu-label-m" style={strong}>
+              <h2 className="t-label-m" style={strong}>
                 {readyLine(readyCount, checks.length)}
               </h2>
               {overCap ? (
-                <p role="status" className="tu-body-s" style={secondary}>
+                <p role="status" className="t-body-s" style={secondary}>
                   {overCapLine(checks.length, MAX_BULK_ROWS)}
                 </p>
               ) : (
-                <p className="tu-body-s" style={muted}>
+                <p className="t-body-s" style={muted}>
                   {readyCount === checks.length
                     ? "Every row fits its template. Export when you are ready."
                     : "Rows with problems are left out of the export unless you include them below. Hover a row to preview it."}
@@ -434,7 +434,7 @@ function BulkFill({
                   checked={problemsOnly}
                   onChange={setProblemsOnly}
                   label={
-                    <span className="tu-body-s" style={secondary}>
+                    <span className="t-body-s" style={secondary}>
                       Show only rows with problems
                     </span>
                   }
@@ -445,7 +445,7 @@ function BulkFill({
                     onChange={setIncludeProblems}
                     label="Include rows with problems anyway"
                   />
-                  <p className="tu-body-s pl-6 mt-1" style={secondary}>
+                  <p className="t-body-s pl-6 mt-1" style={secondary}>
                     They export as they are: text that overflows runs past the edge of the graphic,
                     and an empty required field shows the field's placeholder.
                   </p>
@@ -454,11 +454,11 @@ function BulkFill({
             )}
 
             <div className="overflow-x-auto">
-              <table className="tu-body-s w-full" style={{ minWidth: 480 }}>
+              <table className="t-body-s w-full" style={{ minWidth: 480 }}>
                 <thead>
                   <tr
                     className="text-left"
-                    style={{ borderBottom: "1px solid var(--border-default)" }}
+                    style={{ borderBottom: "1px solid var(--border-subtle)" }}
                   >
                     {["Row", identifierField?.label ?? "Value", "Status"].map((h) => (
                       <th key={h} className="sp-eyebrow px-3 py-2">
@@ -479,15 +479,15 @@ function BulkFill({
                         tabIndex={0}
                         aria-selected={selected}
                         style={{
-                          borderTop: "1px solid var(--border-default)",
+                          borderTop: "1px solid var(--border-subtle)",
                           background: selected ? "var(--surface-sunken)" : undefined,
                           cursor: "default",
                         }}
                       >
-                        <td className="tu-mono-s px-3 py-2" style={secondary}>
+                        <td className="t-mono-s px-3 py-2" style={secondary}>
                           {c.index + 1}
                         </td>
-                        <td className="tu-label-s px-3 py-2" style={strong}>
+                        <td className="t-label-s px-3 py-2" style={strong}>
                           {truncate(
                             identifierField ? (c.values[identifierField.fieldKey] ?? "") : "",
                             40,
@@ -541,14 +541,14 @@ function BulkFill({
 
       {step === "running" && (
         <div className="sp-card p-5 space-y-4">
-          <h2 className="tu-label-m" style={strong}>
+          <h2 className="t-label-m" style={strong}>
             Rendering {Math.min(progress.done + 1, progress.total)} of {progress.total}
           </h2>
           <ProgressBar
             value={progress.total ? progress.done / progress.total : 0}
             label="Bulk export progress"
           />
-          <p className="tu-body-s" style={muted}>
+          <p className="t-body-s" style={muted}>
             Each graphic goes through the same export as a single download. Stopping keeps
             everything rendered so far.
           </p>
@@ -560,12 +560,12 @@ function BulkFill({
 
       {step === "done" && outcome && (
         <div className="sp-card p-5 space-y-4">
-          <h2 className="tu-label-m" style={strong}>
+          <h2 className="t-label-m" style={strong}>
             {outcome.result.rendered === 0
               ? "Nothing rendered."
               : `${outcome.result.rendered} ${outcome.result.rendered === 1 ? "graphic" : "graphics"} rendered and downloaded as ${outcome.zipName}.`}
           </h2>
-          <div className="tu-body-s space-y-1" style={secondary}>
+          <div className="t-body-s space-y-1" style={secondary}>
             {outcome.canceled && (
               <p>
                 Stopped after {outcome.result.rendered + outcome.result.failed.length} of{" "}
@@ -625,19 +625,19 @@ function UploadStep({
       <label
         {...drop.bind}
         data-active={drop.active}
-        className="sp-dropzone tu-body-s flex flex-col items-center justify-center gap-2 cursor-pointer text-center"
+        className="sp-dropzone t-body-s flex flex-col items-center justify-center gap-2 cursor-pointer text-center"
         style={{
           minHeight: 160,
-          padding: "var(--space-md)",
+          padding: "var(--space-24)",
           border: "1.5px dashed var(--border-strong)",
-          borderRadius: "var(--radius-control)",
+          borderRadius: "var(--radius-sm)",
           color: "var(--text-secondary)",
         }}
       >
         <span className="sp-dropzone__icon flex">
           <FileSpreadsheet style={{ width: 22, height: 22 }} />
         </span>
-        <span className="tu-label-s" style={strong}>
+        <span className="t-label-s" style={strong}>
           Drop a CSV here, or click to choose one
         </span>
         <span style={muted}>One row per graphic. Comma, tab, or semicolon separated.</span>
@@ -654,12 +654,12 @@ function UploadStep({
       </label>
 
       {error && (
-        <p role="alert" className="tu-body-s" style={secondary}>
+        <p role="alert" className="t-body-s" style={secondary}>
           {error}
         </p>
       )}
 
-      <div className="tu-body-s space-y-2" style={muted}>
+      <div className="t-body-s space-y-2" style={muted}>
         <p>
           The first line is the column headings. Headings that match a field name are mapped
           automatically ({fields.join(", ")}); anything else you match by hand on the next step.
@@ -695,7 +695,7 @@ function PreviewCard({
   return (
     <div className="sp-card p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="tu-label-m" style={strong}>
+        <h3 className="t-label-m" style={strong}>
           Row {row + 1}
         </h3>
         <span className="sp-eyebrow">
@@ -706,8 +706,8 @@ function PreviewCard({
         className="overflow-hidden"
         style={{
           background: "var(--surface-sunken)",
-          border: "1px solid var(--border-default)",
-          borderRadius: "var(--radius-control-md)",
+          border: "1px solid var(--border-subtle)",
+          borderRadius: "var(--radius-sm)",
           aspectRatio: `${template.canvasWidth} / ${template.canvasHeight}`,
           maxWidth: `calc((100vh - 180px) * ${template.canvasWidth / template.canvasHeight})`,
           marginInline: "auto",

@@ -93,13 +93,13 @@ export function FieldCrashFallback({ width, height }: { width: number; height: n
         alignItems: "center",
         justifyContent: "center",
         border: "1.5px dashed var(--border-strong)",
-        background: "color-mix(in srgb, var(--border) 18%, transparent)",
+        background: "color-mix(in srgb, var(--border-subtle) 18%, transparent)",
       }}
     >
       <span
         style={{
           fontSize: Math.max(16, Math.min(width, height) / 6),
-          color: "var(--text-muted)",
+          color: "var(--text-secondary)",
           textAlign: "center",
           padding: 8,
         }}

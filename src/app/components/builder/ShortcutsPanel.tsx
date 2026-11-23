@@ -114,10 +114,10 @@ export function ShortcutsPanel({ isMac, onClose }: { isMac: boolean; onClose(): 
         style={{
           maxWidth: 860,
           maxHeight: "80dvh",
-          background: "var(--bg-surface)",
-          border: "1px solid var(--border)",
-          borderRadius: "var(--radius-card)",
-          padding: "var(--space-md)",
+          background: "var(--surface-raised)",
+          border: "1px solid var(--border-subtle)",
+          borderRadius: "var(--radius-xl)",
+          padding: "var(--space-24)",
         }}
       >
         <header className="flex items-center justify-between gap-4 mb-4">
@@ -142,7 +142,7 @@ export function ShortcutsPanel({ isMac, onClose }: { isMac: boolean; onClose(): 
         >
           {sections(isMac).map((section) => (
             <section key={section.title}>
-              <h3 className="sp-eyebrow" style={{ marginBottom: "var(--space-2xs)" }}>
+              <h3 className="sp-eyebrow" style={{ marginBottom: "var(--space-8)" }}>
                 {section.title}
               </h3>
               <dl className="space-y-1">

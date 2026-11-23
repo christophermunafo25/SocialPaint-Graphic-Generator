@@ -25,7 +25,7 @@ export function SignedImg({ src, alt, className, style, draggable }: SignedImgPr
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "var(--text-muted)",
+          color: "var(--text-secondary)",
           ...style,
         }}
       >

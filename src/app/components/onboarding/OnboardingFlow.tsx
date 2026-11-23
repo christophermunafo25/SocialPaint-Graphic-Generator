@@ -481,8 +481,8 @@ export function OnboardingFlow({ services, inApp = false, initial }: OnboardingF
             ariaLabel={`${c.name}, ${c.hex}`}
             swatchStyle={
               shape === "dot"
-                ? { width: 40, height: 40, borderRadius: "var(--radius-pill)" }
-                : { width: "100%", height: 48, borderRadius: "var(--radius-control)" }
+                ? { width: 40, height: 40, borderRadius: "var(--radius-full)" }
+                : { width: "100%", height: 48, borderRadius: "var(--radius-sm)" }
             }
           />
           {shape === "card" && <span className="t-mono-s sp-onb-muted">{c.hex.toUpperCase()}</span>}

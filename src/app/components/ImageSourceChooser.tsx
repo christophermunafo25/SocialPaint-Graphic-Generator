@@ -102,7 +102,7 @@ function BrandAssetGrid({
       style={{
         display: "grid",
         gridTemplateColumns: `repeat(auto-fill, minmax(${compact ? 64 : 88}px, 1fr))`,
-        gap: "var(--space-3xs)",
+        gap: "var(--space-4)",
       }}
     >
       {assets.map((asset) => {
@@ -119,9 +119,11 @@ function BrandAssetGrid({
             className="flex flex-col items-center gap-1 relative"
             style={{
               padding: compact ? 4 : 6,
-              border: selected ? "1px solid var(--state-primary)" : "1px solid var(--border)",
-              borderRadius: "var(--radius-control)",
-              background: "var(--bg-surface)",
+              border: selected
+                ? "1px solid var(--state-primary)"
+                : "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--surface-raised)",
               fontSize: 10.5,
               color: "var(--text-secondary)",
               minWidth: 0,
@@ -232,7 +234,7 @@ export function ImageSourceDialog({
         target?.focus({ preventScroll: true });
       }}
     >
-      <p className="tu-body-m sp-st-confirm__body">
+      <p className="t-body-m sp-st-confirm__body">
         {showingBrand
           ? "Pick one of your brand's logos or images."
           : "Where should the new image come from?"}
@@ -248,7 +250,7 @@ export function ImageSourceDialog({
           }}
         />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2xs)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-8)" }}>
           {assets.length > 0 && (
             <OptionTile
               label="Your brand"

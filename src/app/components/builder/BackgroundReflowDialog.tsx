@@ -87,9 +87,9 @@ export function BackgroundReflowDialog({
       <div
         className="w-full max-w-lg p-5 space-y-4"
         style={{
-          background: "var(--bg-surface)",
+          background: "var(--surface-raised)",
           border: "1px solid var(--border-strong)",
-          borderRadius: "var(--radius-card)",
+          borderRadius: "var(--radius-xl)",
         }}
         onClick={(e) => e.stopPropagation()}
       >

@@ -121,11 +121,11 @@ export function IconPicker({ anchorRef, side, selected, onPick, onClose }: IconP
         maxHeight,
         zIndex: "var(--z-popover)" as unknown as number,
         background: "var(--surface-raised)",
-        border: "1px solid var(--border-default)",
-        borderRadius: "var(--radius-menu)",
-        boxShadow: "var(--elevation-medium)",
-        padding: "var(--space-2xs)",
-        gap: "var(--space-2xs)",
+        border: "1px solid var(--border-subtle)",
+        borderRadius: "var(--radius-lg)",
+        boxShadow: "var(--elevation-2-overlay)",
+        padding: "var(--space-8)",
+        gap: "var(--space-8)",
       }}
     >
       <label className="relative flex items-center">
@@ -133,16 +133,16 @@ export function IconPicker({ anchorRef, side, selected, onPick, onClose }: IconP
           aria-hidden
           style={{
             position: "absolute",
-            left: "var(--space-3xs)",
+            left: "var(--space-4)",
             width: 14,
             height: 14,
-            color: "var(--text-muted)",
+            color: "var(--text-secondary)",
           }}
         />
         <input
           autoFocus
           className="sp-input w-full"
-          style={{ paddingLeft: "var(--space-md)" }}
+          style={{ paddingLeft: "var(--space-24)" }}
           placeholder="Search icons"
           aria-label="Search icons"
           value={query}
@@ -157,7 +157,7 @@ export function IconPicker({ anchorRef, side, selected, onPick, onClose }: IconP
           className="grid"
           style={{
             gridTemplateColumns: `repeat(${COLUMNS}, ${CELL}px)`,
-            gap: "var(--space-3xs)",
+            gap: "var(--space-4)",
             overflowY: "auto",
           }}
         >
@@ -173,7 +173,7 @@ export function IconPicker({ anchorRef, side, selected, onPick, onClose }: IconP
               style={{
                 width: CELL,
                 height: CELL,
-                borderRadius: "var(--radius-menu-item)",
+                borderRadius: "var(--radius-sm)",
                 color: "var(--text-primary)",
                 background: name === selected ? "var(--state-selected)" : undefined,
               }}
@@ -184,8 +184,12 @@ export function IconPicker({ anchorRef, side, selected, onPick, onClose }: IconP
         </div>
       ) : (
         <p
-          className="tu-caption-m"
-          style={{ padding: "var(--space-md) 0", textAlign: "center", color: "var(--text-muted)" }}
+          className="t-caption-m"
+          style={{
+            padding: "var(--space-24) 0",
+            textAlign: "center",
+            color: "var(--text-secondary)",
+          }}
         >
           No icons match “{query.trim()}”
         </p>

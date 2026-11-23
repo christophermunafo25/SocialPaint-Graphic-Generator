@@ -115,7 +115,7 @@ export function ColorControl({
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commitDraft}
       onKeyDown={(e) => e.key === "Enter" && commitDraft()}
-      className="tu-mono-s"
+      className="t-mono-s"
       style={{ width: 88 }}
       aria-label={`${label} hex value`}
     />
@@ -194,7 +194,7 @@ export function ColorControl({
           <button
             type="button"
             onClick={onClear}
-            style={{ fontSize: 11, color: "var(--text-muted)" }}
+            style={{ fontSize: 11, color: "var(--text-secondary)" }}
             title="Remove color"
           >
             Clear
