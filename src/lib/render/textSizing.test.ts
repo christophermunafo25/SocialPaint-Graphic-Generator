@@ -549,6 +549,31 @@ describe("line breaks", () => {
       }
     });
 
+    it("leaves room for the letter spacing the browser adds after the pair's last glyph", () => {
+      // At 48px with 6px of letter spacing the pair is 324px as lineWidth
+      // counts it (ten gaps) and 330px as the browser lays it out (eleven).
+      const value = "aa bb eeee ffffff";
+      const spaced = (width: number, letterSpacingPx: number) =>
+        multiline({ textSizing: "free", letterSpacingPx, width });
+      expect(typeset(spaced(329, 6), value).text).toBe(value);
+      expect(typeset(spaced(330, 6), value).text).toBe(`aa bb eeee${NB}ffffff`);
+      // Negative spacing never loosens the test: the pair is 244px either way.
+      expect(typeset(spaced(243, -2), value).text).toBe(value);
+      expect(typeset(spaced(244, -2), value).text).toBe(`aa bb eeee${NB}ffffff`);
+    });
+
+    it("leaves a paragraph that holds a tab as typed", () => {
+      // The measure counts a tab as one space and the browser moves it to a
+      // tab stop, so the width the pair paints at is not known.
+      const tabbed = "aaaa\tbbbb cccc dddd eeee ffffff";
+      const free = multiline({ textSizing: "free", height: 400 });
+      expect(orphanedParagraphs(tabbed, 600, {}, 48, measure)).toEqual([0]);
+      expect(typeset(free, tabbed).text).toBe(tabbed);
+      expect(typeset(free, `${tabbed}\n${stubborn}`).text).toBe(
+        `${tabbed}\naaaa bbbb cccc dddd eeee${NB}ffffff`,
+      );
+    });
+
     it("joins a plated field at its narrower wrap width", () => {
       // 24 chars fit 600px on one line, but not the 500px inside the plate.
       const plated = multiline({ textSizing: "free", plateColor: "#000000", platePaddingX: 50 });

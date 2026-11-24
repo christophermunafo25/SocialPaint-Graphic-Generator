@@ -135,10 +135,14 @@ const wrapWidthOf = (f: TemplateField): number => Math.max(1, f.width - platePad
 /** Join each paragraph that ends on an orphan at this size, when its last
  * two words fit the wrap width together and the join adds no line. A pair
  * wider than the wrap width keeps its orphan: joining it would only break
- * the pair mid-word. So does a paragraph the join would make a line taller.
- * That is one that ends in a typed space when the pair fills its line: the
- * space has no room beside the pair, so wrapLines closes the line on it and
- * counts an empty one below. */
+ * the pair mid-word. The pair is given room for one more gap of letter
+ * spacing than lineWidth counts, because the browser adds the spacing after
+ * a line's last glyph too. A paragraph that holds a tab keeps its orphan:
+ * the measure counts a tab as one space and the browser moves it to a tab
+ * stop, so the pair's painted width is not known. So does a paragraph the
+ * join would make a line taller. That is one that ends in typed white space
+ * when the pair fills its line: the space has no room beside the pair, so
+ * wrapLines closes the line on it and counts an empty one below. */
 export function joinAtSize(
   field: TemplateField,
   style: ResolvedFieldStyle,
@@ -147,12 +151,15 @@ export function joinAtSize(
   measure: LineMeasurer,
 ): string {
   const width = wrapWidthOf(field);
+  const trailingGap = Math.max(0, style.letterSpacingPx ?? 0);
   const paragraphs = text.split("\n");
   const lineCount = (paragraph: string) =>
     wrapLines(paragraph, width, style, fontSizePx, measure).length;
   const joinable = orphanedParagraphs(text, width, style, fontSizePx, measure).filter((i) => {
+    if (paragraphs[i].includes("\t")) return false;
     const pair = lastWordPair(paragraphs[i]);
-    if (pair === null || measuredTextWidth(style, pair, fontSizePx, measure) > width) return false;
+    if (pair === null) return false;
+    if (measuredTextWidth(style, pair, fontSizePx, measure) + trailingGap > width) return false;
     return lineCount(joinLastWords(paragraphs[i], [0])) <= lineCount(paragraphs[i]);
   });
   return joinable.length ? joinLastWords(text, joinable) : text;
