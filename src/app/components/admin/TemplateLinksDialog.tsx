@@ -282,7 +282,7 @@ export function PublicLinksBody({
             onRetry={onRetryLoad}
           />
         ) : links === null ? (
-          <div className="sp-links__rows" aria-busy="true" aria-label="Loading links">
+          <div className="sp-links__rows" role="status" aria-busy="true" aria-label="Loading links">
             <Skeleton width="40%" height={13} />
             <Skeleton width="100%" height={36} radius="sm" />
           </div>

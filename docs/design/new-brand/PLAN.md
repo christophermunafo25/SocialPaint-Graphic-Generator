@@ -71,7 +71,7 @@ What that phase still owes after #182, and where this program picks each up:
 | Drop the unread `company_canvas_presets` table and the unread `brand_kits` font columns (migrations 0046 and 0047 are promised to them) | Left out of ElevenLabs Phase E9 by CJ (2026-11-23) |
 | Remove the never-imported packages | Done in ElevenLabs Phase E9 (43 packages) |
 | Lint rules against raw colors and inline type. There is no automated check today: the rule is prose in `CLAUDE.md` and a line in the phase reviewer's checklist | Done in ElevenLabs Phase E9 (no-restricted-syntax, with a ratchet list) |
-| A contrast and keyboard pass, `ARCHITECTURE.md`, the stylesheet header | ARCHITECTURE.md and the header done in ElevenLabs Phase E9; the contrast and keyboard pass is still open |
+| A contrast and keyboard pass, `ARCHITECTURE.md`, the stylesheet header | ARCHITECTURE.md and the header done in ElevenLabs Phase E9; the contrast and keyboard pass done in its follow-up (`shots.mjs a11y`) |
 
 `docs/brand-system/` Phase 6 is gated on "new-look Phase 9 merged". That phase will not finish as written, so CJ decides whether #182 satisfies the gate or Track B waits for this program's Phase 7, which rebuilds the same Brand Studio screens.
 

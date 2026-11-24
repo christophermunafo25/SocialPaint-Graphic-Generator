@@ -2838,7 +2838,12 @@ export function TemplateBuilder({
     // An artboard-shaped pulse where the canvas is about to be, so the
     // builder doesn't flash a bare void while the template loads.
     return (
-      <div className="sp-builder-opening" aria-busy="true" aria-label="Loading this template">
+      <div
+        className="sp-builder-opening"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading this template"
+      >
         <Skeleton shape="block" radius="md" />
       </div>
     );

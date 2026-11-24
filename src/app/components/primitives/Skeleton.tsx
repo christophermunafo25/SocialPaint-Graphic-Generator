@@ -23,8 +23,8 @@ export interface SkeletonProps extends Omit<React.HTMLAttributes<HTMLSpanElement
  * size of what is coming, so nothing moves when the data lands.
  *
  * It is decoration. The region it sits in says it is busy, once
- * (aria-busy and a label); a skeleton that carries its own label is that
- * region. */
+ * (role status, aria-busy and a label); a skeleton that carries its own
+ * label is that region. */
 export function Skeleton({
   shape = "line",
   width,
@@ -37,6 +37,7 @@ export function Skeleton({
   return (
     <span
       aria-hidden={rest["aria-label"] ? undefined : true}
+      role={rest["aria-label"] ? "status" : undefined}
       {...rest}
       className={cx("ui-skeleton", className)}
       data-shape={shape}
@@ -53,10 +54,16 @@ export function SkeletonLines({
   label = "Loading",
 }: {
   lines?: number;
-  label?: string;
+  /** null when the region around it already says it is loading. */
+  label?: string | null;
 }) {
   return (
-    <div className="ui-skeleton-lines" aria-busy="true" aria-label={label}>
+    <div
+      className="ui-skeleton-lines"
+      role={label ? "status" : undefined}
+      aria-busy={label ? true : undefined}
+      aria-label={label ?? undefined}
+    >
       {Array.from({ length: lines }, (_, i) => (
         <Skeleton key={i} width={`${[62, 44, 54, 36][i % 4]}%`} />
       ))}
@@ -73,10 +80,16 @@ export function SkeletonRows({
 }: {
   rows?: number;
   inset?: string;
-  label?: string;
+  /** null when the region around it already says it is loading. */
+  label?: string | null;
 }) {
   return (
-    <div className="ui-skeleton-rows" aria-busy="true" aria-label={label}>
+    <div
+      className="ui-skeleton-rows"
+      role={label ? "status" : undefined}
+      aria-busy={label ? true : undefined}
+      aria-label={label ?? undefined}
+    >
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="ui-skeleton-row" style={{ padding: inset }}>
           <Skeleton shape="circle" width={26} />

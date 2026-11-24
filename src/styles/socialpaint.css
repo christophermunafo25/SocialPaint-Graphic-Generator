@@ -1197,17 +1197,6 @@ input[type="radio"] {
   .sp-page--bleed .sp-emptystate {
     margin-inline: var(--space-16);
   }
-
-  /* iOS Safari zooms the whole page when a focused field's font-size sits
-     under 16px (2026-09-15, at CJ's direction — stop the zoom). Every
-     text-entry control takes the composer step at touch widths: 16px, an
-     existing rung, one over the desktop fields' 13/15. Fields styled
-     inline are caught by the viewport meta's maximum-scale=1 instead
-     (see index.html). */
-  select,
-  textarea {
-    font-size: var(--type-composer-size);
-  }
 }
 
 /* --- Reduced motion: the literal-timing holdouts -------------------------

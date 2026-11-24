@@ -47,7 +47,13 @@ export function TemplateUsePage({ templateId }: { templateId: string }) {
           </div>
         }
       >
-        <div className="sp-fill" data-place="member" aria-busy="true" aria-label="Loading template">
+        <div
+          className="sp-fill"
+          data-place="member"
+          role="status"
+          aria-busy="true"
+          aria-label="Loading template"
+        >
           <div className="sp-fill__preview">
             <div className="sp-fill__stage" />
           </div>
