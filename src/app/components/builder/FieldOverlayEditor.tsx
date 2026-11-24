@@ -390,7 +390,7 @@ function RotateZones({ onRotate }: { onRotate(e: React.PointerEvent): void }) {
         <div
           key={key}
           title="Rotate (shift snaps to 15°)"
-          aria-label="Rotate"
+          aria-hidden="true"
           onPointerDown={(e) => {
             if (e.button !== 0) return;
             e.stopPropagation();

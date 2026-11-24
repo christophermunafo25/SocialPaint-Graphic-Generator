@@ -54,7 +54,7 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
   const label = `Loading ${CATEGORY_TITLES[category]}`;
   if (category === "colors") {
     return (
-      <div className="sp-bs-colors" aria-busy="true" aria-label={label}>
+      <div className="sp-bs-colors" role="status" aria-busy="true" aria-label={label}>
         {Array.from({ length: 6 }, (_, i) => (
           <div key={i} className="sp-bs-color" aria-hidden>
             <Skeleton className="sp-bs-color__swatch" />
@@ -69,7 +69,7 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
   }
   if (category === "logos") {
     return (
-      <div className="sp-bs-logos" aria-busy="true" aria-label={label}>
+      <div className="sp-bs-logos" role="status" aria-busy="true" aria-label={label}>
         {Array.from({ length: 4 }, (_, i) => (
           <div key={i} className="sp-bs-logo" aria-hidden>
             <Skeleton className="sp-bs-logo__plate" />
@@ -84,7 +84,7 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
   }
   if (category === "images") {
     return (
-      <div className="sp-bs-images" aria-busy="true" aria-label={label}>
+      <div className="sp-bs-images" role="status" aria-busy="true" aria-label={label}>
         {Array.from({ length: 4 }, (_, i) => (
           <div key={i} className="sp-bs-image" aria-hidden>
             <Skeleton className="sp-bs-image__plate" />
@@ -99,7 +99,7 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
   }
   if (category === "import") {
     return (
-      <div className="sp-bs-import" aria-busy="true" aria-label={label}>
+      <div className="sp-bs-import" role="status" aria-busy="true" aria-label={label}>
         {Array.from({ length: 2 }, (_, i) => (
           <div key={i} className="sp-bs-import__leg" aria-hidden>
             <Skeleton width={120} height={10} />
@@ -111,7 +111,7 @@ function DetailSkeleton({ category }: { category: BrandCategory }) {
   }
   // Fonts and type styles: the list card with row-shaped bones.
   return (
-    <div className="sp-bs-list" aria-busy="true" aria-label={label}>
+    <div className="sp-bs-list" role="status" aria-busy="true" aria-label={label}>
       <div className="sp-bs-list__rows">
         {Array.from({ length: 3 }, (_, i) => (
           <div key={i} className="sp-bs-font" aria-hidden>

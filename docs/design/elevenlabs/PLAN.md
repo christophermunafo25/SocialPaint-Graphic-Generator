@@ -146,7 +146,13 @@ Phase E9 deleted `legacy-bridge.css`, the `.tu-*` classes, the dead rules and cu
 - The earlier control classes `.sp-btn`, `.sp-input`, `.sp-icon-btn`, `.sp-seg` and `.sp-tabstrip` are gone since the follow-up to E9: the builder's popovers and dialogs and `ImageSourceChooser` read Button, Input, Select, IconButton and SegmentedControl.
 - `socialpaint.css`'s own theme layer (the `--bg-*`, `--icon-btn-bg-hover`, `--state-*` and edge names, some on raw values), which the icon picker's cells, the upload chip, the dropzone, the toast and the card and empty-state recipes still read. Its header lists it.
 - The lint rule's ratchet list in `eslint.config.js`: fourteen older files still on inline type. A file leaves the list when it moves onto the `.t-*` classes.
-- The contrast and keyboard pass new-brand Phase 10 owed.
+- The contrast and keyboard pass new-brand Phase 10 owed is done since its own follow-up: `shots.mjs a11y` runs axe (WCAG 2.2 AA) and a keyboard Tab walk on every screen in both themes, and `contrast.mjs` reads the props snapshot. What it leaves is listed under "What the contrast and keyboard pass left".
+
+## What the contrast and keyboard pass left
+
+- White text on `action/danger` (red 600) measures about 3.6 to 1, under 4.5 for the destructive button's label. The token comes from the Figma export, so moving it a step darker is CJ's call.
+- An empty image field draws its label in the graphic at 35% black, which axe measures under 4.5. It is part of the graphic that `SchemaRenderer` draws, never part of an export, and it stays as drawn.
+- Disabled controls measure under 4.5 by design, which WCAG 1.4.3 allows.
 
 CJ's calls at E9 (2026-11-23): the `company_canvas_presets` table and the unread `brand_kits` font columns stay (no drop migrations), and the transparent bevel and glow tokens stay.
 

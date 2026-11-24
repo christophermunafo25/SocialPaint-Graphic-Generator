@@ -2703,3 +2703,17 @@ button.ui-detail-tag__value {
 .ui-option-group[data-layout="hug"] .ui-option-tile__text {
   flex: none;
 }
+
+/* ── Touch: no zoom on focus, and pinch-zoom stays (WCAG 1.4.4) ──
+   iOS Safari zooms the page when a focused field's text is under 16
+   (CJ, 2026-09-15: stop the zoom). Every text-entry field takes 16 on a
+   coarse pointer, so the viewport needs no maximum-scale, which blocked
+   pinch-zoom for everyone. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]),
+  select,
+  textarea,
+  [contenteditable="true"] {
+    font-size: var(--type-size-16);
+  }
+}

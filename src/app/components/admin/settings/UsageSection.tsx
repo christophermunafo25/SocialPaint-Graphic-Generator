@@ -40,7 +40,7 @@ export function UsageSection() {
 
       <SettingsCard title={monthName}>
         {state.status === "loading" ? (
-          <div className="sp-st-metrics" aria-busy="true" aria-label="Loading usage">
+          <div className="sp-st-metrics" role="status" aria-busy="true" aria-label="Loading usage">
             {Array.from({ length: 4 }, (_, i) => (
               <Skeleton key={i} width={96} height={74} />
             ))}

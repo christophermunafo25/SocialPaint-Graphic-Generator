@@ -465,7 +465,7 @@ export function AdminTemplates() {
       )}
 
       {templatesState.status === "loading" ? (
-        <div className="sp-tb-grid" aria-busy="true" aria-label="Loading templates">
+        <div className="sp-tb-grid" role="status" aria-busy="true" aria-label="Loading templates">
           {Array.from({ length: 8 }, (_, i) => (
             <BuilderTemplateCardSkeleton key={i} />
           ))}

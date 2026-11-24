@@ -11,7 +11,9 @@ export function LibraryShelfSkeleton({ cards = 4 }: { cards?: number }) {
         <Skeleton width={240} height={12} />
       </div>
       <div className="sp-lib-rail">
-        <div className="sp-lib-rail__track sp-lib-shelf__track">
+        {/* A scrolling box is a tab stop in Chromium; the bones hold
+            nothing to reach. */}
+        <div className="sp-lib-rail__track sp-lib-shelf__track" tabIndex={-1}>
           {Array.from({ length: cards }, (_, i) => (
             <div key={i} className="sp-lib-shelf__item" aria-hidden>
               <div className="sp-tcard">

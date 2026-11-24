@@ -87,7 +87,7 @@ export function BulkFillPage({ templateId }: { templateId: string }) {
   if (templateState.status === "loading") {
     return (
       <Page header={header}>
-        <div aria-busy="true" aria-label="Loading template">
+        <div role="status" aria-busy="true" aria-label="Loading template">
           <Skeleton width={148} height={13} style={{ marginBottom: 20 }} />
           <div className="sp-card p-5">
             <SkeletonLines lines={4} />

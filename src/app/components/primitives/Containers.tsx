@@ -151,6 +151,7 @@ export function Metric({
     return (
       <div
         className={cx("ui-metric", className)}
+        role="group"
         aria-busy="true"
         aria-label={typeof label === "string" ? label : undefined}
       >

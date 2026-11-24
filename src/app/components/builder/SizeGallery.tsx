@@ -348,7 +348,12 @@ export function SizeGallery({
 
       <div className="sp-size__main">
         {state.status === "loading" ? (
-          <div className="sp-size__scroll" aria-busy="true" aria-label="Loading sizes">
+          <div
+            className="sp-size__scroll"
+            role="status"
+            aria-busy="true"
+            aria-label="Loading sizes"
+          >
             <div className="sp-size__grid">
               {Array.from({ length: 8 }, (_, i) => (
                 <SizeCoverSkeleton key={i} />
