@@ -176,6 +176,6 @@ Migrations stay additive, and Edge Function mirrors stay byte-identical to their
 ## 13. Known open items
 
 - Field edges read 1.23:1 in Light (`--border-field` on white) and 1.38:1 in Dark. WCAG 1.4.11 asks 3:1 for the boundary that identifies a control. Every field has a visible label above it, so the ElevenLabs look is kept, and raising the edge is CJ's call.
-- White on `--action-danger` reads 3.80:1, under 4.5:1 for small text. CJ's call, kept.
+- White on `--action-danger` read 3.80:1 on red 600. Since 2026-11-24 the fill is red 700 and reads 5.55:1 (hover red 800, pressed red 950).
 - Disabled text reads 2.52:1 in Light and 3.72:1 in Dark. Disabled controls are exempt.
 - `--text-secondary` reads 5.33:1 on the page, 5.11:1 on cards and 4.63:1 on `--surface-sunken` in Light, and 7.85:1 on the page in Dark. Primary buttons read 19.17:1 in Light and 18.36:1 in Dark.

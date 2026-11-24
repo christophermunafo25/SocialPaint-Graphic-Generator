@@ -565,17 +565,6 @@
     },
     "action/danger": {
       "css": "--action-danger",
-      "light": "red/600",
-      "dark": "red/600",
-      "resolved": {
-        "light": "#FA3030",
-        "dark": "#FA3030"
-      },
-      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "Fill of destructive buttons, like delete."
-    },
-    "action/danger-hover": {
-      "css": "--action-danger-hover",
       "light": "red/700",
       "dark": "red/700",
       "resolved": {
@@ -583,15 +572,26 @@
         "dark": "#D0121C"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "Danger button on hover."
+      "description": "Fill of destructive buttons, like delete."
     },
-    "action/danger-pressed": {
-      "css": "--action-danger-pressed",
+    "action/danger-hover": {
+      "css": "--action-danger-hover",
       "light": "red/800",
       "dark": "red/800",
       "resolved": {
         "light": "#A40B13",
         "dark": "#A40B13"
+      },
+      "scopes": ["FRAME_FILL", "SHAPE_FILL"],
+      "description": "Danger button on hover."
+    },
+    "action/danger-pressed": {
+      "css": "--action-danger-pressed",
+      "light": "red/950",
+      "dark": "red/950",
+      "resolved": {
+        "light": "#3D1011",
+        "dark": "#3D1011"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
       "description": "Danger button while pressed."
