@@ -150,7 +150,7 @@ Phase E9 deleted `legacy-bridge.css`, the `.tu-*` classes, the dead rules and cu
 
 ## What the contrast and keyboard pass left
 
-- White text on `action/danger` measured about 3.6 to 1 on red 600. On CJ's word (2026-11-24) the danger ladder moved one step darker in the token JSON: fill red 700 (5.55 to 1), hover red 800, pressed red 950, since the ramp has no 900. The Figma variables still read red 600, 700 and 800 until they are changed there too.
+- White text on `action/danger` measured 3.80 to 1 on red 600. On CJ's word (2026-11-24) the danger ladder moved one step darker in the token JSON: fill red 700 (5.55 to 1), hover red 800, pressed red 950 in Light (the ramp has no 900) and red 800 in Dark, where red 950 nearly vanished against the dialog surfaces. The Figma variables still read red 600, 700 and 800 until they are changed there too.
 - An empty image field draws its label in the graphic at 35% black, which axe measures under 4.5. It is part of the graphic that `SchemaRenderer` draws, never part of an export, and it stays as drawn.
 - Disabled controls measure under 4.5 by design, which WCAG 1.4.3 allows.
 

@@ -235,6 +235,6 @@ Migrations stay additive, and Edge Function mirrors stay byte-identical to their
 
 ## 13. Known open items
 
-- White on `--action-danger` (`#FA3030`) reads 3.80:1, under the 4.5:1 small text needs. It is CJ's call and is kept. Hover and pressed pass.
+- White on `--action-danger` read 3.80:1 on `#FA3030`. Since 2026-11-24 the fill is red 700 and reads 5.55:1; hover and pressed pass.
 - Slime against the Light page reads 1.25:1, so a Primary or Send button is told apart in Light by its label and shape, not its fill.
 - Disabled text reads 2.48:1 in Light and 2.86:1 in Dark. Disabled controls are exempt.

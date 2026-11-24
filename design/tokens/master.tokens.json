@@ -588,10 +588,10 @@
     "action/danger-pressed": {
       "css": "--action-danger-pressed",
       "light": "red/950",
-      "dark": "red/950",
+      "dark": "red/800",
       "resolved": {
         "light": "#3D1011",
-        "dark": "#3D1011"
+        "dark": "#A40B13"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
       "description": "Danger button while pressed."

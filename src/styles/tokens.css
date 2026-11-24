@@ -297,7 +297,7 @@
   --action-on-accent: var(--gray-900); /* action/on-accent */
   --action-danger: var(--red-700); /* action/danger */
   --action-danger-hover: var(--red-800); /* action/danger-hover */
-  --action-danger-pressed: var(--red-950); /* action/danger-pressed */
+  --action-danger-pressed: var(--red-800); /* action/danger-pressed */
   --action-on-danger: var(--gray-0); /* action/on-danger */
   --action-disabled: var(--gray-870); /* action/disabled */
   --state-hover: var(--gray-870); /* state/hover */
