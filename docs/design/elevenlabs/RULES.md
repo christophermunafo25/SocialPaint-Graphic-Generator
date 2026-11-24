@@ -50,11 +50,12 @@ Spacing is named by value: `--space-2`, `-4`, `-6`, `-8`, `-12`, `-16`, `-20`, `
 
 Controls share four heights: `--size-control-xs` 24 (badges, tags), `--size-control-sm` 28, `--size-control-md` 36 and `--size-control-lg` 44. The filter bar is the one exception: Platform Chips and the Large Search Field are `--size-control-lg` plus a hairline edge on each side, 46 in all. Give a control its height from the token and center its content. Never build a control's height from padding around its label.
 
-Raised surfaces are flat. A card, panel, metric, the sidebar or the composer draws its edge with a `--border-raised` hairline (template, recent and history cards draw no edge, since `--surface-card` already differs from the page). Shadows are for things that float.
+Raised surfaces are flat. A card, panel, metric, the sidebar or the composer draws its edge with a `--border-raised` hairline. Cards on `--surface-card` (the template, builder template, recent and history cards, and Brand Studio's cards) are the one resting surface with a shadow: the hairline plus `--elevation-card`, since their ground measures 1.04 to 1 against the white page in Light, too close to read on its own (CJ, 2026-11-24). Every other shadow is for something that floats.
 
 | Composite | Figma style | Use |
 |---|---|---|
 | `--elevation-1-raised` | Elevation/1 Raised, every layer transparent | Kept so raised components keep one rule. It draws nothing |
+| `--elevation-card` | Elevation/Card, 0 1 2 and 0 4 12 `--shadow-card` | Cards on `--surface-card`, beside their `--border-raised` hairline |
 | `--elevation-2-overlay` | Elevation/2 Overlay, 0 4 16 `--shadow-floating` | Menus, popovers, tooltips, toasts |
 | `--elevation-3-floating` | Elevation/3 Floating, 0 8 32 `--shadow-floating` | Dialogs |
 | `--elevation-thumb` | Elevation/Thumb, 0 1 3 `--shadow-thumb` | The switch thumb and the selected segment |
@@ -143,11 +144,11 @@ Each area keeps the new-brand structure (`docs/design/new-brand/RULES.md` sectio
 
 | Area | What changed |
 |---|---|
-| Brand Templates | The filter bar is 46: the Large Search Field, then Platform Chips 8 apart. Template cards are flat on `--surface-card`, 8 padding, the preview inset on `--radius-lg` |
+| Brand Templates | The filter bar is 46: the Large Search Field, then Platform Chips 8 apart. Template cards are on `--surface-card` with the card hairline and `--elevation-card`, 8 padding, the preview inset on `--radius-lg` |
 | Fill page | The preview stage on `--surface-stage` at `--radius-xl` with 40 padding. The Details panel is 380 on `--surface-raised` with a `--border-raised` hairline, 20 padding, the Variation picker first, fields 24 apart with each label 12 above its control, Download PNG pinned to the bottom |
-| Generate | Start has a header row with the Generate title, and its column is one 720 column. The composer is one line on `--radius-composer` between the plus and Send, with the stepper beside Send, and attachments and details stack above the line. Recent cards are flat on `--surface-card`. The Result Card's stage is `--surface-stage` |
+| Generate | Start has a header row with the Generate title, and its column is one 720 column. The composer is one line on `--radius-composer` between the plus and Send, with the stepper beside Send, and attachments and details stack above the line. Recent cards are on `--surface-card` with the card hairline and `--elevation-card`. The Result Card's stage is `--surface-stage` |
 | Template Builder | The editor's bar is the 64 header row now, with the breadcrumb, the save status, the mode switch and Publish, where the earlier editor drew its own 44 bar. Rail and inspector are flat panels with `--border-raised` edges. The stage is `--surface-stage`, with the variations bar floating under its top edge. The inspector is 320 |
-| Brand Studio | Logo plates read `--plate-dark` and `--plate-light` |
+| Brand Studio | Logo plates read `--plate-dark` and `--plate-light`. The progress strip, the section cards and the color, logo, image and import cards take the card hairline and `--elevation-card` |
 | Settings and Insights | Settings Cards and Metrics are flat with `--border-raised` edges |
 | Sign in and Create account | Light only. Fields rest on `--surface-field` with a hairline |
 

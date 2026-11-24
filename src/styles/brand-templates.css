@@ -118,7 +118,7 @@
 }
 /* The rail: cards 302 wide and 16 apart, the next one cut off at the
    content's edge under the fade (2308:4). The track keeps 12 for the
-   cards' Elevation/1 and the focus ring above, below and at both ends (a
+   cards' Elevation/Card and the focus ring above, below and at both ends (a
    scroller clips both), and the rail steps back by as much at the top,
    the bottom and the start, so the cards sit where they are drawn and the
    clip falls on the content's edge. */
@@ -224,12 +224,13 @@
 
 /* ── Template card (2308:4): 8 around the preview (radius/lg), then the
    name in Label/M over its size and variations in Caption/M, 8 apart,
-   beside the go arrow, on surface/raised at radius/xl with Elevation/1.
+   beside the go arrow, on surface/card at radius/xl.
    One button with the keyboard ring. Hover and focus step through its
    variations (judgement call 4) and fill the arrow with the primary pair;
    hover changes colour only (RULES.md section 6), so the card keeps its
-   Elevation/1 and the rail's 12 of room holds it. ── */
-/* ElevenLabs E1: content cards are flat on surface/card with no edge (RULES.md section 4). Template Card 4018:129. */
+   edge and Elevation/Card and the rail's 12 of room holds them. ── */
+/* Template Card 4018:129. Cards on surface/card draw the border/raised
+   hairline and Elevation/Card (RULES.md section 4, CJ 2026-11-24). */
 .sp-tcard {
   box-sizing: border-box;
   display: flex;
@@ -238,7 +239,9 @@
   padding: var(--space-8);
   border-radius: var(--radius-xl);
   background: var(--surface-card);
-  box-shadow: var(--elevation-1-raised);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-card);
   color: var(--text-primary);
   text-align: left;
   cursor: pointer;

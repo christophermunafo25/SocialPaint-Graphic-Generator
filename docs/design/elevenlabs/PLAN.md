@@ -156,6 +156,10 @@ Phase E9 deleted `legacy-bridge.css`, the `.tu-*` classes, the dead rules and cu
 
 CJ's calls at E9 (2026-11-23): the `company_canvas_presets` table and the unread `brand_kits` font columns stay (no drop migrations), and the transparent bevel and glow tokens stay.
 
+## Card edges
+
+Cards on `--surface-card` (#FAFAFA) measured 1.04 to 1 against the white page in Light, a lightness step of about 1.7, so a white template nearly vanished on Brand Templates. Dark measured 1.06 to 1 and read, since white previews stand out on the dark card. On CJ's word (2026-11-24) the cards take a `--border-raised` hairline and a soft shadow. The token JSON gains the primitive `alpha/black-5`, the variable `shadow/card` (black 5% in Light, 30% in Dark) and the effect style Elevation/Card (0 1 2 and 0 4 12 on `shadow/card`), and `tokens.css` is rebuilt from it. The Figma file does not have the three yet, and its Template, Builder Template, Recent and History Card components (`4018:129`, `4018:156`, `4018:183`, `4018:1728`) still draw no edge.
+
 ## Screen map
 
 Paths are under `src/app/components/` unless they start with `src/`. Routes and entry points are the ones the new-brand program confirmed (`docs/design/new-brand/PLAN.md`, Screen map). Frames are 1440 by 1053 and every Light frame has a Dark twin except the sign-in gate and Create account.
