@@ -32,6 +32,7 @@ export function PublicFillPage({ token }: { token: string }) {
         <div
           className="sp-fill"
           data-place="public"
+          role="status"
           aria-busy="true"
           aria-label="Opening your template"
         >

@@ -391,7 +391,7 @@ function InsightsSkeleton() {
       layout={{ className: "sp-in-page" }}
       header={<PageHeader icon={AREA_ICON.insights} title="Insights & Analytics" />}
     >
-      <div className="sp-in-content" aria-busy="true" aria-label="Loading Insights">
+      <div className="sp-in-content" role="status" aria-busy="true" aria-label="Loading Insights">
         <div className="sp-in-card sp-in-digest" data-loading>
           {bone(220, 44)}
           {bone("70%", 26)}

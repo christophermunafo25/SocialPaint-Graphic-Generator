@@ -156,7 +156,12 @@ export function BrandOverview({ brand, companyId }: { brand: BrandDraft; company
         )}
 
         {loading ? (
-          <div className="sp-bs-overview__grid" aria-busy="true" aria-label="Loading Brand Studio">
+          <div
+            className="sp-bs-overview__grid"
+            role="status"
+            aria-busy="true"
+            aria-label="Loading Brand Studio"
+          >
             {CATEGORY_ORDER.map((category) => (
               <div key={category} className="sp-bs-cat" aria-hidden>
                 <span className="sp-bs-cat__cover" />
