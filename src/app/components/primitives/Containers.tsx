@@ -411,7 +411,7 @@ export function Progress({
         "aria-valuenow": steps.now,
         "aria-labelledby": steps.labelledBy,
       }
-    : { "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": percent };
+    : { "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": percent, "aria-label": label };
   return (
     <div className="ui-progress" role="progressbar" aria-valuetext={label} {...aria}>
       <span className="ui-progress__bars" aria-hidden>

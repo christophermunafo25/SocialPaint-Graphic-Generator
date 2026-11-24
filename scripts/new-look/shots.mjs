@@ -808,11 +808,15 @@ async function propsCompare(fileA, fileB) {
 // For every route (after its act) in each theme at one width: axe-core's
 // WCAG 2.2 A and AA rules, then a keyboard walk. The walk presses Tab up to
 // --tabs times from the top and records each stop: its role and name,
-// whether it is on screen, and whether :focus-visible draws something (an
-// outline or a box-shadow that differs from rest). It flags a stop that is
-// hidden or off screen, one with no visible focus, and focus that falls to
-// <body> mid-walk. Writes the findings to <report.json> and prints a summary;
-// exits 1 when axe finds a serious or critical violation.
+// whether it is on screen, and whether focus draws something (an outline or
+// a box-shadow on it, its ::before or ::after, or an outline on a near
+// ancestor). It flags a stop that is hidden or off screen, one with no
+// visible focus and one with no name, and ends when Tab leaves the document
+// or comes back to a control it has already stopped on. Writes the findings
+// to <report.json>, even when the run fails, and prints a summary. It exits 1
+// on any serious or critical axe violation or a route that errors or times
+// out; the accepted ones (docs/design/elevenlabs/PLAN.md, "What the contrast
+// and keyboard pass left") still count, so read the report, not the exit code.
 async function a11y(file) {
   const { default: AxeBuilder } = await import("@axe-core/playwright");
   const only = flags.only ? flags.only.split(",") : null;
@@ -821,133 +825,145 @@ async function a11y(file) {
   const tabs = Number(flags.tabs ?? 60);
   const report = [];
   let serious = 0;
-  await withServer(async (base) => {
-    const browser = await launch();
-    for (const theme of themes) {
-      for (const [name, route, opts = {}] of ROUTES) {
-        if (only && !only.includes(name)) continue;
-        if (opts.widths && !opts.widths.includes(width)) continue;
-        const context = await newContext(browser, theme, opts, width);
-        // A page that never settles costs one row, not the run.
-        let timer;
-        const limit = new Promise((_, reject) => {
-          timer = setTimeout(() => reject(new Error("timed out after 120 s")), 120_000);
-        });
-        try {
-          await Promise.race([limit, audit(context)]);
-        } catch (err) {
-          report.push({ name, theme, route, error: String(err.message ?? err) });
-          console.log(`${name}-${theme}  error ${err.message ?? err}`);
-          serious++;
-        } finally {
-          clearTimeout(timer);
-          await context.close().catch(() => {});
-        }
-        continue;
-        async function audit(context) {
-          const page = await context.newPage();
-          await page.goto(base + route, { waitUntil: "domcontentloaded" });
-          await settle(page);
-          if (opts.act) {
-            page.setDefaultTimeout(5000);
-            await opts.act(page).catch(() => {});
-            await settle(page);
-          }
-          const axe = await new AxeBuilder({ page })
-            .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-            .analyze();
-          const violations = axe.violations.map((v) => ({
-            id: v.id,
-            impact: v.impact,
-            help: v.help,
-            targets: v.nodes.slice(0, 8).map((n) => n.target.join(" ")),
-            count: v.nodes.length,
-          }));
-          serious += violations.filter(
-            (v) => v.impact === "serious" || v.impact === "critical",
-          ).length;
-          // The keyboard walk starts from the document, as a person would.
-          await page.evaluate(() => {
-            document.activeElement?.blur?.();
-            window.scrollTo(0, 0);
+  try {
+    await withServer(async (base) => {
+      const browser = await launch();
+      for (const theme of themes) {
+        for (const [name, route, opts = {}] of ROUTES) {
+          if (only && !only.includes(name)) continue;
+          if (opts.widths && !opts.widths.includes(width)) continue;
+          const context = await newContext(browser, theme, opts, width);
+          // A page that never settles costs one row, not the run.
+          let timer;
+          const limit = new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error("timed out after 120 s")), 120_000);
           });
-          const stops = [];
-          const issues = [];
-          const seen = new Set();
-          for (let i = 0; i < tabs; i++) {
-            await page.keyboard.press("Tab");
-            const stop = await page.evaluate(() => {
-              const el = document.activeElement;
-              if (!el || el === document.body) return { body: true };
-              const r = el.getBoundingClientRect();
-              const cs = getComputedStyle(el);
-              const name =
-                el.getAttribute("aria-label") ||
-                (el.labels?.[0]?.textContent?.trim() ?? "") ||
-                (el.getAttribute("aria-labelledby") &&
-                  document.getElementById(el.getAttribute("aria-labelledby"))?.textContent) ||
-                el.textContent?.trim().slice(0, 40) ||
-                el.getAttribute("title") ||
-                el.getAttribute("placeholder") ||
-                "";
-              const path = [];
-              for (let n = el; n && n !== document.body && path.length < 4; n = n.parentElement)
-                path.unshift(
-                  n.tagName.toLowerCase() +
-                    (n.className && typeof n.className === "string"
-                      ? "." + n.className.trim().split(/\s+/).slice(0, 2).join(".")
-                      : ""),
-                );
-              const ring =
-                (cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0) ||
-                (cs.boxShadow && cs.boxShadow !== "none");
-              // A focus ring drawn by a ::before or ::after halo counts too.
-              const pseudo = ["::before", "::after"].some((p) => {
-                const ps = getComputedStyle(el, p);
-                return (
-                  (ps.outlineStyle !== "none" && parseFloat(ps.outlineWidth) > 0) ||
-                  (ps.boxShadow && ps.boxShadow !== "none")
-                );
-              });
-              // So does an outline on a near ancestor, drawn by :has() or
-              // :focus-within around a bare input (the search field's box).
-              let around = false;
-              for (let n = el.parentElement, d = 0; n && d < 3; n = n.parentElement, d++) {
-                const as = getComputedStyle(n);
-                if (as.outlineStyle !== "none" && parseFloat(as.outlineWidth) > 0) around = true;
-              }
-              return {
-                key: path.join(" > ") + "|" + name,
-                role: el.getAttribute("role") || el.tagName.toLowerCase(),
-                name,
-                path: path.join(" > "),
-                visible: r.width > 0 && r.height > 0 && cs.visibility !== "hidden",
-                onScreen: r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth,
-                focusVisible: el.matches(":focus-visible"),
-                ring: ring || pseudo || around,
-              };
-            });
-            // Tab past the last control leaves the document, and the page
-            // reports the body: the walk is done.
-            if (stop.body) break;
-            if (seen.has(stop.key)) break; // wrapped around
-            seen.add(stop.key);
-            stops.push(stop);
-            if (!stop.visible) issues.push({ kind: "focus on a hidden element", ...stop });
-            else if (!stop.onScreen) issues.push({ kind: "focus off screen", ...stop });
-            if (stop.visible && !stop.ring) issues.push({ kind: "no visible focus", ...stop });
-            if (!stop.name.trim()) issues.push({ kind: "no name", ...stop });
+          try {
+            await Promise.race([limit, audit(context)]);
+          } catch (err) {
+            report.push({ name, theme, route, error: String(err.message ?? err) });
+            console.log(`${name}-${theme}  error ${err.message ?? err}`);
+            serious++;
+          } finally {
+            clearTimeout(timer);
+            await context.close().catch(() => {});
           }
-          report.push({ name, theme, route, violations, stops: stops.length, issues });
-          console.log(
-            `${name}-${theme}  axe ${violations.map((v) => `${v.id}(${v.impact},${v.count})`).join(" ") || "clean"}  tab stops ${stops.length}  issues ${issues.length}`,
-          );
+          continue;
+          async function audit(context) {
+            const page = await context.newPage();
+            await page.goto(base + route, { waitUntil: "domcontentloaded" });
+            await settle(page);
+            if (opts.act) {
+              page.setDefaultTimeout(5000);
+              await opts.act(page).catch(() => {});
+              await settle(page);
+            }
+            const axe = await new AxeBuilder({ page })
+              .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+              .analyze();
+            const violations = axe.violations.map((v) => ({
+              id: v.id,
+              impact: v.impact,
+              help: v.help,
+              targets: v.nodes.slice(0, 8).map((n) => n.target.join(" ")),
+              count: v.nodes.length,
+            }));
+            serious += violations.filter(
+              (v) => v.impact === "serious" || v.impact === "critical",
+            ).length;
+            // The keyboard walk starts from the document, as a person would.
+            await page.evaluate(() => {
+              // Focusing the root resets where the next Tab starts from, which
+              // blur alone leaves wherever an act last clicked.
+              const root = document.documentElement;
+              root.setAttribute("tabindex", "-1");
+              root.focus({ preventScroll: true });
+              root.removeAttribute("tabindex");
+              window.scrollTo(0, 0);
+            });
+            const stops = [];
+            const issues = [];
+            for (let i = 0; i < tabs; i++) {
+              await page.keyboard.press("Tab");
+              const stop = await page.evaluate(() => {
+                const el = document.activeElement;
+                if (!el || el === document.body || el === document.documentElement)
+                  return { body: true };
+                // Identical controls in a grid share a path and a name, so a
+                // stop is known by a stamp on the element itself.
+                if (el.hasAttribute("data-a11y-seen")) return { again: true };
+                el.setAttribute("data-a11y-seen", "");
+                const r = el.getBoundingClientRect();
+                const cs = getComputedStyle(el);
+                const name =
+                  el.getAttribute("aria-label") ||
+                  (el.labels?.[0]?.textContent?.trim() ?? "") ||
+                  (el.getAttribute("aria-labelledby") &&
+                    document.getElementById(el.getAttribute("aria-labelledby"))?.textContent) ||
+                  el.textContent?.trim().slice(0, 40) ||
+                  el.getAttribute("title") ||
+                  el.getAttribute("placeholder") ||
+                  "";
+                const path = [];
+                for (let n = el; n && n !== document.body && path.length < 4; n = n.parentElement)
+                  path.unshift(
+                    n.tagName.toLowerCase() +
+                      (n.className && typeof n.className === "string"
+                        ? "." + n.className.trim().split(/\s+/).slice(0, 2).join(".")
+                        : ""),
+                  );
+                const ring =
+                  (cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0) ||
+                  (cs.boxShadow && cs.boxShadow !== "none");
+                // A focus ring drawn by a ::before or ::after halo counts too.
+                const pseudo = ["::before", "::after"].some((p) => {
+                  const ps = getComputedStyle(el, p);
+                  return (
+                    (ps.outlineStyle !== "none" && parseFloat(ps.outlineWidth) > 0) ||
+                    (ps.boxShadow && ps.boxShadow !== "none")
+                  );
+                });
+                // So does an outline on a near ancestor, drawn by :has() or
+                // :focus-within around a bare input (the search field's box).
+                let around = false;
+                for (let n = el.parentElement, d = 0; n && d < 3; n = n.parentElement, d++) {
+                  const as = getComputedStyle(n);
+                  if (as.outlineStyle !== "none" && parseFloat(as.outlineWidth) > 0) around = true;
+                }
+                return {
+                  key: path.join(" > ") + "|" + name,
+                  role: el.getAttribute("role") || el.tagName.toLowerCase(),
+                  name,
+                  path: path.join(" > "),
+                  visible: r.width > 0 && r.height > 0 && cs.visibility !== "hidden",
+                  onScreen:
+                    r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth,
+                  focusVisible: el.matches(":focus-visible"),
+                  ring: ring || pseudo || around,
+                };
+              });
+              // Tab past the last control leaves the document, and the page
+              // reports the body: the walk is done.
+              if (stop.body) break;
+              if (stop.again) break; // wrapped around
+              stops.push(stop);
+              if (!stop.visible) issues.push({ kind: "focus on a hidden element", ...stop });
+              else if (!stop.onScreen) issues.push({ kind: "focus off screen", ...stop });
+              if (stop.visible && !stop.ring) issues.push({ kind: "no visible focus", ...stop });
+              if (!stop.name.trim()) issues.push({ kind: "no name", ...stop });
+            }
+            report.push({ name, theme, route, violations, stops: stops.length, issues });
+            console.log(
+              `${name}-${theme}  axe ${violations.map((v) => `${v.id}(${v.impact},${v.count})`).join(" ") || "clean"}  tab stops ${stops.length}  issues ${issues.length}`,
+            );
+          }
         }
       }
-    }
-    await browser.close();
-  });
-  await writeFile(file, JSON.stringify(report, null, 2));
+      await browser.close();
+    });
+  } finally {
+    await writeFile(file, JSON.stringify(report, null, 2));
+  }
   process.exitCode = serious ? 1 : 0;
 }
 

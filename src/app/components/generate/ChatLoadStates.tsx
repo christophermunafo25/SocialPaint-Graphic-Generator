@@ -51,6 +51,7 @@ export function ChatLoading({ onNewChat, onHistory }: ChatPageActions) {
               ref={threadRef}
               className="sp-chat-thread"
               style={{ "--thread-scrollbar": `${gutter}px` } as React.CSSProperties}
+              role="status"
               aria-busy="true"
               aria-label="Loading chat"
             >

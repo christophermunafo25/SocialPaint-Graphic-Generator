@@ -2708,12 +2708,13 @@ button.ui-detail-tag__value {
    iOS Safari zooms the page when a focused field's text is under 16
    (CJ, 2026-09-15: stop the zoom). Every text-entry field takes 16 on a
    coarse pointer, so the viewport needs no maximum-scale, which blocked
-   pinch-zoom for everyone. */
+   pinch-zoom for everyone. The fields win over their own type (the fill
+   value's Mono/Code, an inline size) with !important. A text box edited on
+   the canvas keeps its own size: it is the graphic's type. */
 @media (pointer: coarse) {
   input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]),
   select,
-  textarea,
-  [contenteditable="true"] {
-    font-size: var(--type-size-16);
+  textarea {
+    font-size: var(--type-size-16) !important;
   }
 }
