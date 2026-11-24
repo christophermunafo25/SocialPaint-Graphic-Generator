@@ -62,7 +62,9 @@
   padding: var(--space-16) var(--space-24);
   border-radius: var(--radius-xl);
   background: var(--surface-card);
-  box-shadow: var(--elevation-1-raised);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-card);
   color: var(--text-primary);
 }
 .sp-bs-strip__progress {
@@ -119,7 +121,9 @@
   padding: var(--space-8);
   border-radius: var(--radius-xl);
   background: var(--surface-card);
-  box-shadow: var(--elevation-1-raised);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-card);
   color: var(--text-primary);
   text-decoration: none;
 }
@@ -225,7 +229,9 @@ label.sp-bs-add:focus-within {
   padding: var(--space-8);
   border-radius: var(--radius-xl);
   background: var(--surface-card);
-  box-shadow: var(--elevation-1-raised);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-card);
   color: var(--text-primary);
   text-align: left;
 }
@@ -233,7 +239,7 @@ label.sp-bs-add:focus-within {
 .sp-bs-color[aria-expanded="true"] {
   box-shadow:
     inset 0 0 0 var(--stroke-hairline) var(--text-primary),
-    var(--elevation-1-raised);
+    var(--elevation-card);
 }
 .sp-bs-color__swatch {
   height: 88px;
@@ -431,7 +437,9 @@ label.sp-bs-add:focus-within {
   padding: var(--space-8);
   border-radius: var(--radius-xl);
   background: var(--surface-card);
-  box-shadow: var(--elevation-1-raised);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-card);
   color: var(--text-primary);
   text-align: left;
 }
@@ -787,7 +795,9 @@ label.sp-bs-add:focus-within {
   padding: var(--space-8);
   border-radius: var(--radius-xl);
   background: var(--surface-card);
-  box-shadow: var(--elevation-1-raised);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-card);
   color: var(--text-primary);
 }
 .sp-bs-image__plate {
@@ -885,7 +895,9 @@ label.sp-bs-add:focus-within {
 .sp-bs-import__leg {
   gap: var(--space-24);
   background: var(--surface-card);
-  box-shadow: var(--elevation-1-raised);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-card);
 }
 .sp-bs-import__status {
   background: var(--surface-raised);

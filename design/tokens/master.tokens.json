@@ -42,6 +42,10 @@
       "css": "--alpha-white-45",
       "value": "#FFFFFF73"
     },
+    "alpha/black-5": {
+      "css": "--alpha-black-5",
+      "value": "#0000000D"
+    },
     "alpha/black-10": {
       "css": "--alpha-black-10",
       "value": "#0000001A"
@@ -1025,6 +1029,17 @@
       "scopes": ["EFFECT_COLOR"],
       "description": "Transparent. Raised surfaces sit flat and take their edge from border/raised."
     },
+    "shadow/card": {
+      "css": "--shadow-card",
+      "light": "alpha/black-5",
+      "dark": "alpha/black-30",
+      "resolved": {
+        "light": "#0000000D",
+        "dark": "#0000004D"
+      },
+      "scopes": ["EFFECT_COLOR"],
+      "description": "Soft shadow under cards on surface/card, which also take a border/raised hairline."
+    },
     "shadow/floating": {
       "css": "--shadow-floating",
       "light": "alpha/black-10",
@@ -1824,6 +1839,28 @@
         "spread": 0,
         "color": "#FFFFFF00",
         "colorVar": "shadow/raised"
+      }
+    ],
+    "Elevation/Card": [
+      {
+        "type": "DROP_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": 1,
+        "blur": 2,
+        "spread": 0,
+        "color": "#0000000D",
+        "colorVar": "shadow/card"
+      },
+      {
+        "type": "DROP_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": 4,
+        "blur": 12,
+        "spread": 0,
+        "color": "#0000000D",
+        "colorVar": "shadow/card"
       }
     ],
     "Elevation/2 Overlay": [

@@ -83,11 +83,13 @@
 }
 
 /* ── A chat's card, on Recent and in History (sp-recent-card,
-   sp-history-card): one button, 8 around its preview, on surface/raised at
-   radius/xl under Elevation/1, which hover keeps (RULES.md section 6, as
-   the library's cards). The preview sits in a sunken well at radius/lg,
-   then the title and meta. ── */
-/* ElevenLabs E1: content cards are flat on surface/card with no edge (RULES.md section 4). Recent Card 4018:183, History Card 4018:1728. */
+   sp-history-card): one button, 8 around its preview, on surface/card at
+   radius/xl under its edge and Elevation/Card, which hover keeps (RULES.md
+   section 6, as the library's cards). The preview sits in a sunken well at
+   radius/lg, then the title and meta. ── */
+/* Recent Card 4018:183, History Card 4018:1728. Cards on surface/card draw
+   the border/raised hairline and Elevation/Card (RULES.md section 4, CJ
+   2026-11-24). */
 .sp-gen-card {
   box-sizing: border-box;
   display: flex;
@@ -96,7 +98,9 @@
   padding: var(--space-8);
   border-radius: var(--radius-xl);
   background: var(--surface-card);
-  box-shadow: var(--elevation-1-raised);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-card);
   color: var(--text-primary);
   text-align: left;
   cursor: pointer;

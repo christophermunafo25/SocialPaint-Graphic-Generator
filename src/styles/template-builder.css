@@ -36,7 +36,9 @@
 }
 
 /* ── The card (sp-template-card in 328:1944) ── */
-/* ElevenLabs E1: content cards are flat on surface/card with no edge (RULES.md section 4). Builder Template Card 4018:156. */
+/* Builder Template Card 4018:156. Cards on surface/card draw the
+   border/raised hairline and Elevation/Card (RULES.md section 4, CJ
+   2026-11-24). */
 .sp-tbcard {
   box-sizing: border-box;
   display: flex;
@@ -45,7 +47,9 @@
   padding: var(--space-8);
   border-radius: var(--radius-xl);
   background: var(--surface-card);
-  box-shadow: var(--elevation-1-raised);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    var(--elevation-card);
   color: var(--text-primary);
 }
 /* The well: square, sunken, the template fitted 12 in at its own ratio.
