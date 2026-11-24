@@ -595,6 +595,21 @@ proposal becomes a complete `TemplateSchema` (`designToSchema`) and is
 measured; the server shrink-sizes its text, so there is no repair round and
 an overflow drops it. A member never sees text off the edge.
 
+**Line breaks.** Member text in a multiline field never ends a paragraph on
+one stray word (`typesetFieldText` in `src/lib/render/layout.ts`; the
+line-breaks-and-size-families program, Phase 1). A Shrink or Fill field
+first takes up to 8% more shrink, never below its floor; when that can't
+clear it, and always for Free, the last two words are joined with a
+no-break space if they fit the wrap width together and the join adds no
+line. The pair is given room for the letter spacing the browser adds after
+a line's last glyph, and a paragraph that holds a tab is left as typed,
+because the measure cannot know how wide the browser paints a tab. The
+joined string lives only in `LayoutResult.texts`, which the layout
+measures and `SchemaRenderer` paints. Stored values, captions and everything
+sent to the model keep what was typed, and Fixed text and placeholders paint
+as authored. Because `measureProposal` measures through the same function, a
+value can move from `fits` to `shrinks` but never to `overflows`.
+
 **One run at a time.** `chatReducer` owns every transition of the thread;
 components never mutate a turn. `runChat` sequences a run with every side
 effect injected (the stores, the measurer, ids, the clock), and

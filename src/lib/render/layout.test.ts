@@ -297,6 +297,22 @@ describe("robustness", () => {
     expect(r.fontSizes.get(t1.id)!).toBeLessThan(100);
     expect(r.fontSizes.get(t1.id)!).toBeGreaterThanOrEqual(10);
   });
+
+  it("joins again at the size shrinkToFit lands on", () => {
+    const t1 = mkField({ fieldKey: "t1", type: "multiline", fontSizePx: 60, minFontSizePx: 10 });
+    const text = "aaaa bbbb cccc dd ee";
+    // At 60px (13 chars a line) the text ends on "cccc dd ee": no orphan.
+    expect(layout([t1], undefined, { t1: text }).texts.get(t1.id)).toBe(text);
+    // 90px below the anchor: two 60px lines shrink to 45px, where a line
+    // holds 17 chars and "ee" would sit alone, so dd and ee are joined.
+    const g = mkGroup({ children: ["t1"], x: 0, y: 1350, shrinkToFit: true });
+    const r = layout([t1], [g], { t1: text });
+    expect(r.fontSizes.get(t1.id)).toBe(45);
+    expect(r.texts.get(t1.id)).toBe("aaaa bbbb cccc dd\u00A0ee");
+    const rect = r.fieldRects.get(t1.id)!;
+    expect(rect.height).toBe(90);
+    expect(rect.y + rect.height).toBeLessThanOrEqual(1440);
+  });
 });
 
 describe("text semantics", () => {

@@ -27,4 +27,4 @@ Changed % is the share of pixels that differ by more than 6 on any channel. Brow
 
 ## Adding a starter fixture
 
-Name it `starter-<blueprintKey>`; the dev render route materializes it, and `?variant=dark` selects the Dark variant. Bless it, run all engines, and ask CJ before recording a baseline.
+Name it `starter-<blueprintKey>`; the dev render route materializes it, and `?variant=dark` selects the Dark variant. To fill the blueprint with member text, give the fixture a name that does not begin with `starter-` and set `starter: "<blueprintKey>"`, `values` and, for Dark, `variantId: "dark"` (the `line-breaks-launch` fixtures do this). Bless it, run all engines, and ask CJ before recording a baseline.

@@ -29,6 +29,10 @@ export interface FixtureFont {
 export interface FidelityFixture {
   name: string;
   kind: "figma" | "starter" | "synthetic" | "import";
+  /** starter: the blueprint's starterKey, for a fixture named on its own
+   * (not starter-<key>). It carries `values` and `variantId` from the file;
+   * a starter fixture without it takes its blueprint from its name. */
+  starter?: string;
   source?: { fileKey: string; nodeId: string };
   /** import: root-relative URL of the saved node tree the replay walks. */
   figmaNode?: string;
@@ -86,7 +90,35 @@ export function resolveStarterFixture(
   workspace: StarterWorkspace,
 ): ResolvedFixture | null {
   if (!name.startsWith(STARTER_PREFIX)) return null;
-  const key = name.slice(STARTER_PREFIX.length);
+  return materializeStarterFixture(name, name.slice(STARTER_PREFIX.length), variant, {}, workspace);
+}
+
+/** A starter fixture file that names its blueprint with `starter`: the
+ * blueprint materialized as resolveStarterFixture does, with the file's
+ * values. `variant` from the address wins over the file's own. Null when
+ * the file names no blueprint, or one that doesn't exist. */
+export function resolveKeyedStarterFixture(
+  fixture: FidelityFixture,
+  variant: string | undefined,
+  workspace: StarterWorkspace,
+): ResolvedFixture | null {
+  if (fixture.kind !== "starter" || !fixture.starter) return null;
+  return materializeStarterFixture(
+    fixture.name,
+    fixture.starter,
+    variant ?? fixture.variantId ?? undefined,
+    fixture.values ?? {},
+    workspace,
+  );
+}
+
+function materializeStarterFixture(
+  name: string,
+  key: string,
+  variant: string | undefined,
+  values: FieldValues,
+  workspace: StarterWorkspace,
+): ResolvedFixture | null {
   const blueprint = STARTER_BLUEPRINTS.find((b) => b.starterKey === key);
   if (!blueprint) return null;
   const input = materializeStarter(blueprint, {
@@ -102,7 +134,7 @@ export function resolveStarterFixture(
   };
   return {
     schema,
-    values: {},
+    values,
     brandKit: workspace.kit,
     variantId: variant === "dark" ? "dark" : null,
     emptyFields: "placeholder",

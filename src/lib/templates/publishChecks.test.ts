@@ -65,4 +65,20 @@ describe("limitOverflows", () => {
     const photo = mkField({ type: "image", maxLength: 200 });
     expect(limitOverflows(schema([fixed, open, photo]), {}, null, measure)).toEqual([]);
   });
+
+  it("does not flag a limit that cuts the sample after a space", () => {
+    // 20 characters a line and two lines in the box. The sample's last two
+    // words fill a line exactly, so the line-break rule leaves them apart
+    // rather than count the space after them as a third line.
+    const body = mkField({
+      label: "Body",
+      type: "multiline",
+      textSizing: "free",
+      height: 80,
+      placeholder: `aaaa bbbb cccc dddd ${"e".repeat(15)} ffff`,
+      maxLength: 36,
+    });
+    expect(limitSample(body, 36)).toBe(`aaaa bbbb cccc dddd ${"e".repeat(15)} `);
+    expect(limitOverflows(schema([body]), {}, null, measure)).toEqual([]);
+  });
 });

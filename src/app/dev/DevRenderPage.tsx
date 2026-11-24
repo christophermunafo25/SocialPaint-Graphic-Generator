@@ -7,6 +7,7 @@ import {
   fixtureFontAsset,
   fixtureFontUrl,
   resolveFileFixture,
+  resolveKeyedStarterFixture,
   resolveStarterFixture,
   type FidelityFixture,
   type ResolvedFixture,
@@ -61,7 +62,12 @@ async function resolveFixture(name: string, variant?: string): Promise<ResolvedF
   }
   const load = FIXTURE_FILES[`/test/fidelity/fixtures/${name}/fixture.json`];
   if (!load) throw new Error(`No fixture named ${name}`);
-  const file = await load();
+  const file = { ...(await load()), name };
+  if (file.kind === "starter") {
+    const keyed = resolveKeyedStarterFixture(file, variant, await loadWorkspace());
+    if (!keyed) throw new Error(`No starter blueprint for ${name}`);
+    return keyed;
+  }
   if (file.kind === "import") {
     if (!file.source || !file.figmaNode) throw new Error(`Fixture ${name} names no saved tree`);
     const { replayImport } = await import("./importReplay");
