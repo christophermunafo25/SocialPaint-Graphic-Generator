@@ -435,6 +435,28 @@
       "scopes": ["STROKE_COLOR"],
       "description": "The edge of panels, cards, menus and dialogs."
     },
+    "border/card": {
+      "css": "--border-card",
+      "light": "gray/300",
+      "dark": "gray/700",
+      "resolved": {
+        "light": "#D4D4D4",
+        "dark": "#333333"
+      },
+      "scopes": ["STROKE_COLOR"],
+      "description": "The thin edge of cards on surface/card, at stroke/thin."
+    },
+    "border/card-hover": {
+      "css": "--border-card-hover",
+      "light": "gray/400",
+      "dark": "gray/600",
+      "resolved": {
+        "light": "#A3A3A3",
+        "dark": "#6B6B6B"
+      },
+      "scopes": ["STROKE_COLOR"],
+      "description": "A card's edge while the pointer is over a card you click as a whole."
+    },
     "border/focus": {
       "css": "--border-focus",
       "light": "gray/900",
@@ -1108,14 +1130,14 @@
     },
     "surface/card": {
       "css": "--surface-card",
-      "light": "gray/50",
+      "light": "gray/0",
       "dark": "gray/890",
       "resolved": {
-        "light": "#FAFAFA",
+        "light": "#FFFFFF",
         "dark": "#121212"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "Template, result and content cards on the page."
+      "description": "Template, result and content cards on the page. White in Light, where border/card and Elevation/Card draw the edge."
     },
     "surface/stage": {
       "css": "--surface-stage",
@@ -1338,6 +1360,12 @@
       "type": "FLOAT",
       "value": 1,
       "description": "Borders and dividers."
+    },
+    "stroke/thin": {
+      "css": "--stroke-thin",
+      "type": "FLOAT",
+      "value": 0.5,
+      "description": "The edge of cards on surface/card: one device pixel on a 2x screen."
     },
     "stroke/focus": {
       "css": "--stroke-focus",
@@ -1846,9 +1874,9 @@
         "type": "DROP_SHADOW",
         "visible": true,
         "x": 0,
-        "y": 1,
+        "y": 2,
         "blur": 2,
-        "spread": 0,
+        "spread": -1,
         "color": "#0000000D",
         "colorVar": "shadow/card"
       },
@@ -1856,9 +1884,9 @@
         "type": "DROP_SHADOW",
         "visible": true,
         "x": 0,
-        "y": 4,
-        "blur": 12,
-        "spread": 0,
+        "y": 1,
+        "blur": 3,
+        "spread": -1,
         "color": "#0000000D",
         "colorVar": "shadow/card"
       }
