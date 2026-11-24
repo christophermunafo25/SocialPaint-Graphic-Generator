@@ -92,6 +92,7 @@
   --size-icon-sm: 16px;
   --size-icon-md: 18px;
   --stroke-hairline: 1px;
+  --stroke-thin: 0.5px;
   --stroke-focus: 2px;
   --focus-offset: 2px;
   --type-size-11: 11px;
@@ -196,6 +197,8 @@
   --border-strong: var(--gray-200); /* border/strong */
   --border-control: var(--alpha-ink-45); /* border/control */
   --border-raised: var(--gray-200); /* border/raised */
+  --border-card: var(--gray-300); /* border/card */
+  --border-card-hover: var(--gray-400); /* border/card-hover */
   --border-focus: var(--gray-900); /* border/focus */
   --action-primary: var(--gray-900); /* action/primary */
   --action-primary-hover: var(--gray-800); /* action/primary-hover */
@@ -257,7 +260,7 @@
   --bevel-bottom: var(--alpha-transparent); /* bevel/bottom */
   --glow-accent: var(--alpha-transparent); /* glow/accent */
   --surface-shell: var(--gray-50); /* surface/shell */
-  --surface-card: var(--gray-50); /* surface/card */
+  --surface-card: var(--gray-0); /* surface/card */
   --surface-stage: var(--gray-50); /* surface/stage */
   --surface-soft: var(--gray-150); /* surface/soft */
   --border-field: var(--gray-200); /* border/field */
@@ -285,6 +288,8 @@
   --border-strong: var(--gray-750); /* border/strong */
   --border-control: var(--alpha-white-45); /* border/control */
   --border-raised: var(--gray-800); /* border/raised */
+  --border-card: var(--gray-700); /* border/card */
+  --border-card-hover: var(--gray-600); /* border/card-hover */
   --border-focus: var(--gray-50); /* border/focus */
   --action-primary: var(--gray-50); /* action/primary */
   --action-primary-hover: var(--gray-200); /* action/primary-hover */
@@ -360,7 +365,7 @@
   --elevation-1-raised:
     inset 0 1px 2px 0 var(--bevel-top), inset 0 -1px 1px 0 var(--bevel-bottom),
     0 2px 8px 0 var(--shadow-raised);
-  --elevation-card: 0 1px 2px 0 var(--shadow-card), 0 4px 12px 0 var(--shadow-card);
+  --elevation-card: 0 2px 2px -1px var(--shadow-card), 0 1px 3px -1px var(--shadow-card);
   --elevation-2-overlay:
     inset 0 1px 2px 0 var(--bevel-top), inset 0 -1px 1px 0 var(--bevel-bottom),
     0 4px 16px 0 var(--shadow-floating);

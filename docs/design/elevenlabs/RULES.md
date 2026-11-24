@@ -50,12 +50,12 @@ Spacing is named by value: `--space-2`, `-4`, `-6`, `-8`, `-12`, `-16`, `-20`, `
 
 Controls share four heights: `--size-control-xs` 24 (badges, tags), `--size-control-sm` 28, `--size-control-md` 36 and `--size-control-lg` 44. The filter bar is the one exception: Platform Chips and the Large Search Field are `--size-control-lg` plus a hairline edge on each side, 46 in all. Give a control its height from the token and center its content. Never build a control's height from padding around its label.
 
-Raised surfaces are flat. A card, panel, metric, the sidebar or the composer draws its edge with a `--border-raised` hairline. Cards on `--surface-card` (the template, builder template, recent and history cards, and Brand Studio's cards) are the one resting surface with a shadow: the hairline plus `--elevation-card`, since their ground measures 1.04 to 1 against the white page in Light, too close to read on its own (CJ, 2026-11-24). Every other shadow is for something that floats.
+Raised surfaces are flat. A card, panel, metric, the sidebar or the composer draws its edge with a `--border-raised` hairline. Cards on `--surface-card` (the template, builder template, recent and history cards, and Brand Studio's cards) are the exception, and the one resting surface with a shadow: white in Light, with a `--stroke-thin` edge in `--border-card` and `--elevation-card` sitting under the bottom edge (CJ, 2026-11-24). Every other shadow is for something that floats.
 
 | Composite | Figma style | Use |
 |---|---|---|
 | `--elevation-1-raised` | Elevation/1 Raised, every layer transparent | Kept so raised components keep one rule. It draws nothing |
-| `--elevation-card` | Elevation/Card, 0 1 2 and 0 4 12 `--shadow-card` | Cards on `--surface-card`, beside their `--border-raised` hairline |
+| `--elevation-card` | Elevation/Card, 0 2 2 -1 and 0 1 3 -1 `--shadow-card` | Cards on `--surface-card`, under their thin `--border-card` edge |
 | `--elevation-2-overlay` | Elevation/2 Overlay, 0 4 16 `--shadow-floating` | Menus, popovers, tooltips, toasts |
 | `--elevation-3-floating` | Elevation/3 Floating, 0 8 32 `--shadow-floating` | Dialogs |
 | `--elevation-thumb` | Elevation/Thumb, 0 1 3 `--shadow-thumb` | The switch thumb and the selected segment |
@@ -86,7 +86,7 @@ No menu, popover, toast, dialog or thumb loses part of its shadow to a container
 
 Each component's board is the spec for its states in both themes.
 
-- **Hover and pressed** change color. Hover does nothing else, and pressed also shrinks a Button, Icon Button, Send Button, Chip or Platform Chip to 0.97 (`PROMPT.md` section 7.5). Each action has its own tokens (`--action-primary-hover` and `-pressed`, and the same for neutral, accent and danger). Rows, ghost controls, menu items and nav items use `--state-hover` and `--state-pressed`. Three exceptions are drawn and built as drawn: a Switch, Checkbox or Radio hovers with a `--state-pressed` halo 4 larger than the control; a field (Input, Select, Text Area, Upload) hovers by moving its hairline from `--border-field` to `--border-field-hover`; the builder's Element Tile lays `--state-hover` over its fill.
+- **Hover and pressed** change color. Hover does nothing else, and pressed also shrinks a Button, Icon Button, Send Button, Chip or Platform Chip to 0.97 (`PROMPT.md` section 7.5). Each action has its own tokens (`--action-primary-hover` and `-pressed`, and the same for neutral, accent and danger). Rows, ghost controls, menu items and nav items use `--state-hover` and `--state-pressed`. Three exceptions are drawn and built as drawn: a Switch, Checkbox or Radio hovers with a `--state-pressed` halo 4 larger than the control; a field (Input, Select, Text Area, Upload) hovers by moving its hairline from `--border-field` to `--border-field-hover`; the builder's Element Tile lays `--state-hover` over its fill. A card you click as a whole hovers by moving its edge from `--border-card` to `--border-card-hover`, and a pointer press shrinks it to 0.98 (CJ, 2026-11-24).
 - **Rest** for a field is `--surface-field` with a `--border-field` hairline. Nothing about a field's rest state is a filled gray any more.
 - **Selected** is for things that stay chosen: `--state-selected` on rows, nav items, menu items and ghost icon buttons, `--action-neutral-pressed` on Filled and Outline icon buttons, `--surface-inverse` under `--text-inverse` on a Chip or Platform Chip, and `--control-thumb` with `--elevation-thumb` for a segment in its track. On, a switch, checkbox or radio is `--control-on` with `--control-on-mark`. Off, a checkbox or radio is `--surface-raised` with a `--border-control` edge.
 - **Icons** in a Nav Item and an Outline icon button sit on `--text-secondary` at rest and `--text-primary` on hover and selected. Everywhere else an icon takes the color of the label beside it.
@@ -144,11 +144,11 @@ Each area keeps the new-brand structure (`docs/design/new-brand/RULES.md` sectio
 
 | Area | What changed |
 |---|---|
-| Brand Templates | The filter bar is 46: the Large Search Field, then Platform Chips 8 apart. Template cards are on `--surface-card` with the card hairline and `--elevation-card`, 8 padding, the preview inset on `--radius-lg` |
+| Brand Templates | The filter bar is 46: the Large Search Field, then Platform Chips 8 apart. Template cards are on `--surface-card` with the thin card edge and `--elevation-card`, 8 padding, the preview inset on `--radius-lg` under a `--border-subtle` hairline ring |
 | Fill page | The preview stage on `--surface-stage` at `--radius-xl` with 40 padding. The Details panel is 380 on `--surface-raised` with a `--border-raised` hairline, 20 padding, the Variation picker first, fields 24 apart with each label 12 above its control, Download PNG pinned to the bottom |
-| Generate | Start has a header row with the Generate title, and its column is one 720 column. The composer is one line on `--radius-composer` between the plus and Send, with the stepper beside Send, and attachments and details stack above the line. Recent cards are on `--surface-card` with the card hairline and `--elevation-card`. The Result Card's stage is `--surface-stage` |
+| Generate | Start has a header row with the Generate title, and its column is one 720 column. The composer is one line on `--radius-composer` between the plus and Send, with the stepper beside Send, and attachments and details stack above the line. Recent cards are on `--surface-card` with the thin card edge and `--elevation-card`. The Result Card's stage is `--surface-stage` |
 | Template Builder | The editor's bar is the 64 header row now, with the breadcrumb, the save status, the mode switch and Publish, where the earlier editor drew its own 44 bar. Rail and inspector are flat panels with `--border-raised` edges. The stage is `--surface-stage`, with the variations bar floating under its top edge. The inspector is 320 |
-| Brand Studio | Logo plates read `--plate-dark` and `--plate-light`. The progress strip, the section cards and the color, logo, image and import cards take the card hairline and `--elevation-card` |
+| Brand Studio | Logo plates read `--plate-dark` and `--plate-light`. The progress strip, the section cards and the color, logo, image and import cards take the thin card edge and `--elevation-card` |
 | Settings and Insights | Settings Cards and Metrics are flat with `--border-raised` edges |
 | Sign in and Create account | Light only. Fields rest on `--surface-field` with a hairline |
 
@@ -179,4 +179,4 @@ Migrations stay additive, and Edge Function mirrors stay byte-identical to their
 - Field edges read 1.23:1 in Light (`--border-field` on white) and 1.38:1 in Dark. WCAG 1.4.11 asks 3:1 for the boundary that identifies a control. Every field has a visible label above it, so the ElevenLabs look is kept, and raising the edge is CJ's call.
 - White on `--action-danger` read 3.80:1 on red 600. Since 2026-11-24 the fill is red 700 and reads 5.55:1 (hover red 800; pressed red 950 in Light, red 800 in Dark).
 - Disabled text reads 2.52:1 in Light and 3.72:1 in Dark. Disabled controls are exempt.
-- `--text-secondary` reads 5.33:1 on the page, 5.11:1 on cards and 4.63:1 on `--surface-sunken` in Light, and 7.85:1 on the page in Dark. Primary buttons read 19.17:1 in Light and 18.36:1 in Dark.
+- `--text-secondary` reads 5.33:1 on the page and on cards and 4.63:1 on `--surface-sunken` in Light, and 7.85:1 on the page in Dark. Primary buttons read 19.17:1 in Light and 18.36:1 in Dark.

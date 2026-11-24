@@ -63,7 +63,7 @@
   border-radius: var(--radius-xl);
   background: var(--surface-card);
   box-shadow:
-    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    inset 0 0 0 var(--stroke-thin) var(--_edge, var(--border-card)),
     var(--elevation-card);
   color: var(--text-primary);
 }
@@ -122,10 +122,26 @@
   border-radius: var(--radius-xl);
   background: var(--surface-card);
   box-shadow:
-    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    inset 0 0 0 var(--stroke-thin) var(--_edge, var(--border-card)),
     var(--elevation-card);
   color: var(--text-primary);
   text-decoration: none;
+}
+/* The cards you click as a whole (a section, a color, a logo): hover moves
+   the edge to border/card-hover and a pointer press shrinks the card to
+   0.98 (RULES.md section 6). Loading cards and image cards stay still. */
+:is(a.sp-bs-cat, button.sp-bs-color, button.sp-bs-logo) {
+  transition:
+    box-shadow var(--motion-duration-fast) var(--motion-easing-standard),
+    scale var(--motion-duration-fast) var(--motion-easing-standard);
+}
+@media (hover: hover) and (pointer: fine) {
+  :is(a.sp-bs-cat, button.sp-bs-color, button.sp-bs-logo):hover {
+    --_edge: var(--border-card-hover);
+  }
+}
+:root[data-input="pointer"] :is(a.sp-bs-cat, button.sp-bs-color, button.sp-bs-logo):active {
+  scale: 0.98;
 }
 /* The cover keeps its 3:2 shape at every width (CJ, 2026-11-20). */
 .sp-bs-cat__cover {
@@ -230,7 +246,7 @@ label.sp-bs-add:focus-within {
   border-radius: var(--radius-xl);
   background: var(--surface-card);
   box-shadow:
-    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    inset 0 0 0 var(--stroke-thin) var(--_edge, var(--border-card)),
     var(--elevation-card);
   color: var(--text-primary);
   text-align: left;
@@ -438,7 +454,7 @@ label.sp-bs-add:focus-within {
   border-radius: var(--radius-xl);
   background: var(--surface-card);
   box-shadow:
-    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    inset 0 0 0 var(--stroke-thin) var(--_edge, var(--border-card)),
     var(--elevation-card);
   color: var(--text-primary);
   text-align: left;
@@ -796,7 +812,7 @@ label.sp-bs-add:focus-within {
   border-radius: var(--radius-xl);
   background: var(--surface-card);
   box-shadow:
-    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    inset 0 0 0 var(--stroke-thin) var(--_edge, var(--border-card)),
     var(--elevation-card);
   color: var(--text-primary);
 }
@@ -896,7 +912,7 @@ label.sp-bs-add:focus-within {
   gap: var(--space-24);
   background: var(--surface-card);
   box-shadow:
-    inset 0 0 0 var(--stroke-hairline) var(--border-raised),
+    inset 0 0 0 var(--stroke-thin) var(--_edge, var(--border-card)),
     var(--elevation-card);
 }
 .sp-bs-import__status {
