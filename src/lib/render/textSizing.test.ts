@@ -436,11 +436,14 @@ describe("line breaks", () => {
       expect(lastWordPair("  cc")).toBeNull();
     });
 
-    it("measures a no-break pair as one unbreakable word", () => {
+    it("ends a word at a tab and at a no-break space when it sizes the widest word", () => {
       const input = { multiline: true, width: 600, height: 1000, fontSizePx: 48 };
       const half = "a".repeat(14);
       expect(fitsAtSize(measure, input, `${half} ${half}`, 48)).toBe(true);
-      expect(fitsAtSize(measure, input, `${half}${NB}${half}`, 48)).toBe(false);
+      expect(fitsAtSize(measure, input, `${half}\t${half}`, 48)).toBe(true);
+      expect(fitsAtSize(measure, input, `${half}${NB}${half}`, 48)).toBe(true);
+      // One word of the same length has nowhere to break and is too wide.
+      expect(fitsAtSize(measure, input, "a".repeat(29), 48)).toBe(false);
     });
   });
 
@@ -579,6 +582,20 @@ describe("line breaks", () => {
       const single = mkField({ type: "text", textSizing: "shrink" });
       expect(typesetsMemberText(single, stubborn)).toBe(false);
       expect(typeset(single, stubborn).text).toBe(stubborn);
+    });
+
+    it("keeps the size of two wide words that meet at a tab or a no-break space", () => {
+      // 14 letters, the gap and 14 letters are 696px at 48px, wider than the
+      // 600px box. Each half fits it, so the text wraps to two lines at the
+      // full size, authored or typed, and a 45px floor is never reached.
+      const half = "a".repeat(14);
+      for (const gap of ["\t", NB]) {
+        const text = `${half}${gap}${half}`;
+        const authored = typeset(multiline({ placeholder: text }), undefined);
+        expect(authored, JSON.stringify(gap)).toEqual({ text, fontSizePx: 48, overflows: false });
+        const typed = typeset(multiline({ minFontSizePx: 45 }), text);
+        expect(typed, JSON.stringify(gap)).toEqual({ text, fontSizePx: 48, overflows: false });
+      }
     });
 
     it("paints and measures the joined string in the layout", () => {

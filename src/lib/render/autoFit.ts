@@ -350,9 +350,11 @@ export function fitsAtSize(
     const width = measure(sample, font) + perGap * Math.max(0, sample.length - 1);
     return width <= input.width && size * lineH <= input.height;
   }
-  // Spaces and hard breaks only: a no-break space joins its two words into
-  // one unbreakable run, exactly as the browser wraps it.
-  const words = sample.split(/[ \n]+/).filter(Boolean);
+  // Every white space character ends a word here, a tab and a no-break space
+  // included: the browser breaks after a tab, and breaks a no-break run that
+  // is wider than the box. The line-break rule needs nothing narrower, since
+  // joinAtSize (layout.ts) only joins a pair that fits the wrap width.
+  const words = sample.split(/[\s\n]+/).filter(Boolean);
   const widest = words.every(
     (w) => measure(w, font) + perGap * Math.max(0, w.length - 1) <= input.width,
   );
