@@ -31,6 +31,7 @@ import {
   type useBrandBindings,
 } from "./kitPlumbing";
 import { AddSlot } from "./primitives/AddSlot";
+import { InlineEdit } from "./primitives/InlineEdit";
 
 type Bindings = ReturnType<typeof useBrandBindings>;
 
@@ -238,35 +239,16 @@ function StyleRow({
     <div ref={rowRef} className="sp-bs-style" data-expanded={expanded || undefined}>
       <RowContextMenu groups={groups} label={label} disabled={renaming || editingValue !== null}>
         <div className="sp-bs-style__row">
-          {renaming ? (
-            <input
-              className="ui-reset ui-ring-none sp-bs-style__spec sp-bs-style__rename"
-              style={specimenStyle}
-              aria-label={`Rename ${s.name}`}
-              defaultValue={s.name}
-              autoFocus
-              onFocus={(e) => e.target.select()}
-              onBlur={(e) => {
-                const next = e.target.value.trim();
-                if (next && next !== s.name) update({ name: next });
-                setRenaming(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.currentTarget.blur();
-                  refocus(".sp-bs-style__row .ui-rowmenu");
-                } else if (e.key === "Escape") {
-                  e.currentTarget.value = s.name;
-                  setRenaming(false);
-                  refocus(".sp-bs-style__row .ui-rowmenu");
-                }
-              }}
-            />
-          ) : (
-            <span className="sp-bs-style__spec" style={specimenStyle}>
-              {s.name}
-            </span>
-          )}
+          <InlineEdit
+            value={s.name}
+            label={s.name}
+            className="sp-bs-style__spec"
+            rootClassName="sp-bs-style__name"
+            style={specimenStyle}
+            editing={renaming}
+            onEditingChange={setRenaming}
+            onSave={(next) => update({ name: next })}
+          />
           <span className="t-body-s sp-bs-style__face">
             <span>
               {s.font?.family ?? "Any face"}

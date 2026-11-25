@@ -11,7 +11,6 @@ import { consumeAddFlow } from "./addFlow";
 import type { BrandDraft } from "./kitPlumbing";
 import {
   Button,
-  Input,
   ProgressBar,
   RowContextMenu,
   RowMenu,
@@ -20,6 +19,7 @@ import {
 } from "../../primitives";
 import { AddSlot } from "./primitives/AddSlot";
 import { useLinkClick } from "./useLinkClick";
+import { InlineEdit } from "./primitives/InlineEdit";
 
 const IMAGE_ACCEPT = "image/png,image/jpeg,image/webp,image/svg+xml";
 
@@ -170,10 +170,6 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
 function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
   const { company, refresh, setError } = brand;
   const downloadRef = useRef<HTMLAnchorElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-  /** Back to the card's menu trigger once the rename closes from the keyboard. */
-  const refocus = () =>
-    window.setTimeout(() => cardRef.current?.querySelector<HTMLElement>(".ui-rowmenu")?.focus());
   const linkClick = useLinkClick();
   const signed = useSignedUrl(asset.url);
   const [renaming, setRenaming] = useState(false);
@@ -188,12 +184,14 @@ function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
   const meta = width && height ? `${ext} · ${width} × ${height}` : ext;
 
   const rename = async (next: string) => {
-    if (!next || next === asset.name) return;
+    if (!next || next === asset.name) return false;
     try {
       await stores.brandAssets.update(asset.id, { name: next });
       await refresh();
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : `Couldn't rename ${asset.name}.`);
+      return false;
     }
   };
 
@@ -240,7 +238,7 @@ function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
 
   return (
     <RowContextMenu groups={groups} label={label} disabled={renaming}>
-      <div ref={cardRef} className="sp-bs-image">
+      <div className="sp-bs-image">
         <span className="sp-bs-image__plate">
           {signed.url && (
             <img
@@ -259,31 +257,15 @@ function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
         </span>
         <span className="sp-bs-image__meta">
           <span className="sp-bs-image__row">
-            {renaming ? (
-              <Input
-                size="sm"
-                aria-label={`Rename ${asset.name}`}
-                defaultValue={asset.name}
-                autoFocus
-                onFocus={(e) => e.target.select()}
-                onBlur={(e) => {
-                  void rename(e.target.value.trim());
-                  setRenaming(false);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.currentTarget.blur();
-                    refocus();
-                  } else if (e.key === "Escape") {
-                    e.stopPropagation();
-                    setRenaming(false);
-                    refocus();
-                  }
-                }}
-              />
-            ) : (
-              <span className="t-label-s sp-bs-image__name">{asset.name}</span>
-            )}
+            <InlineEdit
+              value={asset.name}
+              label={asset.name}
+              className="t-label-s sp-bs-image__name"
+              stacked
+              editing={renaming}
+              onEditingChange={setRenaming}
+              onSave={rename}
+            />
             <RowMenu groups={groups} label={label} />
           </span>
           <span className="t-label-xs sp-bs-image__size">{meta}</span>
