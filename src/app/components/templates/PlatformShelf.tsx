@@ -28,7 +28,7 @@ export function PlatformShelf({
   return (
     <section className="sp-lib-shelf" aria-labelledby={`shelf-${group.id}`}>
       <div className="sp-lib-shelf__header">
-        <h2 className="t-title-section" id={`shelf-${group.id}`}>
+        <h2 className="t-title-group" id={`shelf-${group.id}`}>
           {group.label}
         </h2>
         {/* View all (6010:2087): the Small Ghost button with its label in

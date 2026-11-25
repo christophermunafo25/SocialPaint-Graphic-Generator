@@ -324,9 +324,35 @@
 .sp-shell-sidebar[data-collapsed] .sp-shell-panel {
   width: 76px;
 }
+/* Once you have used Collapse or Expand, the rail runs open and shut on
+   its width (CJ, 2026-11-25), clipping what it holds as it narrows. What
+   arrives with the new state (the lockup, the labels, the account's text,
+   or the mark) fades in once the width is under way. Reduced motion
+   zeroes the durations. */
+.sp-shell-sidebar[data-animate] .sp-shell-panel {
+  overflow: hidden;
+  transition: width var(--motion-duration-slow) var(--motion-easing-standard);
+}
+@keyframes sp-shell-arrive {
+  from {
+    opacity: 0;
+  }
+}
+.sp-shell-sidebar[data-animate]
+  :is(
+    .sp-shell-logo,
+    .sp-shell-panel__utility,
+    .ui-nav-item > .t-label-m,
+    .sp-shell-account__text,
+    .sp-shell-account__settings
+  ) {
+  animation: sp-shell-arrive var(--motion-duration-base) var(--motion-easing-standard)
+    var(--motion-duration-fast) both;
+}
 /* The header row (2218:578), 28 tall: the lockup 24 tall, then the theme
    toggle and Collapse (Outline Small) 8 apart. Collapsed (2218:634):
-   Expand (Ghost Medium) alone, centred, under the mark. */
+   Expand alone, centred, under the mark, in the same Outline Small box
+   (CJ, 2026-11-25). */
 .sp-shell-panel__header {
   display: flex;
   flex: none;
@@ -337,7 +363,6 @@
 }
 .sp-shell-sidebar[data-collapsed] .sp-shell-panel__header {
   justify-content: center;
-  height: var(--size-control-md);
 }
 .sp-shell-panel__utility {
   display: flex;

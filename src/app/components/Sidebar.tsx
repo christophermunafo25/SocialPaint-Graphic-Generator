@@ -177,6 +177,10 @@ export function Sidebar() {
   // Collapse state lives in ChromeContext: the Template Builder borrows the
   // rail for as long as it is open, and hands it back untouched.
   const { sidebarCollapsed, setSidebarCollapsed } = useChrome();
+  // The rail runs open and shut once you have used the button; a page that
+  // loads collapsed (or the Template Builder borrowing the rail) never
+  // animates on first paint.
+  const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1023px)");
@@ -267,20 +271,28 @@ export function Sidebar() {
 
   // ── Desktop: the Sidebar ────────────────────────────────────────────────
   const collapsed = sidebarCollapsed;
-  // Collapse is Outline Small (2218:582); Expand stays Ghost Medium
-  // (2218:635).
+  // Collapse is Outline Small (2218:582), and Expand keeps that box under
+  // the mark (CJ, 2026-11-25; the file draws Expand as Ghost Medium,
+  // 2218:635).
   const collapseButton = (
     <IconButton
-      variant={collapsed ? "ghost" : "outline"}
-      size={collapsed ? "md" : "sm"}
+      variant="outline"
+      size="sm"
       icon={PanelLeft}
       label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       aria-expanded={!collapsed}
-      onClick={() => setSidebarCollapsed(!collapsed)}
+      onClick={() => {
+        setAnimate(true);
+        setSidebarCollapsed(!collapsed);
+      }}
     />
   );
   return (
-    <div className="sp-shell-sidebar" data-collapsed={collapsed || undefined}>
+    <div
+      className="sp-shell-sidebar"
+      data-collapsed={collapsed || undefined}
+      data-animate={animate || undefined}
+    >
       <aside className="sp-shell-panel" aria-label="Sidebar">
         {/* Collapsed (2218:633), the lockup's mark is the home link, above
             Expand. */}

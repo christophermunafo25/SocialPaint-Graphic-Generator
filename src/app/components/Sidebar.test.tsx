@@ -65,7 +65,7 @@ describe("Sidebar", () => {
     routeName = "settings";
     render(<Sidebar />);
     const expand = screen.getByRole("button", { name: "Expand sidebar" });
-    expect(expand.getAttribute("data-variant")).toBe("ghost");
+    expect(expand.getAttribute("data-variant")).toBe("outline");
     expect(screen.queryByRole("button", { name: "Switch to dark mode" })).toBeNull();
     const home = screen.getByRole("button", { name: "SocialPaint home" });
     expect(home.compareDocumentPosition(expand) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
