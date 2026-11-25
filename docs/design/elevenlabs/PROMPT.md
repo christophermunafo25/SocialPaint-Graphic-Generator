@@ -31,7 +31,7 @@ Every variable carries WEB code syntax, and the CSS name is the variable name wi
 - **Brand neutrals** for template content and the lockup: `neutral/0`, `50`, `100`, `200`, `850` (`#1C1F1E`, the lockup's ink), `900`.
 - **Brand families**: green (`slime`, `deep-moss`, `lime`, `mint`), blue (`lapis`, `ocean-tide`, `clouds`, `selection`), pink (`christina`, `orchid`, `soft-pink`), warm (`fire`, `choco`, `peach`, `cream`), purple (`violet`, `kara`, `lilac`).
 - **Functional**: red `50`, `300`, `600`, `700`, `800`, `950` and amber `50`, `300`, `400`, `700`, `950`.
-- **Alpha**: `ink-45`, `ink-50`, `ink-72`, `white-45`, `black-10`, `black-30`, `transparent`.
+- **Alpha**: `ink-45`, `ink-50`, `ink-72`, `white-45`, `black-3` (CJ, 2026-11-25), `black-5`, `black-10`, `black-30`, `transparent`.
 
 ### 3.2 Color
 
@@ -39,13 +39,13 @@ Light and Dark name the primitive each token reads.
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| surface/page | gray/0 | gray/950 | The app background |
+| surface/page | gray/50 | gray/950 | The app background, off-white in Light (CJ, 2026-11-25) |
 | surface/raised | gray/0 | gray/880 | Panels, menus, popovers, dialogs. Its edge is border/raised |
 | surface/sunken | gray/150 | gray/850 | Wells inside a raised surface |
 | surface/field | gray/0 | gray/950 | Inputs, selects, text areas, uploads |
 | surface/card | gray/50 | gray/890 | Template, result and content cards |
 | surface/shell | gray/50 | gray/890 | The shell behind the sidebar and Main |
-| surface/stage | gray/50 | gray/890 | The stage behind a template preview |
+| surface/stage | gray/100 | gray/890 | The stage behind a template preview, a step under the page in Light (CJ, 2026-11-25) |
 | surface/soft | gray/150 | gray/850 | Icon tiles, segmented tracks, the stepper, progress tracks and pending steps |
 | surface/inverse | gray/900 | gray/50 | The selected Chip and the selected Platform Chip |
 | surface/overlay | alpha/ink-72 | alpha/ink-72 | Tags and labels on an image |
@@ -53,6 +53,7 @@ Light and Dark name the primitive each token reads.
 | surface/skeleton | gray/150 | gray/850 | Skeletons |
 | text/primary | gray/900 | gray/50 | Default text and icons |
 | text/secondary | gray/600 | gray/400 | Supporting text, placeholders, quiet icons |
+| text/item | gray/700 | gray/300 | Nav, menu, layer and form rows at rest, icons included (CJ, 2026-11-25) |
 | text/disabled | gray/400 | gray/600 | Disabled text and icons |
 | text/inverse | gray/0 | gray/900 | Text on surface/inverse |
 | text/on-color | gray/0 | gray/0 | Text on overlays that stay dark |
@@ -83,6 +84,7 @@ Light and Dark name the primitive each token reads.
 | accent, deep, tint, wash families | brand primitives | the same | Charts and brand moments, never chrome |
 | shadow/raised, bevel/top, bevel/bottom, glow/accent | alpha/transparent | the same | Kept at zero so the composites keep one shape |
 | shadow/floating, shadow/thumb | alpha/black-10 | alpha/black-30 | Menus, dialogs, toasts, thumbs |
+| shadow/composer-near, shadow/composer-far | alpha/black-5, alpha/black-3 | alpha/transparent | Elevation/Composer (CJ, 2026-11-25) |
 
 ### 3.3 Scale
 
@@ -121,6 +123,7 @@ Twenty styles, each trimmed to cap height, each a `.t-` class over a `--type-` v
 | Style | CSS | Now |
 |---|---|---|
 | Elevation/1 Raised | `--elevation-1-raised` | All layers transparent. Raised surfaces are flat and take `--border-raised` |
+| Elevation/Composer | `--elevation-composer` | 0 1 6 -1 `--shadow-composer-near` and 0 6 88 2 `--shadow-composer-far`. The composer in Light (CJ, 2026-11-25) |
 | Elevation/2 Overlay | `--elevation-2-overlay` | 0 4 16 `--shadow-floating`. Menus and popovers |
 | Elevation/3 Floating | `--elevation-3-floating` | 0 8 32 `--shadow-floating`. Dialogs and toasts |
 | Elevation/Thumb | `--elevation-thumb` | 0 1 3 `--shadow-thumb`. The switch thumb and the selected segment |
@@ -135,7 +138,7 @@ The app shell on a 1440 frame. The Layout board on Foundations draws it to scale
 |---|---|
 | Sidebar | 300 plus a hairline right edge. `--surface-shell`, `--border-raised` on the right only, padding `--space-20`, sections `--space-24` apart. Collapsed is 76 |
 | Nav items | 36 tall, `--space-4` apart, `--radius-sm` |
-| Page header | 64 plus a hairline bottom edge in `--border-subtle`. A 36 row centered in it, `--space-32` at the sides. The area's icon at 18 on `--text-secondary`, then the page name in Label/M on `--text-secondary` or the Breadcrumb, and the actions on the right 8 apart |
+| Page header | 64, with no hairline under it (CJ, 2026-11-25). A 36 row centered in it, `--space-32` at the sides. The area's icon at 18 on `--text-secondary`, then the page name in Label/M on `--text-secondary` or the Breadcrumb, and the actions on the right 8 apart |
 | Content | `--space-24` at the top, `--space-32` at the sides, sections `--space-32` apart |
 | Scroll | Main scrolls and the window never does. The header row, the content and the footer links scroll together, and nothing sticks (CJ, 2026-11-16) |
 | Footer Links | At the foot of the content on every page. The frames draw none, and decision 14 keeps them |
@@ -163,7 +166,7 @@ The type pages hold each component's board with its main component. "Change" is 
 | Search Field | `50:62` | `6220:840` | `SearchField` | `primitives/SearchField.tsx` | `.ui-search` | New `size`: `lg` 46 on `--radius-chip` beside Platform Chips, `md` 36 on `--radius-sm`. A real clear Icon Button. Hover on `--action-neutral-hover` |
 | Field | `4015:628` | `6220:980` | `Field` | `primitives/Field.tsx` | `.ui-field` | Holds a Medium control. Label `--space-12` above it. Help text stays off |
 | Upload | `2211:278` | `6220:1107` | `Upload` | `primitives/Upload.tsx` | `.ui-upload` | As Input. The empty thumbnail sits on `--surface-soft`. A picked or dropped photo develops in, and a slow upload pulses the tile (section 7.6) |
-| Stepper | `2211:227` | `6220:1214` | `Stepper` | `primitives/IconButton.tsx` | `.ui-stepper` | The capsule sits on `--surface-soft` |
+| Stepper | `2211:227` | `6220:1214` | `Stepper` | `primitives/IconButton.tsx` | `.ui-stepper` | The capsule sits on `--surface-soft`. Inside the composer it has no capsule at rest, and each button hovers on `--state-hover` (CJ, 2026-11-25) |
 | Switch | `2211:90` | `6221:3` | `Switch` | `primitives/Toggles.tsx` | `.ui-switch` | Tokens |
 | Checkbox | `2211:148` | `6221:101` | `Checkbox` | `primitives/Toggles.tsx` | `.ui-check` | Tokens. The mark draws in (section 7.4) |
 | Radio | `2211:187` | `6221:259` | `Radio` | `primitives/Toggles.tsx` | `.ui-check` | Tokens |
@@ -186,7 +189,7 @@ The type pages hold each component's board with its main component. "Change" is 
 | Menu | `2213:159` | `6221:803` | `Menu` | `primitives/Menu.tsx` | `.ui-menu` | `--surface-raised`, a `--border-raised` hairline, `--elevation-2-overlay`, `--radius-lg` 12 |
 | Tab | `4015:635` | `6221:959` | `Tab` | `primitives/Toggles.tsx` | `.ui-tabs` | Tokens |
 | Tabs | `4015:673` | `6221:1011` | `Tabs` | `primitives/Toggles.tsx` | `.ui-tabs` | Tokens |
-| Page Header | `4015:764` | `6221:1053` | `PageHeader` | `primitives/PageHeader.tsx` | `.ui-page-header` | Rebuilt. The area icon at 18 on `--text-secondary` leads, then the title in Label/M on `--text-secondary`, or the Breadcrumb. Sits in the 64 header row with a `--border-subtle` hairline under it (Phase E2) |
+| Page Header | `4015:764` | `6221:1053` | `PageHeader` | `primitives/PageHeader.tsx` | `.ui-page-header` | Rebuilt. The area icon at 18 on `--text-secondary` leads, then the title in Label/M on `--text-secondary`, or the Breadcrumb. Sits in the 64 header row, which has no hairline under it since 2026-11-25 (CJ) |
 | Footer Links | `4015:750` | `6221:1160` | `FooterLinks` | `primitives/PageHeader.tsx` | `.ui-footer-links` | Tokens |
 | Card | `2215:141` | `6222:835` | `Card` | `primitives/Containers.tsx` | `.ui-card` | Flat on `--surface-raised` with a `--border-raised` hairline and `--radius-xl` 16 |
 | Dialog | `2215:203` | `6222:915` | `Modal` | `primitives/Containers.tsx` | `.ui-modal-scrim` | `--surface-raised`, a `--border-raised` hairline, `--elevation-3-floating`, `--radius-xl` 16 |
@@ -199,7 +202,7 @@ On `4012:1194`, one column per area.
 
 | Component | Node | Code | Change |
 |---|---|---|---|
-| Sidebar | `2218:679` | `Sidebar.tsx` | Flush on `--surface-shell`, right edge only. Open, the Logo beside an Outline collapse button, and an Outline settings button in the account row. Collapsed, the mark above a Ghost Medium Expand, and the avatar alone |
+| Sidebar | `2218:679` | `Sidebar.tsx` | Flush on `--surface-shell`, right edge only. Open, the Logo beside the theme toggle and a collapse button, and a settings button in the account row. Collapsed, the mark above Expand, and the avatar alone. All four are Ghost Small (CJ, 2026-11-25) |
 | Logo, Logo Mark | `54:66`, `61:467` | `BrandMark.tsx` | CJ updated the lockup in the Sidebar (`6243:8529`, its mark in the collapsed rail `6112:44073`), on `logo/ink`, so it is near-black on Light and off-white on Dark. The sign-in gate places the same lockup as instances of CJ's New Logo Dark 1 (`6243:17235`, Default) at 24 tall on `logo/ink` (CJ, 2026-11-17). Logo (`54:66`) still draws the earlier lockup on Create account and the Cover |
 | Platform Logo | `53:73` | `primitives/Chips.tsx` | Artwork |
 | Platform Chip | `53:96` | `primitives/Chips.tsx` | 46 tall, `--radius-chip`, logo tile on `--radius-tile` and `--surface-soft`. Selected on `--surface-inverse` with its tile on `--action-primary-hover` and the glyph on `--text-inverse`. Shrinks while pressed (section 7.5) |
