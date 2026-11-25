@@ -52,17 +52,15 @@
     var(--elevation-card);
   color: var(--text-primary);
 }
-/* Hover anywhere on the card moves its edge to border/card-hover, and a
+/* Hover anywhere on the card grows it to 1.01, and a
    pointer press on the preview, the card's own button, shrinks the card
    to 0.98 (RULES.md section 6). The menu presses on its own. */
 article.sp-tbcard {
-  transition:
-    box-shadow var(--motion-duration-fast) var(--motion-easing-standard),
-    scale var(--motion-duration-fast) var(--motion-easing-standard);
+  transition: scale var(--motion-duration-fast) var(--motion-easing-standard);
 }
 @media (hover: hover) and (pointer: fine) {
   article.sp-tbcard:hover {
-    --_edge: var(--border-card-hover);
+    scale: 1.01;
   }
 }
 :root[data-input="pointer"] article.sp-tbcard:has(.sp-tbcard__preview:active) {

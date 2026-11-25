@@ -162,6 +162,8 @@ Cards on `--surface-card` (#FAFAFA) measured 1.04 to 1 against the white page in
 
 Later that day CJ asked, from an ElevenLabs reference, for white cards with a thin edge and a shadow that sits at the bottom, and for a hover. In Light `surface/card` turns white. The edge is the new `stroke/thin` (0.5, one device pixel on a 2x screen) in the new `border/card` (gray 300 in Light, gray 700 in Dark). Elevation/Card becomes 0 2 2 -1 and 0 1 3 -1 on `shadow/card`, fitted to the reference: about 6% black under the bottom edge, 1.6% at the sides and almost none on top. A card you click as a whole hovers by moving its edge to the new `border/card-hover` (gray 400 in Light, gray 600 in Dark), and a pointer press shrinks it to 0.98, as CJ's motion rules allow (no lift or growing shadow on hover). A white template in the white card keeps its canvas edge with a `border/subtle` ring on the preview. The Figma file has none of these yet.
 
+On 2026-11-25 CJ found the darker edge on hover too strong. A card you click as a whole now grows to 1.01 on hover instead and keeps its `border/card` edge. `border/card-hover` stays in the tokens with no reader.
+
 ## Screen map
 
 Paths are under `src/app/components/` unless they start with `src/`. Routes and entry points are the ones the new-brand program confirmed (`docs/design/new-brand/PLAN.md`, Screen map). Frames are 1440 by 1053 and every Light frame has a Dark twin except the sign-in gate and Create account.

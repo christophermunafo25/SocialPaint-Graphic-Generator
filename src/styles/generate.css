@@ -105,16 +105,14 @@
   text-align: left;
   cursor: pointer;
 }
-/* Hover moves the edge to border/card-hover and a pointer press shrinks
+/* Hover grows the card to 1.01 and a pointer press shrinks
    the card to 0.98, as the library's cards do (RULES.md section 6). */
 button.sp-gen-card {
-  transition:
-    box-shadow var(--motion-duration-fast) var(--motion-easing-standard),
-    scale var(--motion-duration-fast) var(--motion-easing-standard);
+  transition: scale var(--motion-duration-fast) var(--motion-easing-standard);
 }
 @media (hover: hover) and (pointer: fine) {
   button.sp-gen-card:hover {
-    --_edge: var(--border-card-hover);
+    scale: 1.01;
   }
 }
 :root[data-input="pointer"] button.sp-gen-card:active {
