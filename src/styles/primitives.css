@@ -791,12 +791,11 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   display: inline-flex;
   flex: none;
   align-items: center;
-  justify-content: center;
+  overflow: hidden;
   border: var(--stroke-hairline) solid var(--border-strong);
-  --_fill: var(--action-neutral);
-  --_hover: var(--action-neutral-hover);
-  --_pressed: var(--action-neutral-pressed);
-  --_fg: var(--text-primary);
+  /* The box runs open and shut on its width (CJ, 2026-11-25). Reduced
+     motion zeroes the duration. */
+  transition: width var(--motion-duration-slow) var(--motion-easing-standard);
 }
 .ui-search[data-size="lg"] {
   width: calc(var(--size-control-lg) + 2 * var(--stroke-hairline));
@@ -808,8 +807,27 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   height: var(--size-control-md);
   border-radius: var(--radius-sm);
 }
+/* Collapsed, the button fills the box, and the box draws its ring. */
+.ui-search__trigger {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  --_fill: var(--action-neutral);
+  --_hover: var(--action-neutral-hover);
+  --_pressed: var(--action-neutral-pressed);
+  --_fg: var(--text-primary);
+}
+.ui-search:has(> .ui-search__trigger:focus-visible) {
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
+}
+.ui-search__trigger:focus-visible {
+  outline: none;
+}
 .ui-search--open {
-  justify-content: flex-start;
   max-width: 100%;
   gap: var(--space-8);
   background: var(--action-neutral);
@@ -823,9 +841,32 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   width: 280px; /* as drawn (6203:1754) */
   padding: 0 var(--space-4) 0 var(--space-12);
 }
+.ui-search--open > .ui-icon {
+  flex: none;
+}
 .ui-search--open:has(.ui-search__input:focus-visible) {
   outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
+}
+/* The query fades in once the box has begun to grow, and the clear button
+   pops in with the first character. */
+@keyframes ui-search-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ui-search-pop {
+  from {
+    opacity: 0;
+    scale: 0.7;
+  }
+}
+.ui-search--open .ui-search__input {
+  animation: ui-search-in var(--motion-duration-base) var(--motion-easing-standard)
+    var(--motion-duration-fast) both;
+}
+.ui-search__clear {
+  animation: ui-search-pop var(--motion-duration-base) var(--motion-easing-standard) both;
 }
 .ui-search__input {
   flex: 1;

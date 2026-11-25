@@ -164,6 +164,8 @@ Later that day CJ asked, from an ElevenLabs reference, for white cards with a th
 
 On 2026-11-25 CJ found the darker edge on hover too strong. A card you click as a whole now grows to 1.01 on hover instead and keeps its `border/card` edge. `border/card-hover` stays in the tokens with no reader.
 
+Also on 2026-11-25, from two references CJ sent: the filter-bar search (`SearchField`, in the library, History, the Template Builder and the size gallery) now runs its width open and shut over `motion/duration/slow`, the query fades in once the box has begun to grow, and the clear button pops in. Brand Studio's renames (a font's file label, an image's name, a type style's name) use `InlineEdit`: the name is a quiet button with a pencil on hover and focus, editing shows Save and Cancel beside the field (under it on an image card), Enter or leaving the field keeps the change, Escape drops it, and a kept change flashes green and is read out. Logo and colour names stay in their edit cards.
+
 ## Screen map
 
 Paths are under `src/app/components/` unless they start with `src/`. Routes and entry points are the ones the new-brand program confirmed (`docs/design/new-brand/PLAN.md`, Screen map). Frames are 1440 by 1053 and every Light frame has a Dark twin except the sign-in gate and Create account.

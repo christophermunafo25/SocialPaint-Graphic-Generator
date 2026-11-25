@@ -4,10 +4,11 @@ import type { BrandAsset } from "@/lib/types";
 import { stores } from "@/lib/stores";
 import { registerCustomFont } from "@/lib/render/fonts";
 import { FONT_ACCEPT, inspectFontFile } from "@/lib/brand/fontUpload";
-import { Input, ProgressBar, RowContextMenu, RowMenu, type RowMenuGroup } from "../../primitives";
+import { ProgressBar, RowContextMenu, RowMenu, type RowMenuGroup } from "../../primitives";
 import { consumeAddFlow } from "./addFlow";
 import type { BrandDraft } from "./kitPlumbing";
 import { AddSlot } from "./primitives/AddSlot";
+import { InlineEdit } from "./primitives/InlineEdit";
 
 /** A font file mid-upload: the row shows the family read from the file and
  * an indeterminate bar, then "Added", then becomes the real row. */
@@ -133,16 +134,12 @@ function FontRow({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
   const [blocked, setBlocked] = useState<string | null>(null);
   const replaceRef = useRef<HTMLInputElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  /** Back to the row's menu trigger once the rename closes from the keyboard. */
-  const refocus = () =>
-    window.setTimeout(() => wrapRef.current?.querySelector<HTMLElement>(".ui-rowmenu")?.focus());
 
   const usedBy = draft.typeStyles.filter(
     (s) => s.font?.source === "custom" && (s.font.assetId === asset.id || s.font.family === family),
   );
 
   const rename = async (raw: string) => {
-    setRenaming(false);
     const next = raw.trim();
     if (!next || next === asset.name) return;
     try {
@@ -210,28 +207,14 @@ function FontRow({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
           </span>
           <span className="sp-bs-font__id">
             <span className="t-label-s sp-bs-font__family">{family}</span>
-            {renaming ? (
-              <Input
-                size="sm"
-                aria-label={`Rename ${asset.name}`}
-                defaultValue={asset.name}
-                autoFocus
-                onFocus={(e) => e.target.select()}
-                onBlur={(e) => void rename(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.currentTarget.blur();
-                    refocus();
-                  } else if (e.key === "Escape") {
-                    e.stopPropagation();
-                    setRenaming(false);
-                    refocus();
-                  }
-                }}
-              />
-            ) : (
-              <span className="t-label-xs sp-bs-font__file">{asset.name}</span>
-            )}
+            <InlineEdit
+              value={asset.name}
+              label={asset.name}
+              className="t-label-xs sp-bs-font__file"
+              editing={renaming}
+              onEditingChange={setRenaming}
+              onSave={rename}
+            />
           </span>
           <span className="sp-bs-font__specimen" style={face}>
             {SPECIMEN}
