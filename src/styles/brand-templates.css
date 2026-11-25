@@ -84,8 +84,9 @@
 }
 
 /* A shelf (6010:2084): its header, 28 tall and 8 in from the content's
-   sides, the title in Label/XS on text/secondary with View all at its end,
-   16 above the rail. */
+   sides, the title in Title/Section on text/primary (darkest in Light,
+   lightest in Dark; CJ, 2026-11-25, from a BYQ reference) with View all at
+   its end, 16 above the rail. */
 .sp-lib-shelf {
   display: flex;
   flex-direction: column;
@@ -104,6 +105,7 @@
 .sp-lib-shelf__header > h2 {
   min-width: 0;
   margin: 0;
+  color: var(--text-primary);
 }
 /* View all (6010:2087): a Small Ghost button whose label is Label/XS on
    text/secondary, underlined. Hover keeps the ghost's fill and lifts the
@@ -149,8 +151,8 @@
   color: var(--text-secondary);
 }
 
-/* A result group (6010:2457): its label and count in Label/XS on
-   text/secondary at either end, 32 tall and 8 in from the content's sides,
+/* A result group (6010:2457): its label and its count (Label/XS on
+   text/secondary) at either end, 32 tall and 8 in from the content's sides,
    16 above the grid; three columns of cards 16 apart both ways (RULES.md
    section 10; the frame's 17 between rows is off the scale). */
 .sp-lib-group {
@@ -168,8 +170,11 @@
   padding-inline: var(--space-8);
   color: var(--text-secondary);
 }
+/* The group's label is Title/Section on text/primary, as a shelf's title
+   is (CJ, 2026-11-25); the count stays small. */
 .sp-lib-group__header > h2 {
   margin: 0;
+  color: var(--text-primary);
 }
 .sp-lib-group__count {
   flex: none;

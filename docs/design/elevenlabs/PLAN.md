@@ -166,6 +166,8 @@ On 2026-11-25 CJ found the darker edge on hover too strong. A card you click as 
 
 Also on 2026-11-25, from two references CJ sent: the filter-bar search (`SearchField`, in the library, History, the Template Builder and the size gallery) now runs its width open and shut over `motion/duration/slow`, the query fades in once the box has begun to grow, and the clear button pops in. Brand Studio's renames (a font's file label, an image's name, a type style's name) use `InlineEdit`: the name is a quiet button with a pencil on hover and focus, editing shows Save and Cancel beside the field (under it on an image card), Enter or leaving the field keeps the change, Escape drops it, and a kept change flashes green and is read out. Logo and colour names stay in their edit cards.
 
+Also on 2026-11-25, from a BYQ reference: Brand Templates' shelf titles and the result groups' labels are Title/Section (24) on `text/primary`, the darkest text in Light and the lightest in Dark. View all and a group's count stay in Label/XS on `text/secondary`.
+
 ## Screen map
 
 Paths are under `src/app/components/` unless they start with `src/`. Routes and entry points are the ones the new-brand program confirmed (`docs/design/new-brand/PLAN.md`, Screen map). Frames are 1440 by 1053 and every Light frame has a Dark twin except the sign-in gate and Create account.
