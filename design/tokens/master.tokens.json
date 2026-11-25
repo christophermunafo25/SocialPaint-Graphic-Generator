@@ -42,6 +42,10 @@
       "css": "--alpha-white-45",
       "value": "#FFFFFF73"
     },
+    "alpha/black-3": {
+      "css": "--alpha-black-3",
+      "value": "#00000008"
+    },
     "alpha/black-5": {
       "css": "--alpha-black-5",
       "value": "#0000000D"
@@ -250,14 +254,14 @@
   "color": {
     "surface/page": {
       "css": "--surface-page",
-      "light": "gray/0",
+      "light": "gray/50",
       "dark": "gray/950",
       "resolved": {
-        "light": "#FFFFFF",
+        "light": "#FAFAFA",
         "dark": "#0A0A0A"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "The app background behind every panel."
+      "description": "The app background behind every panel. Off-white in Light, so white cards, panels, fields, menus and the composer lift off it, and the sidebar shares it behind its hairline."
     },
     "surface/raised": {
       "css": "--surface-raised",
@@ -268,7 +272,7 @@
         "dark": "#161616"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "Panels, menus, popovers and dialogs. Matches the page in Light, so the edge comes from border/raised."
+      "description": "Panels, menus, popovers and dialogs. White in Light, a step above the off-white page, with its edge from border/raised."
     },
     "surface/sunken": {
       "css": "--surface-sunken",
@@ -357,6 +361,17 @@
       },
       "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
       "description": "Supporting text, placeholders and quiet icons."
+    },
+    "text/item": {
+      "css": "--text-item",
+      "light": "gray/700",
+      "dark": "gray/300",
+      "resolved": {
+        "light": "#333333",
+        "dark": "#D4D4D4"
+      },
+      "scopes": ["SHAPE_FILL", "TEXT_FILL"],
+      "description": "Nav items, menu items and the builder's Layer and Form Rows at rest, their icons included. Hover and selected lift them to text/primary."
     },
     "text/disabled": {
       "css": "--text-disabled",
@@ -1062,6 +1077,28 @@
       "scopes": ["EFFECT_COLOR"],
       "description": "Soft shadow under cards on surface/card, which also take a border/raised hairline."
     },
+    "shadow/composer-near": {
+      "css": "--shadow-composer-near",
+      "light": "alpha/black-5",
+      "dark": "alpha/transparent",
+      "resolved": {
+        "light": "#0000000D",
+        "dark": "#FFFFFF00"
+      },
+      "scopes": ["EFFECT_COLOR"],
+      "description": "The near layer of Elevation/Composer, close under the composer's edge. Transparent in Dark, where the composer lifts by value."
+    },
+    "shadow/composer-far": {
+      "css": "--shadow-composer-far",
+      "light": "alpha/black-3",
+      "dark": "alpha/transparent",
+      "resolved": {
+        "light": "#00000008",
+        "dark": "#FFFFFF00"
+      },
+      "scopes": ["EFFECT_COLOR"],
+      "description": "The far halo of Elevation/Composer. Transparent in Dark, where the composer lifts by value."
+    },
     "shadow/floating": {
       "css": "--shadow-floating",
       "light": "alpha/black-10",
@@ -1141,14 +1178,14 @@
     },
     "surface/stage": {
       "css": "--surface-stage",
-      "light": "gray/50",
+      "light": "gray/100",
       "dark": "gray/890",
       "resolved": {
-        "light": "#FAFAFA",
+        "light": "#F5F5F5",
         "dark": "#121212"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "The stage behind a template preview."
+      "description": "The stage behind a template preview. One step under the page in Light, so it still reads on it."
     },
     "surface/soft": {
       "css": "--surface-soft",
@@ -1889,6 +1926,28 @@
         "spread": -1,
         "color": "#0000000D",
         "colorVar": "shadow/card"
+      }
+    ],
+    "Elevation/Composer": [
+      {
+        "type": "DROP_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": 1,
+        "blur": 6,
+        "spread": -1,
+        "color": "#0000000D",
+        "colorVar": "shadow/composer-near"
+      },
+      {
+        "type": "DROP_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": 6,
+        "blur": 88,
+        "spread": 2,
+        "color": "#00000008",
+        "colorVar": "shadow/composer-far"
       }
     ],
     "Elevation/2 Overlay": [

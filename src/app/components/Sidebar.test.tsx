@@ -44,9 +44,9 @@ describe("Sidebar", () => {
     const toggle = screen.getByRole("button", { name: "Switch to dark mode" });
     const collapse = screen.getByRole("button", { name: "Collapse sidebar" });
     expect(toggle.parentElement).toBe(collapse.parentElement);
-    // Both are Outline Small, the bordered squares the file draws (2218:582).
-    expect(toggle.getAttribute("data-variant")).toBe("outline");
-    expect(collapse.getAttribute("data-variant")).toBe("outline");
+    // Both are Ghost Small, with no fill or edge at rest (CJ, 2026-11-25).
+    expect(toggle.getAttribute("data-variant")).toBe("ghost");
+    expect(collapse.getAttribute("data-variant")).toBe("ghost");
     expect(screen.getByRole("button", { name: "SocialPaint home" })).toBeTruthy();
   });
 
@@ -55,7 +55,7 @@ describe("Sidebar", () => {
     expect(screen.getByText("Jo Doe")).toBeTruthy();
     expect(screen.getByText("jo.doe@example.com")).toBeTruthy();
     const settings = screen.getByRole("button", { name: "Settings" });
-    expect(settings.getAttribute("data-variant")).toBe("outline");
+    expect(settings.getAttribute("data-variant")).toBe("ghost");
     fireEvent.click(settings);
     expect(navigate).toHaveBeenCalledWith({ name: "settings" });
   });
@@ -65,7 +65,7 @@ describe("Sidebar", () => {
     routeName = "settings";
     render(<Sidebar />);
     const expand = screen.getByRole("button", { name: "Expand sidebar" });
-    expect(expand.getAttribute("data-variant")).toBe("outline");
+    expect(expand.getAttribute("data-variant")).toBe("ghost");
     expect(screen.queryByRole("button", { name: "Switch to dark mode" })).toBeNull();
     const home = screen.getByRole("button", { name: "SocialPaint home" });
     expect(home.compareDocumentPosition(expand) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
