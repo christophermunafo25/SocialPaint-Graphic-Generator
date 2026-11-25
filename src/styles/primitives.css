@@ -373,7 +373,8 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 
 /* ── Stepper (2211:227): two ghost Small icon buttons around the value, in
-   a capsule on surface/soft. ── */
+   a capsule on surface/soft. Inside the composer the capsule has no ground
+   at rest, and each button keeps its own state/hover (CJ, 2026-11-25). ── */
 .ui-stepper {
   display: inline-flex;
   flex: none;
@@ -384,6 +385,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   background: var(--surface-soft);
   color: var(--text-primary);
   white-space: nowrap;
+}
+.ui-composer .ui-stepper {
+  background: transparent;
 }
 .ui-stepper__value {
   display: inline-flex;
@@ -2510,6 +2514,9 @@ button.ui-detail-tag__value {
   border: var(--stroke-hairline) solid var(--border-raised);
   border-radius: var(--radius-composer);
   background: var(--surface-raised);
+  /* It lifts off the page in Light (CJ, 2026-11-25). Dark's layers are
+     transparent, since the composer lifts there by value. */
+  box-shadow: var(--elevation-composer);
   color: var(--text-primary);
 }
 /* The text area's focus rings the whole box, as a field's does. */

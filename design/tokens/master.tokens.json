@@ -42,6 +42,10 @@
       "css": "--alpha-white-45",
       "value": "#FFFFFF73"
     },
+    "alpha/black-3": {
+      "css": "--alpha-black-3",
+      "value": "#00000008"
+    },
     "alpha/black-5": {
       "css": "--alpha-black-5",
       "value": "#0000000D"
@@ -1073,6 +1077,28 @@
       "scopes": ["EFFECT_COLOR"],
       "description": "Soft shadow under cards on surface/card, which also take a border/raised hairline."
     },
+    "shadow/composer-near": {
+      "css": "--shadow-composer-near",
+      "light": "alpha/black-5",
+      "dark": "alpha/transparent",
+      "resolved": {
+        "light": "#0000000D",
+        "dark": "#FFFFFF00"
+      },
+      "scopes": ["EFFECT_COLOR"],
+      "description": "The near layer of Elevation/Composer, close under the composer's edge. Transparent in Dark, where the composer lifts by value."
+    },
+    "shadow/composer-far": {
+      "css": "--shadow-composer-far",
+      "light": "alpha/black-3",
+      "dark": "alpha/transparent",
+      "resolved": {
+        "light": "#00000008",
+        "dark": "#FFFFFF00"
+      },
+      "scopes": ["EFFECT_COLOR"],
+      "description": "The far halo of Elevation/Composer. Transparent in Dark, where the composer lifts by value."
+    },
     "shadow/floating": {
       "css": "--shadow-floating",
       "light": "alpha/black-10",
@@ -1900,6 +1926,28 @@
         "spread": -1,
         "color": "#0000000D",
         "colorVar": "shadow/card"
+      }
+    ],
+    "Elevation/Composer": [
+      {
+        "type": "DROP_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": 1,
+        "blur": 6,
+        "spread": -1,
+        "color": "#0000000D",
+        "colorVar": "shadow/composer-near"
+      },
+      {
+        "type": "DROP_SHADOW",
+        "visible": true,
+        "x": 0,
+        "y": 6,
+        "blur": 88,
+        "spread": 2,
+        "color": "#00000008",
+        "colorVar": "shadow/composer-far"
       }
     ],
     "Elevation/2 Overlay": [
