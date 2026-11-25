@@ -190,6 +190,7 @@
   --surface-skeleton: var(--gray-150); /* surface/skeleton */
   --text-primary: var(--gray-900); /* text/primary */
   --text-secondary: var(--gray-600); /* text/secondary */
+  --text-item: var(--gray-700); /* text/item */
   --text-disabled: var(--gray-400); /* text/disabled */
   --text-inverse: var(--gray-0); /* text/inverse */
   --text-on-color: var(--gray-0); /* text/on-color */
@@ -281,6 +282,7 @@
   --surface-skeleton: var(--gray-850); /* surface/skeleton */
   --text-primary: var(--gray-50); /* text/primary */
   --text-secondary: var(--gray-400); /* text/secondary */
+  --text-item: var(--gray-300); /* text/item */
   --text-disabled: var(--gray-600); /* text/disabled */
   --text-inverse: var(--gray-900); /* text/inverse */
   --text-on-color: var(--gray-0); /* text/on-color */

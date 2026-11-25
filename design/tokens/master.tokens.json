@@ -358,6 +358,17 @@
       "scopes": ["SHAPE_FILL", "TEXT_FILL", "STROKE_COLOR"],
       "description": "Supporting text, placeholders and quiet icons."
     },
+    "text/item": {
+      "css": "--text-item",
+      "light": "gray/700",
+      "dark": "gray/300",
+      "resolved": {
+        "light": "#333333",
+        "dark": "#D4D4D4"
+      },
+      "scopes": ["SHAPE_FILL", "TEXT_FILL"],
+      "description": "Nav items, menu items and the builder's Layer and Form Rows at rest, their icons included. Hover and selected lift them to text/primary."
+    },
     "text/disabled": {
       "css": "--text-disabled",
       "light": "gray/400",

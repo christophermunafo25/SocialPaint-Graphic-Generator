@@ -797,14 +797,16 @@ article.sp-tbcard {
   height: 32px; /* as drawn */
   padding: 0 var(--space-8) 0 calc(var(--space-8) + var(--layer-depth, 0) * var(--space-16));
   border-radius: var(--radius-sm);
-  color: var(--text-primary);
+  color: var(--text-item); /* at rest (CJ, 2026-11-25) */
 }
 .sp-layer:hover,
 .sp-layer[data-over] {
   background: var(--state-hover);
+  color: var(--text-primary);
 }
 .sp-layer[data-selected] {
   background: var(--surface-sunken);
+  color: var(--text-primary);
 }
 .sp-layer__main {
   display: flex;
@@ -864,7 +866,7 @@ article.sp-tbcard {
   opacity: 1;
 }
 .sp-layer__fixed {
-  color: var(--text-primary);
+  color: inherit;
 }
 /* Form (321:64): Form Rows, 2 apart. */
 .sp-form-rows {
@@ -885,15 +887,17 @@ article.sp-tbcard {
   height: 40px; /* as drawn */
   padding: 0 10px 0 calc(var(--space-8) + var(--layer-depth, 0) * var(--space-16)); /* as drawn */
   border-radius: var(--radius-sm);
-  color: var(--text-primary);
+  color: var(--text-item); /* at rest (CJ, 2026-11-25) */
   cursor: grab;
 }
 .sp-form-row:hover,
 .sp-form-row[data-over] {
   background: var(--state-hover);
+  color: var(--text-primary);
 }
 .sp-form-row[data-selected] {
   background: var(--surface-sunken);
+  color: var(--text-primary);
 }
 .sp-form-row__grip {
   color: var(--text-secondary);

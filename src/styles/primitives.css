@@ -936,7 +936,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   padding: 0 var(--space-12);
   gap: var(--space-8);
   border-radius: var(--radius-sm);
-  color: var(--text-primary);
+  /* At rest on text/item, lifting to text/primary under the pointer and
+     when selected (CJ, 2026-11-25). */
+  color: var(--text-item);
   cursor: pointer;
   outline: none;
   user-select: none;
@@ -945,10 +947,12 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-menu-item[data-highlighted],
 .ui-menu-item[data-demo-state="hover"] {
   background: var(--state-hover);
+  color: var(--text-primary);
 }
 .ui-menu-item[data-selected],
 .ui-menu-item[data-demo-state="selected"] {
   background: var(--state-selected);
+  color: var(--text-primary);
 }
 /* The keyboard's item: a Radix item has focus itself; a Select's option is
    the list's active descendant, so the ring follows the list's focus. A
@@ -1592,7 +1596,7 @@ button.ui-detail-tag__value {
 }
 
 /* ── Nav item (2213:109): a 36 row at radius/sm, the icon and label on
-   text/secondary. Hover lifts them to text/primary over state/hover, and
+   text/item (CJ, 2026-11-25). Hover lifts them to text/primary over state/hover, and
    Selected holds them there over state/selected. The Settings rail uses the
    same item. ── */
 .ui-nav-item {
@@ -1604,7 +1608,7 @@ button.ui-detail-tag__value {
   gap: var(--space-12);
   border-radius: var(--radius-sm);
   --_disabled: transparent;
-  --_fg: var(--text-secondary);
+  --_fg: var(--text-item);
   --_fg-hover: var(--text-primary);
   text-align: left;
 }
