@@ -12,7 +12,7 @@ Settled. Phases build them and do not re-ask.
 
 1. **The ElevenLabs file is the source of truth** for tokens, components and screens. Its Color collection has two modes, Light and Dark, and its Scale collection one, Value. The v2 modes are gone from the file.
 2. **Primary actions are ink.** `--action-primary` is gray 900 under a white label in Light and gray 50 under a gray 900 label in Dark. This overturns new-brand decision 3 (Slime primary), because the ElevenLabs file draws it that way on every screen.
-3. **Raised surfaces are flat.** Cards, panels and the sidebar take a hairline edge instead of a shadow. Only menus, popovers, dialogs, toasts and the switch thumb cast one.
+3. **Raised surfaces are flat.** Cards, panels and the sidebar take a hairline edge instead of a shadow. Only menus, popovers, dialogs, toasts and the switch thumb cast one. Cards on `--surface-card` gained Elevation/Card (CJ, 2026-11-24), and the composer lifts in Light on Elevation/Composer (CJ, 2026-11-25).
 4. **Fields have a visible edge.** Inputs, selects, text areas and uploads rest on `--surface-field` with a `--border-field` hairline.
 5. **The sidebar runs flush** on `--surface-shell` with only a right edge. `--radius-shell` and `--layout-shell-inset` are 0.
 6. **The variations bar reads Variation 1, Variation 2 and Variation 3.** The product word stays "variations" in every string the interface shows.

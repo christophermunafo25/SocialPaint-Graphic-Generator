@@ -183,9 +183,9 @@ The type pages hold each component's board with its main component. "Change" is 
 | Progress Steps | `2221:1105` | `6222:626` | `Progress` | `primitives/Containers.tsx` | `.ui-progress` | Pending steps on `--surface-soft` |
 | Skeleton | `2215:286` | `6222:710` | `Skeleton` | `primitives/Skeleton.tsx` | `.ui-skeleton` | Tokens. `--surface-skeleton` is now solid gray |
 | Empty State | `2215:304` | `6222:770` | `EmptyState` | `primitives/EmptyState.tsx` | `.ui-empty` | Tokens |
-| Nav Item | `2213:109` | `6221:525` | `NavItem` | `primitives/Navigation.tsx` | `.ui-nav-item` | Tokens. The icon and label already sit on `--text-secondary` at rest and lift to `--text-primary` |
+| Nav Item | `2213:109` | `6221:525` | `NavItem` | `primitives/Navigation.tsx` | `.ui-nav-item` | The icon and label rest on `--text-item` and lift to `--text-primary` (CJ, 2026-11-25) |
 | Breadcrumb | `2213:111` | `6221:621` | `Breadcrumb` | `primitives/PageHeader.tsx` | `.ui-breadcrumb` | Tokens |
-| Menu Item | `2213:157` | `6221:659` | `MenuItem` | `primitives/Menu.tsx` | `.ui-menu` | Tokens |
+| Menu Item | `2213:157` | `6221:659` | `MenuItem` | `primitives/Menu.tsx` | `.ui-menu` | Rests on `--text-item` and lifts to `--text-primary` when highlighted or selected (CJ, 2026-11-25) |
 | Menu | `2213:159` | `6221:803` | `Menu` | `primitives/Menu.tsx` | `.ui-menu` | `--surface-raised`, a `--border-raised` hairline, `--elevation-2-overlay`, `--radius-lg` 12 |
 | Tab | `4015:635` | `6221:959` | `Tab` | `primitives/Toggles.tsx` | `.ui-tabs` | Tokens |
 | Tabs | `4015:673` | `6221:1011` | `Tabs` | `primitives/Toggles.tsx` | `.ui-tabs` | Tokens |
@@ -209,7 +209,7 @@ On `4012:1194`, one column per area.
 | Template Card, Builder Template Card | `4018:129`, `4018:156` | `templates/TemplateCard.tsx`, `admin/BuilderTemplateCard.tsx` | Flat on `--surface-card` |
 | Template Thumbnail | `25:853` | `TemplateThumbnail.tsx` | Artwork with Variation 1, 2 and 3 |
 | Size Covers | `327:1985` and eleven more | `builder/SizeGallery.tsx` | Artwork |
-| Composer | `6024:218` | `chat/ChatComposer.tsx` | One line between the plus and Send on `--radius-composer`, attachments and details stacked above |
+| Composer | `6024:218` | `chat/ChatComposer.tsx` | One line between the plus and Send on `--radius-composer`, attachments and details stacked above. Lifts in Light on Elevation/Composer (CJ, 2026-11-25) |
 | Message Bubble, Assistant Message | `2216:224`, `2216:235` | `chat/Messages.tsx` | Tokens |
 | Result Card | `2216:287` | `primitives/Previews.tsx` | The stage on `--surface-stage`. The art develops in when a run finishes, and its downloads confirm with a check (sections 7.3 and 7.6) |
 | Variation Tile | `2216:315` | `primitives/Previews.tsx` (`LookTile`) | Rename to `VariationTile` |

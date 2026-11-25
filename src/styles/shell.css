@@ -326,8 +326,10 @@
 }
 /* The theme toggle, Collapse or Expand and the account's Settings are Ghost
    icon buttons (CJ, 2026-11-25): no fill or edge at rest, the glyph on
-   text/secondary, lifting to text/primary over state/hover. */
-.sp-shell-panel .ui-iconbtn[data-variant="ghost"] {
+   text/secondary, lifting to text/primary over state/hover. The account's
+   Settings does the same in the mobile drawer. */
+.sp-shell-panel .ui-iconbtn[data-variant="ghost"],
+.sp-shell-account .ui-iconbtn[data-variant="ghost"] {
   --_fg: var(--text-secondary);
   --_fg-hover: var(--text-primary);
 }
