@@ -8,12 +8,14 @@ export interface InlineEditProps {
   value: string;
   /** What is being named, for the controls' names ("Rename Logo dark"). */
   label: string;
-  /** Saves a changed, non-empty name. An empty or unchanged one is dropped. */
-  onSave(next: string): void | Promise<void>;
+  /** Saves a changed, non-empty name; an empty or unchanged one is dropped.
+   * Resolving to false means the save failed (the page shows its own error),
+   * so there is no flash and nothing is read out. */
+  onSave(next: string): void | boolean | Promise<void | boolean>;
   /** Open from outside (the row menu's Rename). */
   editing: boolean;
   onEditingChange(editing: boolean): void;
-  /** The text's own class (a type step) on the name and the field. */
+  /** The name's own type step and layout class, on the resting name only. */
   className?: string;
   /** The text's own look (a type style's specimen), on the name and the field. */
   style?: React.CSSProperties;
@@ -27,8 +29,8 @@ export interface InlineEditProps {
  * whose pencil shows on hover and focus. Pressing it swaps the name for a
  * field holding it, selected, with Save and Cancel beside it. Enter or Save
  * keeps the change, Escape or Cancel drops it, and leaving the field keeps
- * it, as the renames here always have. A kept change flashes the row green
- * and is read out; focus goes back to the name. */
+ * it, as the renames here always have. A change that saved flashes the name
+ * green and is read out; focus goes back to the name. */
 export function InlineEdit({
   value,
   label,
@@ -59,12 +61,13 @@ export function InlineEdit({
     closing.current = true;
     const next = (inputRef.current?.value ?? value).trim();
     onEditingChange(false);
-    if (save && next && next !== value) {
-      void onSave(next);
+    if (refocus) requestAnimationFrame(() => nameRef.current?.focus());
+    if (!save || !next || next === value) return;
+    void Promise.resolve(onSave(next)).then((ok) => {
+      if (ok === false) return;
       setFlash((n) => n + 1);
       setSaid(`Renamed to ${next}`);
-    }
-    if (refocus) requestAnimationFrame(() => nameRef.current?.focus());
+    });
   };
 
   return (
@@ -87,13 +90,14 @@ export function InlineEdit({
         >
           <input
             ref={inputRef}
-            className={cx("ui-reset sp-bs-inline__input", className)}
+            className="ui-reset sp-bs-inline__input"
             style={style}
             aria-label={`Rename ${label}`}
             defaultValue={value}
             spellCheck={false}
             autoComplete="off"
             onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return;
               if (e.key === "Enter") {
                 e.preventDefault();
                 close(true, true);
@@ -132,7 +136,7 @@ export function InlineEdit({
           <span className={cx("sp-bs-inline__text", className)} style={style}>
             {value}
           </span>
-          <Pencil size={14} className="ui-icon sp-bs-inline__pencil" aria-hidden />
+          <Pencil size={16} className="ui-icon sp-bs-inline__pencil" aria-hidden />
         </button>
       )}
       <span className="sp-live" role="status" aria-live="polite">

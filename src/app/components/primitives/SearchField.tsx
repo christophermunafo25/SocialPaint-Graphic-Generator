@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { cx, type DemoStateAttr } from "./cx";
 import { IconButton } from "./IconButton";
@@ -48,8 +48,12 @@ export function SearchField({
   const inputRef = useRef<HTMLInputElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const wasOpen = useRef(open);
+  // Nothing animates on first paint: a page that loads with a query mounts
+  // the field open and still. Opening it, or typing, turns the motion on.
+  const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
+    if (open !== wasOpen.current) setAnimate(true);
     if (open && !wasOpen.current && focusOnOpen) inputRef.current?.focus();
     if (!open && wasOpen.current && document.activeElement === document.body)
       buttonRef.current?.focus();
@@ -60,6 +64,7 @@ export function SearchField({
     <div
       className={cx("ui-search", open && "ui-search--open", className)}
       data-size={size}
+      data-animate={animate || undefined}
       data-demo-state={open ? undefined : demoState}
     >
       {open ? (
@@ -71,7 +76,10 @@ export function SearchField({
             aria-label={label}
             placeholder={placeholder}
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => {
+              setAnimate(true);
+              onChange(e.target.value);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Escape" && value === "") {
                 e.preventDefault();

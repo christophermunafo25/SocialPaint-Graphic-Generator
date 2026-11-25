@@ -1019,13 +1019,13 @@ label.sp-bs-add:focus-within {
   display: inline-flex;
   min-width: 0;
   max-width: 100%;
+  min-height: var(--size-control-xs); /* the 24 hit area (RULES.md section 8) */
   align-items: center;
   gap: var(--space-8);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-xs);
   color: inherit;
   text-align: left;
-  transition: background-color var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .sp-bs-inline__text {
   min-width: 0;
@@ -1035,7 +1035,6 @@ label.sp-bs-add:focus-within {
 .sp-bs-inline__pencil {
   color: var(--text-secondary);
   opacity: 0;
-  transition: opacity var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .sp-bs-inline__name:hover .sp-bs-inline__pencil,
 .sp-bs-inline__name:focus-visible .sp-bs-inline__pencil {
@@ -1060,20 +1059,28 @@ label.sp-bs-add:focus-within {
 .sp-bs-image__row:has(.sp-bs-inline[data-editing]) .ui-rowmenu {
   display: none;
 }
+/* The field: Small control height, Body S unless the row's own look (a
+   type style's specimen) is set on it, the field hairline that moves on
+   hover, and the focus ring. */
 .sp-bs-inline__input {
   box-sizing: border-box;
   flex: 1;
   min-width: 0;
-  padding: var(--space-2) var(--space-8);
+  min-height: var(--size-control-sm);
+  padding: 0 var(--space-8);
   border: var(--stroke-hairline) solid var(--border-field);
   border-radius: var(--radius-xs);
   background: var(--surface-field);
   color: var(--text-primary);
-  transition: border-color var(--motion-duration-fast) var(--motion-easing-standard);
+  font: var(--type-body-s);
+  letter-spacing: var(--type-body-s-tracking);
+}
+.sp-bs-inline__input:hover {
+  border-color: var(--border-field-hover);
 }
 .sp-bs-inline__input:focus-visible {
-  outline: none;
-  border-color: var(--border-focus);
+  outline: var(--stroke-focus) solid var(--border-focus);
+  outline-offset: var(--focus-offset);
 }
 .sp-bs-inline__save.ui-iconbtn[data-variant="filled"] {
   border-color: transparent;

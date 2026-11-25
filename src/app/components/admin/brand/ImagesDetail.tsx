@@ -170,7 +170,6 @@ export function ImagesDetail({ brand }: { brand: BrandDraft }) {
 function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
   const { company, refresh, setError } = brand;
   const downloadRef = useRef<HTMLAnchorElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
   const linkClick = useLinkClick();
   const signed = useSignedUrl(asset.url);
   const [renaming, setRenaming] = useState(false);
@@ -185,12 +184,14 @@ function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
   const meta = width && height ? `${ext} · ${width} × ${height}` : ext;
 
   const rename = async (next: string) => {
-    if (!next || next === asset.name) return;
+    if (!next || next === asset.name) return false;
     try {
       await stores.brandAssets.update(asset.id, { name: next });
       await refresh();
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : `Couldn't rename ${asset.name}.`);
+      return false;
     }
   };
 
@@ -237,7 +238,7 @@ function ImageCard({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
 
   return (
     <RowContextMenu groups={groups} label={label} disabled={renaming}>
-      <div ref={cardRef} className="sp-bs-image">
+      <div className="sp-bs-image">
         <span className="sp-bs-image__plate">
           {signed.url && (
             <img

@@ -791,7 +791,6 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   display: inline-flex;
   flex: none;
   align-items: center;
-  overflow: hidden;
   border: var(--stroke-hairline) solid var(--border-strong);
   /* The box runs open and shut on its width (CJ, 2026-11-25). Reduced
      motion zeroes the duration. */
@@ -820,6 +819,12 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   --_pressed: var(--action-neutral-pressed);
   --_fg: var(--text-primary);
 }
+/* Collapsed, the box clips, so the glyph never spills while it shrinks;
+   open, it does not, so the clear button's ring is never cut. */
+.ui-search:not(.ui-search--open) {
+  overflow: hidden;
+}
+.ui-search:has(> .ui-search__trigger[data-demo-state="focus"]),
 .ui-search:has(> .ui-search__trigger:focus-visible) {
   outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
@@ -848,8 +853,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   outline: var(--stroke-focus) solid var(--border-focus);
   outline-offset: var(--focus-offset);
 }
-/* The query fades in once the box has begun to grow, and the clear button
-   pops in with the first character. */
+/* Once you have opened it or typed (never on first paint), the query fades
+   in as the box begins to grow, and the clear button pops in with the
+   first character. */
 @keyframes ui-search-in {
   from {
     opacity: 0;
@@ -861,11 +867,11 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
     scale: 0.7;
   }
 }
-.ui-search--open .ui-search__input {
+.ui-search[data-animate] .ui-search__input {
   animation: ui-search-in var(--motion-duration-base) var(--motion-easing-standard)
     var(--motion-duration-fast) both;
 }
-.ui-search__clear {
+.ui-search[data-animate] .ui-search__clear {
   animation: ui-search-pop var(--motion-duration-base) var(--motion-easing-standard) both;
 }
 .ui-search__input {

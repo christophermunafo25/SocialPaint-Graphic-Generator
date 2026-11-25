@@ -133,7 +133,6 @@ function FontRow({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
   const [renaming, setRenaming] = useState(false);
   const [blocked, setBlocked] = useState<string | null>(null);
   const replaceRef = useRef<HTMLInputElement>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
 
   const usedBy = draft.typeStyles.filter(
     (s) => s.font?.source === "custom" && (s.font.assetId === asset.id || s.font.family === family),
@@ -141,12 +140,14 @@ function FontRow({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
 
   const rename = async (raw: string) => {
     const next = raw.trim();
-    if (!next || next === asset.name) return;
+    if (!next || next === asset.name) return false;
     try {
       await stores.brandAssets.update(asset.id, { name: next });
       await refresh();
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : `Couldn't rename ${asset.name}.`);
+      return false;
     }
   };
 
@@ -199,7 +200,7 @@ function FontRow({ asset, brand }: { asset: BrandAsset; brand: BrandDraft }) {
   const face = { fontFamily: `"${family}", sans-serif` };
 
   return (
-    <div ref={wrapRef} className="sp-bs-font-wrap">
+    <div className="sp-bs-font-wrap">
       <RowContextMenu groups={groups} label={label} disabled={renaming}>
         <div className="sp-bs-font">
           <span className="sp-bs-font__aa" style={face} aria-hidden>
