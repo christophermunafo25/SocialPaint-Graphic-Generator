@@ -227,7 +227,7 @@
    beside the go arrow, on surface/card at radius/xl.
    One button with the keyboard ring. Hover and focus step through its
    variations (judgement call 4) and fill the arrow with the primary pair;
-   hover moves its edge to border/card-hover and a pointer press shrinks it
+   hover grows it to 1.01 and a pointer press shrinks it
    to 0.98 (RULES.md section 6), so nothing travels and the rail's 12 of
    room holds the edge and Elevation/Card. ── */
 /* Template Card 4018:129. Cards on surface/card draw the thin border/card
@@ -248,13 +248,11 @@
   cursor: pointer;
 }
 button.sp-tcard {
-  transition:
-    box-shadow var(--motion-duration-fast) var(--motion-easing-standard),
-    scale var(--motion-duration-fast) var(--motion-easing-standard);
+  transition: scale var(--motion-duration-fast) var(--motion-easing-standard);
 }
 @media (hover: hover) and (pointer: fine) {
   button.sp-tcard:hover {
-    --_edge: var(--border-card-hover);
+    scale: 1.01;
   }
 }
 :root[data-input="pointer"] button.sp-tcard:active {
@@ -270,6 +268,15 @@ button.sp-tcard {
 .sp-tcard:focus-visible .sp-tcard__go {
   background: var(--action-primary);
   color: var(--action-on-primary);
+}
+/* The arrow nudges 2 forward with the fill (CJ, 2026-11-25); reduced
+   motion zeroes the duration, so it still lands without the slide. */
+.sp-tcard__go .ui-icon {
+  transition: translate var(--motion-duration-base) var(--motion-easing-standard);
+}
+.sp-tcard:hover .sp-tcard__go .ui-icon,
+.sp-tcard:focus-visible .sp-tcard__go .ui-icon {
+  translate: var(--space-2) 0;
 }
 .sp-tcard__frame {
   position: relative;

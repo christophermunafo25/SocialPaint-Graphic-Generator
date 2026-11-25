@@ -127,17 +127,15 @@
   color: var(--text-primary);
   text-decoration: none;
 }
-/* The cards you click as a whole (a section, a color, a logo): hover moves
-   the edge to border/card-hover and a pointer press shrinks the card to
+/* The cards you click as a whole (a section, a color, a logo): hover grows
+   the card to 1.01 and a pointer press shrinks it to
    0.98 (RULES.md section 6). Loading cards and image cards stay still. */
 :is(a.sp-bs-cat, button.sp-bs-color, button.sp-bs-logo) {
-  transition:
-    box-shadow var(--motion-duration-fast) var(--motion-easing-standard),
-    scale var(--motion-duration-fast) var(--motion-easing-standard);
+  transition: scale var(--motion-duration-fast) var(--motion-easing-standard);
 }
 @media (hover: hover) and (pointer: fine) {
   :is(a.sp-bs-cat, button.sp-bs-color, button.sp-bs-logo):hover {
-    --_edge: var(--border-card-hover);
+    scale: 1.01;
   }
 }
 :root[data-input="pointer"] :is(a.sp-bs-cat, button.sp-bs-color, button.sp-bs-logo):active {
