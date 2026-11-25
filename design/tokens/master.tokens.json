@@ -250,14 +250,14 @@
   "color": {
     "surface/page": {
       "css": "--surface-page",
-      "light": "gray/0",
+      "light": "gray/50",
       "dark": "gray/950",
       "resolved": {
-        "light": "#FFFFFF",
+        "light": "#FAFAFA",
         "dark": "#0A0A0A"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "The app background behind every panel."
+      "description": "The app background behind every panel. Off-white in Light, so white cards, panels, fields, menus and the composer lift off it, and the sidebar shares it behind its hairline."
     },
     "surface/raised": {
       "css": "--surface-raised",
@@ -268,7 +268,7 @@
         "dark": "#161616"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "Panels, menus, popovers and dialogs. Matches the page in Light, so the edge comes from border/raised."
+      "description": "Panels, menus, popovers and dialogs. White in Light, a step above the off-white page, with its edge from border/raised."
     },
     "surface/sunken": {
       "css": "--surface-sunken",
@@ -1141,14 +1141,14 @@
     },
     "surface/stage": {
       "css": "--surface-stage",
-      "light": "gray/50",
+      "light": "gray/100",
       "dark": "gray/890",
       "resolved": {
-        "light": "#FAFAFA",
+        "light": "#F5F5F5",
         "dark": "#121212"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "The stage behind a template preview."
+      "description": "The stage behind a template preview. One step under the page in Light, so it still reads on it."
     },
     "surface/soft": {
       "css": "--surface-soft",

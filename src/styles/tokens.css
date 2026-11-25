@@ -180,7 +180,7 @@
 }
 
 [data-theme="light"] {
-  --surface-page: var(--gray-0); /* surface/page */
+  --surface-page: var(--gray-50); /* surface/page */
   --surface-raised: var(--gray-0); /* surface/raised */
   --surface-sunken: var(--gray-150); /* surface/sunken */
   --surface-field: var(--gray-0); /* surface/field */
@@ -261,7 +261,7 @@
   --glow-accent: var(--alpha-transparent); /* glow/accent */
   --surface-shell: var(--gray-50); /* surface/shell */
   --surface-card: var(--gray-0); /* surface/card */
-  --surface-stage: var(--gray-50); /* surface/stage */
+  --surface-stage: var(--gray-100); /* surface/stage */
   --surface-soft: var(--gray-150); /* surface/soft */
   --border-field: var(--gray-200); /* border/field */
   --plate-dark: var(--gray-950); /* plate/dark */
