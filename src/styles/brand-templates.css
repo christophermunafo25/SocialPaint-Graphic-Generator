@@ -11,15 +11,16 @@
    2308:739) ───────────────────────────────────────────────────────────────── */
 
 /* The filter bar scrolls with the page (CJ, 2026-11-16: nothing sticks).
-   The search button, then the chips, 8 apart. */
+   The search button, then the chips, 8 apart, in a 36 row like every other
+   toolbar (CJ, 2026-11-25). */
 .sp-lib-filterbar {
   display: flex;
   align-items: center;
   gap: var(--space-8);
-  min-height: 56px;
+  min-height: var(--size-control-md);
 }
-/* The search (50:62) at Large: a 46 square at radius/chip that opens into
-   the 440 field (6010:2436), beside the 46 chips. */
+/* The search (50:62) at Medium: a 36 square at radius/sm that opens into
+   the 280 field, beside the 36 chips (CJ, 2026-11-25). */
 .sp-lib-search {
   flex: none;
   display: flex;
@@ -379,9 +380,10 @@ button.sp-tcard {
   .sp-page--bleed .sp-lib-chips {
     margin-right: 0;
   }
-  /* The open search (440) is wider than a phone's bar: it takes a row of
-     its own and the chips wrap under it, 12 apart, so the chips' rail and
-     its 12 of focus-ring room meet the field without covering it. */
+  /* The open search (280) leaves a phone's bar no room for the chips: it
+     takes a row of its own and the chips wrap under it, 12 apart, so the
+     chips' rail and its 12 of focus-ring room meet the field without
+     covering it. */
   .sp-lib-filterbar {
     flex-wrap: wrap;
     row-gap: var(--space-12);

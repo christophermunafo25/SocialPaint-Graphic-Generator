@@ -9,8 +9,8 @@ const DEBOUNCE_MS = 150;
  * field primitive. It types locally and settles into the URL after 150ms,
  * so the address stays shareable without a history entry per keystroke.
  *
- * Collapsed it is the 46 square (36 at Medium); it opens into the 440
- * field (280 at Medium). A field
+ * Collapsed it is the Medium 36 square, beside the chips in every filter
+ * bar (CJ, 2026-11-25); it opens into the 280 field. A field
  * holding a query never collapses (a filter you can't see is one you can't
  * undo); an empty one collapses when focus leaves it, or on Escape.
  *
@@ -22,7 +22,7 @@ export function LibrarySearch({
   onChange,
   label = "Search templates",
   placeholder = "Search templates, platforms, sizes, or use cases",
-  size = "lg",
+  size = "md",
   className,
 }: {
   value: string;
@@ -30,7 +30,7 @@ export function LibrarySearch({
   /** The field's name; History's is "Search chats". */
   label?: string;
   placeholder?: string;
-  /** Large beside Platform Chips; Medium in the Template Builder's bars. */
+  /** Medium in every filter bar; Large is the 46 field. */
   size?: "lg" | "md";
   className?: string;
 }) {

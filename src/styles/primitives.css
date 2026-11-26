@@ -1425,55 +1425,31 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   border-color: transparent;
 }
 
-/* ── Platform chip (53:96): 46 tall (size/control-lg plus its hairline edge,
-   judgement call 4) at radius/chip, so it lines up with the Large Search
-   Field. The mark on a 36 tile at radius/tile on surface/soft, the label in
-   Label/XS and a 14 chevron, 8 apart, 4 in from the tile's side and 8 from
-   the chevron's. Flat on action/neutral at rest; selected, it takes
-   state/selected under text/primary with its edge in its own fill, and the
-   chevron points down (CJ, 2026-11-25). ── */
+/* ── Platform chip (53:96): 36 tall (size/control-md) at radius/sm, so it
+   lines up with the Medium Search Field and every other toolbar (CJ,
+   2026-11-25). The mark at 16 with no tile, the label in Label/XS, 8 apart,
+   12 in from each side. No fill and no edge at rest, state/hover on hover;
+   selected, it takes state/selected under text/primary and a 14 chevron
+   pointing down, 8 after the label. ── */
 .ui-platform-chip {
   box-sizing: border-box;
   display: inline-flex;
   flex: none;
   align-items: center;
-  height: calc(var(--size-control-lg) + 2 * var(--stroke-hairline));
-  padding: var(--space-4) var(--space-8) var(--space-4) var(--space-4);
+  height: var(--size-control-md);
+  padding: 0 var(--space-12);
   gap: var(--space-8);
-  border: var(--stroke-hairline) solid var(--border-strong);
-  border-radius: var(--radius-chip);
-  --_fill: var(--action-neutral);
-  --_hover: var(--action-neutral-hover);
+  border-radius: var(--radius-sm);
   --_pressed: var(--action-neutral-pressed);
-  --_selected: var(--state-selected);
   --_fg: var(--text-primary);
   --_fg-selected: var(--text-primary);
   white-space: nowrap;
-}
-.ui-platform-chip__tile {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: var(--size-control-md);
-  height: var(--size-control-md);
-  border-radius: var(--radius-tile);
-  background: var(--surface-soft);
-  color: var(--text-primary);
 }
 .ui-platform-chip__chevron {
   flex: none;
   width: 14px; /* as drawn (53:96) */
   height: 14px;
   color: inherit;
-}
-.ui-platform-chip[data-expanded] .ui-platform-chip__chevron,
-.ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__chevron {
-  transform: rotate(90deg);
-}
-.ui-platform-chip[data-selected],
-.ui-platform-chip[data-demo-state="selected"] {
-  border-color: var(--state-selected);
 }
 
 /* ── Tag (2212:143): a 24 tag at radius/tag in Label/XS. A tag is text and paints its

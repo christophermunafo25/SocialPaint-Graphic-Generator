@@ -97,7 +97,7 @@ describe("Icon Button Outline", () => {
 });
 
 describe("Search Field sizes", () => {
-  it("is Large unless told otherwise, and clears with a real Icon Button", () => {
+  it("is Medium unless told otherwise, and clears with a real Icon Button", () => {
     const onClear = vi.fn();
     const { rerender } = render(
       <SearchField
@@ -110,12 +110,12 @@ describe("Search Field sizes", () => {
       />,
     );
     expect(screen.getByRole("button", { name: "Search templates" }).getAttribute("data-size")).toBe(
-      "lg",
+      "md",
     );
     rerender(
       <SearchField
         open
-        size="md"
+        size="lg"
         onOpenChange={() => {}}
         value="hiring"
         onChange={() => {}}

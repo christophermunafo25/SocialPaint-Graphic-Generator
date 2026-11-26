@@ -50,11 +50,14 @@ describe("chips", () => {
     expect(chip.dataset.selected).toBe("true");
   });
 
-  it("PlatformChip draws its chevron unless told not to", () => {
+  it("PlatformChip draws its chevron only while selected, unless told not to", () => {
     render(
       <>
-        <PlatformChip platform="linkedin">LinkedIn</PlatformChip>
-        <PlatformChip platform="facebook" chevron={false}>
+        <PlatformChip platform="linkedin" selected>
+          LinkedIn
+        </PlatformChip>
+        <PlatformChip platform="instagram">Instagram</PlatformChip>
+        <PlatformChip platform="facebook" selected chevron={false}>
           Facebook
         </PlatformChip>
       </>,
@@ -62,7 +65,17 @@ describe("chips", () => {
     const chevron = (name: string) =>
       screen.getByRole("button", { name }).querySelector(".ui-platform-chip__chevron");
     expect(chevron("LinkedIn")).not.toBeNull();
+    expect(chevron("Instagram")).toBeNull();
     expect(chevron("Facebook")).toBeNull();
+  });
+
+  it("PlatformChip draws its mark at 16 with no tile", () => {
+    render(<PlatformChip platform="linkedin">LinkedIn</PlatformChip>);
+    const chip = screen.getByRole("button", { name: "LinkedIn" });
+    expect(chip.querySelector(".ui-platform-chip__tile")).toBeNull();
+    const mark = chip.querySelector("svg.ui-icon");
+    expect(mark?.getAttribute("width")).toBe("16");
+    expect(mark?.getAttribute("height")).toBe("16");
   });
 });
 

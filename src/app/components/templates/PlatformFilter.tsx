@@ -13,8 +13,8 @@ import { useEdgeFade } from "./useEdgeFade";
  * Roving tabindex: one stop in the tab order, arrows (and Home and End)
  * move within the group and select as they go, the radio-group contract.
  * The chips scroll horizontally behind the shelves' right-edge fade when
- * they outrun the bar (PHASE-4.md §8). A chip has no menu: selected, its
- * chevron turns down, as the component draws it.
+ * they outrun the bar (PHASE-4.md §8). A chip has no menu: only the
+ * selected one shows its chevron, pointing down (CJ, 2026-11-25).
  */
 export function PlatformFilter({
   facets,

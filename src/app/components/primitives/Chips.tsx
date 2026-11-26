@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronRight, LayoutGrid, X } from "lucide-react";
+import { ChevronDown, LayoutGrid, X } from "lucide-react";
 import { platformById, type PlatformId } from "@/lib/templates/platforms";
 import { cx, type DemoStateAttr, type IconComponent } from "./cx";
 
@@ -59,31 +59,20 @@ export function PlatformLogo({
 
 export interface PlatformChipProps extends ButtonAttrs {
   platform: PlatformId | "all";
-  /** Selected takes state/selected under text/primary, and the chevron
-   * points down (CJ, 2026-11-25). */
+  /** Selected takes state/selected under text/primary and shows the
+   * chevron, pointing down (CJ, 2026-11-25). */
   selected?: boolean;
-  /** Its menu is open; the chevron points down. */
-  expanded?: boolean;
-  /** Off where the chip is drawn without it (Choose a size, 329:2970): the
-   * tile and the label, 8 from the end. */
+  /** Off where the chip is drawn without it (Choose a size, 329:2970). */
   chevron?: boolean;
 }
 
-/** Platform chip (Figma 53:96): 46 tall at radius/chip, hugging its label,
- * with the platform's mark on a 36 tile and a chevron, flat at rest. The
- * caller gives it its role (radio in a filter group) and its aria state. */
+/** Platform chip (Figma 53:96): 36 tall at radius/sm, hugging its label,
+ * with the platform's mark at 16 and no tile, no fill or edge at rest, and
+ * a down chevron only while selected (CJ, 2026-11-25). The caller gives it
+ * its role (radio in a filter group) and its aria state. */
 export const PlatformChip = React.forwardRef<HTMLButtonElement, PlatformChipProps>(
   function PlatformChip(
-    {
-      platform,
-      selected = false,
-      expanded = false,
-      chevron = true,
-      className,
-      children,
-      type = "button",
-      ...rest
-    },
+    { platform, selected = false, chevron = true, className, children, type = "button", ...rest },
     ref,
   ) {
     return (
@@ -92,15 +81,12 @@ export const PlatformChip = React.forwardRef<HTMLButtonElement, PlatformChipProp
         type={type}
         className={cx("ui-reset ui-fill ui-ring ui-platform-chip", className)}
         data-selected={selected || undefined}
-        data-expanded={selected || expanded || undefined}
         {...rest}
       >
-        <span className="ui-platform-chip__tile">
-          <PlatformLogo platform={platform} />
-        </span>
+        <PlatformLogo platform={platform} size={16} />
         <span className="t-label-xs">{children}</span>
-        {chevron && (
-          <ChevronRight size={14} className="ui-icon ui-platform-chip__chevron" aria-hidden />
+        {chevron && selected && (
+          <ChevronDown size={14} className="ui-icon ui-platform-chip__chevron" aria-hidden />
         )}
       </button>
     );

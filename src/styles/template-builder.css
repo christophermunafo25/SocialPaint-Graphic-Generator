@@ -242,16 +242,12 @@ article.sp-tbcard {
 .sp-size__chips {
   flex: 1;
 }
-/* The Large search opens to 280 here, not the library's 440, and gives
-   way to the column on a phone, so the chips keep their room and the
-   field never runs past the dialog. */
+/* The Medium search opens to its 280 and gives way to the column on a
+   phone, so the chips keep their room and the field never runs past the
+   dialog. */
 .sp-size__filters .sp-lib-search {
   flex: 0 1 auto;
   min-width: 0;
-}
-.sp-size__filters .ui-search--open[data-size] {
-  width: 280px; /* the Medium field's open width (50:62) */
-  max-width: 100%;
 }
 .sp-size__chips::after {
   background: linear-gradient(to right, transparent, var(--surface-raised));
