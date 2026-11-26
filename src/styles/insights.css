@@ -89,8 +89,9 @@
   position: absolute;
   inset: 0;
   z-index: -1;
+  /* The full 50% scrim, where the frame draws 35%: white text on the art
+     reaches 4.5:1 at its lightest spot only at 50% (premium polish, M1). */
   background: var(--surface-scrim);
-  opacity: 0.7; /* 70% of the 50% scrim: the drawn 35% */
 }
 .sp-in-digest__art {
   position: absolute;

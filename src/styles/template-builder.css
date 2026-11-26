@@ -242,16 +242,12 @@ article.sp-tbcard {
 .sp-size__chips {
   flex: 1;
 }
-/* The Large search opens to 280 here, not the library's 440, and gives
-   way to the column on a phone, so the chips keep their room and the
-   field never runs past the dialog. */
+/* The Medium search opens to its 280 and gives way to the column on a
+   phone, so the chips keep their room and the field never runs past the
+   dialog. */
 .sp-size__filters .sp-lib-search {
   flex: 0 1 auto;
   min-width: 0;
-}
-.sp-size__filters .ui-search--open[data-size] {
-  width: 280px; /* the Medium field's open width (50:62) */
-  max-width: 100%;
 }
 .sp-size__chips::after {
   background: linear-gradient(to right, transparent, var(--surface-raised));
@@ -410,8 +406,8 @@ article.sp-tbcard {
   height: 100%;
   min-height: 0;
 }
-/* The header row (6075:3293): 64 tall plus a border/subtle hairline, 32 at
-   the sides, as every page's. The area's icon and the trail, then the
+/* The header row (6075:3293): 64 tall with no hairline under it (CJ,
+   2026-11-25), 32 at the sides, as every page's. The area's icon and the trail, then the
    status Badge and the save state, 12 apart; Edit or Preview and Publish
    at the end. */
 .sp-builder__bar {
@@ -420,10 +416,9 @@ article.sp-tbcard {
   align-items: center;
   gap: var(--space-12);
   box-sizing: border-box;
-  min-height: calc(var(--space-64) + var(--stroke-hairline));
+  min-height: var(--space-64);
   min-width: 0;
   padding: 0 var(--space-32);
-  border-bottom: var(--stroke-hairline) solid var(--border-subtle);
 }
 .sp-builder__lead {
   display: flex;
@@ -797,14 +792,16 @@ article.sp-tbcard {
   height: 32px; /* as drawn */
   padding: 0 var(--space-8) 0 calc(var(--space-8) + var(--layer-depth, 0) * var(--space-16));
   border-radius: var(--radius-sm);
-  color: var(--text-primary);
+  color: var(--text-item); /* at rest (CJ, 2026-11-25) */
 }
 .sp-layer:hover,
 .sp-layer[data-over] {
   background: var(--state-hover);
+  color: var(--text-primary);
 }
 .sp-layer[data-selected] {
   background: var(--surface-sunken);
+  color: var(--text-primary);
 }
 .sp-layer__main {
   display: flex;
@@ -864,7 +861,7 @@ article.sp-tbcard {
   opacity: 1;
 }
 .sp-layer__fixed {
-  color: var(--text-primary);
+  color: inherit;
 }
 /* Form (321:64): Form Rows, 2 apart. */
 .sp-form-rows {
@@ -885,15 +882,17 @@ article.sp-tbcard {
   height: 40px; /* as drawn */
   padding: 0 10px 0 calc(var(--space-8) + var(--layer-depth, 0) * var(--space-16)); /* as drawn */
   border-radius: var(--radius-sm);
-  color: var(--text-primary);
+  color: var(--text-item); /* at rest (CJ, 2026-11-25) */
   cursor: grab;
 }
 .sp-form-row:hover,
 .sp-form-row[data-over] {
   background: var(--state-hover);
+  color: var(--text-primary);
 }
 .sp-form-row[data-selected] {
   background: var(--surface-sunken);
+  color: var(--text-primary);
 }
 .sp-form-row__grip {
   color: var(--text-secondary);
