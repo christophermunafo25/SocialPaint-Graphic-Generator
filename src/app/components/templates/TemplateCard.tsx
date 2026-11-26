@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ArrowRight } from "lucide-react";
 import type { CatalogTemplate } from "@/lib/templates/catalog";
-import { Tag } from "../primitives";
 import { TemplateThumbnail } from "../TemplateThumbnail";
 
 /** How long each variation shows while the card steps through them. */
@@ -9,36 +7,49 @@ const LOOK_STEP_MS = 1000;
 
 /** The card's size line, as the frames write it: "1080 × 1350", plus
  * " · 3 variations" when the template has more than one (decision 8: the
- * interface calls looks variations). */
-export function cardMeta(template: CatalogTemplate): string {
+ * interface calls looks variations). While the card steps through its
+ * variations, the showing one's name takes the count's place (CJ,
+ * 2026-11-25). */
+export function cardMeta(template: CatalogTemplate, showing?: string): string {
   const variations = template.template.variants?.length ?? 0;
   const size = `${template.width} × ${template.height}`;
-  return variations > 1 ? `${size} · ${variations} variations` : size;
+  if (variations <= 1) return size;
+  return `${size} · ${showing ?? `${variations} variations`}`;
 }
 
 /**
- * The library's template card (new brand, 2308:4): the preview, the name
- * and size, and the go arrow. Shelves and result grids share it.
+ * The library's template card (new brand, 2308:4): the preview, then the
+ * name over its size line. Shelves, result grids and the one grid share
+ * it. Nothing is drawn over the template (CJ, 2026-11-25: no go arrow and
+ * no variation tag).
  *
- * The whole card is one button that opens the fill page; the go arrow is
- * aria-hidden, so a screen reader hears one named target per card and the
- * keyboard has one stop.
+ * The whole card is one button that opens the fill page, so a screen
+ * reader hears one named target per card and the keyboard has one stop.
+ * It carries its template's id, so the library can hand focus back to it
+ * when the layout around it changes.
+ *
+ * In the library's one grid, `fit` draws the preview as the Template
+ * Builder list's well: square and sunken, with the template fitted 12 in
+ * at its own ratio, so a grid of mixed shapes keeps even rows.
  *
  * A template with several variations shows them off while the pointer (or
  * focus) rests on the card: the preview steps through every one, one a
- * second, with dots and the variation's name on an Overlay tag, and settles
- * back on the default when attention moves on (judgement call 4). Under
- * reduced motion it stays on the default.
+ * second, the size line naming the one showing in place of the count, and
+ * it settles back on the default and the count when attention moves on
+ * (judgement call 4). Under reduced motion it stays on the default.
  */
 export function TemplateCard({
   template,
   frame,
+  fit = false,
   onOpen,
 }: {
   template: CatalogTemplate;
   /** The group's frame ratio as a CSS aspect-ratio, e.g. "1200 / 627".
    *  Every card in a group shares it, which keeps a row even. */
   frame?: string;
+  /** The square well the one grid draws, the template fitted 12 in. */
+  fit?: boolean;
   onOpen(template: CatalogTemplate): void;
 }) {
   const looks = useMemo(() => template.template.variants ?? [], [template.template.variants]);
@@ -67,15 +78,12 @@ export function TemplateCard({
     return () => window.clearInterval(id);
   }, [attended, multiLook, looks]);
   const shownLook = lookIndex === null ? undefined : looks[lookIndex];
-  const defaultIndex = Math.max(
-    0,
-    looks.findIndex((v) => v.isDefault),
-  );
 
   return (
     <button
       type="button"
       className="ui-reset ui-ring sp-tcard"
+      data-template-id={template.id}
       onClick={() => onOpen(template)}
       onMouseEnter={() => setAttended(true)}
       onMouseLeave={() => setAttended(false)}
@@ -85,55 +93,46 @@ export function TemplateCard({
         multiLook ? `, ${looks.length} variations` : ""
       }`}
     >
-      <span
-        className="sp-tcard__frame"
-        style={frame ? ({ "--frame-ratio": frame } as React.CSSProperties) : undefined}
-      >
-        {/* Contain, never crop, with a 2px overscan the frame clips:
-            sub-pixel contain rounding reads as a hairline seam around the
-            artwork otherwise. */}
-        <span
-          style={{
-            display: "block",
-            aspectRatio: `${template.width} / ${template.height}`,
-            flexShrink: 0,
-            ...(landscape ? { width: "calc(100% + 2px)" } : { height: "calc(100% + 2px)" }),
-          }}
-        >
-          <TemplateThumbnail template={template.template} variantId={shownLook?.id} />
-        </span>
-        {multiLook && (
-          // Which variation is showing, and how many there are: dots, the way
-          // a carousel says it, plus the name while the card steps through.
-          <Tag kind="overlay" className="sp-tcard__looks" aria-hidden>
-            <span className="sp-tcard__dots">
-              {looks.map((v, i) => (
-                <span
-                  key={v.id}
-                  className="sp-tcard__dot"
-                  data-on={(lookIndex ?? defaultIndex) === i || undefined}
-                />
-              ))}
+      {fit ? (
+        <span className="sp-tcard__frame" data-fit>
+          <span
+            className="sp-tcard__art"
+            style={{ "--fit-ratio": template.width / template.height } as React.CSSProperties}
+          >
+            {/* 1px of overscan: the renderer's contain rounds a hair short
+                of the box. */}
+            <span className="sp-tcard__overscan">
+              <TemplateThumbnail template={template.template} variantId={shownLook?.id} />
             </span>
-            {shownLook && <span>{shownLook.name}</span>}
-          </Tag>
-        )}
-      </span>
+          </span>
+        </span>
+      ) : (
+        <span
+          className="sp-tcard__frame"
+          style={frame ? ({ "--frame-ratio": frame } as React.CSSProperties) : undefined}
+        >
+          {/* Contain, never crop, with a 2px overscan the frame clips:
+              sub-pixel contain rounding reads as a hairline seam around the
+              artwork otherwise. */}
+          <span
+            style={{
+              display: "block",
+              aspectRatio: `${template.width} / ${template.height}`,
+              flexShrink: 0,
+              ...(landscape ? { width: "calc(100% + 2px)" } : { height: "calc(100% + 2px)" }),
+            }}
+          >
+            <TemplateThumbnail template={template.template} variantId={shownLook?.id} />
+          </span>
+        </span>
+      )}
 
       <span className="sp-tcard__meta">
         <span className="sp-tcard__text">
           <span className="t-label-m sp-tcard__title" title={template.name}>
             {template.name}
           </span>
-          <span className="t-caption-m sp-tcard__size">{cardMeta(template)}</span>
-        </span>
-        <span
-          className="ui-fill ui-iconbtn sp-tcard__go"
-          data-variant="filled"
-          data-size="md"
-          aria-hidden
-        >
-          <ArrowRight size={16} className="ui-icon" />
+          <span className="t-caption-m sp-tcard__size">{cardMeta(template, shownLook?.name)}</span>
         </span>
       </span>
     </button>

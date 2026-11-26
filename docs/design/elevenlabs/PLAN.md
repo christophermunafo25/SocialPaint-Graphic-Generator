@@ -12,7 +12,7 @@ Settled. Phases build them and do not re-ask.
 
 1. **The ElevenLabs file is the source of truth** for tokens, components and screens. Its Color collection has two modes, Light and Dark, and its Scale collection one, Value. The v2 modes are gone from the file.
 2. **Primary actions are ink.** `--action-primary` is gray 900 under a white label in Light and gray 50 under a gray 900 label in Dark. This overturns new-brand decision 3 (Slime primary), because the ElevenLabs file draws it that way on every screen.
-3. **Raised surfaces are flat.** Cards, panels and the sidebar take a hairline edge instead of a shadow. Only menus, popovers, dialogs, toasts and the switch thumb cast one.
+3. **Raised surfaces are flat.** Cards, panels and the sidebar take a hairline edge instead of a shadow. Only menus, popovers, dialogs, toasts and the switch thumb cast one. Cards on `--surface-card` gained Elevation/Card (CJ, 2026-11-24), and the composer lifts in Light on Elevation/Composer (CJ, 2026-11-25).
 4. **Fields have a visible edge.** Inputs, selects, text areas and uploads rest on `--surface-field` with a `--border-field` hairline.
 5. **The sidebar runs flush** on `--surface-shell` with only a right edge. `--radius-shell` and `--layout-shell-inset` are 0.
 6. **The variations bar reads Variation 1, Variation 2 and Variation 3.** The product word stays "variations" in every string the interface shows.
@@ -25,6 +25,8 @@ Settled. Phases build them and do not re-ask.
 13. **Six microinteractions from BYQ Supply** (2026-11-17). The Toast eases in and waits, icons swap with a drawn check, the checkbox mark draws in, controls shrink while pressed, results and uploads develop in, and Insights numbers roll. `PROMPT.md` sections 7.2 to 7.7 are the spec, Foundations › Interactions (`6262:353`) draws them, and `reference/microinteractions.html` is the build to follow.
 14. **No planning phase** (2026-11-17). Each phase is built straight through, with no plan mode and no recon gate. It takes the recommended answer to every open question, lists what it took in its pull request, and stops only before something that cannot be undone.
 
+**Premium polish** (CJ, 2026-11-25, `docs/design/premium-polish/PROMPT.md`). Phase P1 builds its decisions D1 to D6 and changes decision 3 and judgement calls 2 and 12 here: the Light page is off-white (gray/50) under white cards, panels, fields, menus and the composer, and the preview stage steps to gray/100 (D1). The composer lifts in Light on Elevation/Composer (D2), and inside it the count stepper has no capsule at rest (D3). Nav, menu, layer and form rows rest on the new `text/item` (D4). The 64 header row has no hairline under it, the builder's bar included (D5). The sidebar's theme toggle, Collapse, Expand and Settings are Ghost icon buttons (D6). Phase P2 builds D7 and D8 and changes judgement calls 3 and 4: a selected Chip or Platform Chip is on `--state-selected` under `--text-primary` (D7), and every filter bar is 36, with Platform Chips at `--size-control-md` on `--radius-sm` beside the Medium Search Field (D8). The chips keep their fill and hairline edge at rest, which D8 had taken away, and draw no chevron, since they open no menu (CJ, 2026-11-26). Phase P3 builds D9 to D13: template cards draw nothing over the template and name the variation showing in their size line (D9), builder cards say only Draft (D10), a library whose every shelf fits in a row reads as one grid (D11), Download PNG always reads as the enabled primary (D12), and the empty library speaks to admins and members apart, with no search (D13).
+
 Still true from the new-brand program: the 2 px focus ring outside every interactive control (decision 5), disabled controls with their own colors (6), the dialog close in the top right (7), the form-only fill page (9), the Generate count control as a plus and minus capsule beside Send (10), the one Result Card with sizes as tabs (11), skeletons for lists and cards (13), Terms of Service and Privacy Policy at the bottom of every page (14), and a shadow is never cut off (17).
 
 Also still true are CJ's answers at the new-brand shell gate (`docs/design/new-brand/PLAN.md`, What Phase 3 found). Main scrolls as one page, with the header row, the content and the footer links moving together, and nothing sticks (2026-11-16). The theme toggle stays beside Collapse and in the mobile bar, though no frame draws it. The lockup is CJ's two files with the gradient mark (2026-11-16). The content has no width cap. The ElevenLabs frames name a scroll region under the Brand Templates filter bar, as the earlier frames did, and CJ's answer stands over it.
@@ -34,9 +36,9 @@ Also still true are CJ's answers at the new-brand shell gate (`docs/design/new-b
 Made while building the system. Built as written unless CJ overturns one.
 
 1. **A hover edge for fields.** `--border-strong` and `--border-field` resolve to the same gray in both themes, so a field's hover showed nothing. `border/field-hover` (gray 300 in Light, gray 700 in Dark) now draws the hover edge on Input, Select, Text Area, Upload and Search.
-2. **Icon Button has an Outline style.** The sidebar's collapse and settings buttons are bordered rounded squares on the screens, which neither Filled (round) nor Ghost (no edge) draws. Outline is Filled's fill and edge on `--radius-sm`, with the glyph on `--text-secondary` at rest.
-3. **Search Field has two sizes.** Large is 46 and sits beside the Platform Chips. Medium is 36 and sits beside other controls in the builder's filter bars.
-4. **The filter bar is 46.** Platform Chips and the Large Search Field are `--size-control-lg` with a hairline edge included, so every state of the chip is 46. The selected chip draws its edge in its own fill color.
+2. **Icon Button has an Outline style.** The sidebar's collapse and settings buttons are bordered rounded squares on the screens, which neither Filled (round) nor Ghost (no edge) draws. Outline is Filled's fill and edge on `--radius-sm`, with the glyph on `--text-secondary` at rest. The sidebar's buttons are Ghost since premium polish D6 (CJ, 2026-11-25), and Outline stays in the primitives.
+3. **Search Field has two sizes.** Medium is 36 and sits in every filter bar, beside the Platform Chips too (CJ, 2026-11-25). Large is 46 and has no place in the app now.
+4. **The filter bar is 36** (CJ, 2026-11-25; it was 46). Platform Chips are `--size-control-md` on `--radius-sm`, a 16 mark and the label with no tile. They keep their container (CJ, 2026-11-26): `--action-neutral` with a `--border-strong` hairline at rest, hovering on `--action-neutral-hover`. Selected takes `--state-selected` under `--text-primary` with its edge in its own fill. No chip draws a chevron, since none opens a menu (CJ, 2026-11-26).
 5. **Logo plates are tokens.** `plate/dark` and `plate/light` stay the same in both themes, replacing the two hex values `socialpaint.css` declared. The Logo Card's light ground used `--surface-page`, which turned dark in Dark, and now reads `--plate-light`.
 6. **Bevels and the accent glow stay as transparent tokens** so the elevation composites keep one shape in code. CJ kept them at Phase E9 (2026-11-23).
 7. **Field holds a Medium control** and its help text stays off.
@@ -44,7 +46,7 @@ Made while building the system. Built as written unless CJ overturns one.
 9. **`LookTile` becomes `VariationTile`** when Phase E4 touches Generate. The Figma component is Variation Tile (`2216:315`).
 10. **The filled Text Area carries a copy button** for generated captions, drawn with Icon Button and `Icon/copy`.
 11. **Loose values moved onto the scale.** Layer Row's 7 corner is `--radius-sm`, and Form Row's 10 gap is `--space-8`.
-12. **The page header leads with the area icon.** Every frame's header row carries the area's 18 icon on `--text-secondary`, then the page name in Label/M on `--text-secondary`, or the Breadcrumb one level down. The Page Header component still drew the v2 row (a Title/Page title and no icon), so it was rebuilt from the frames. Title/Page stays in the scale, and no screen sets a page name in it.
+12. **The page header leads with the area icon.** Every frame's header row carries the area's 18 icon on `--text-secondary`, then the page name in Label/M on `--text-secondary`, or the Breadcrumb one level down. The Page Header component still drew the v2 row (a Title/Page title and no icon), so it was rebuilt from the frames. Title/Page stays in the scale, and no screen sets a page name in it. The row has no hairline under it since premium polish D5 (CJ, 2026-11-25).
 13. **The Progress Bar's track is `--surface-soft`.** It read `--surface-field`, which is white in Light, so the track vanished on a white page or card. Pending Progress Steps already used `--surface-soft`.
 14. **Generate Start has a header row.** Its frames draw one with the Generate title, where the v2 Start drew none.
 15. **The liquid selection runs on the pointer only.** The keyboard and reduced motion place the thumb at once, since the arrows move through options faster than travel can follow. Its timing reuses the motion tokens (base for the thumb, fast and slow for the drop), so no duration or curve was added. Tabs keep changing at once.
@@ -62,7 +64,7 @@ The structure is the same. These are the differences a phase will see on screen.
 | Area | v2 | ElevenLabs |
 |---|---|---|
 | Shell | The sidebar floats as a raised card 12 in from the window edge | The sidebar runs flush on a soft gray panel with a hairline on its right |
-| Page | Off-white page under white panels | White page, with soft gray for the sidebar, cards and preview stage |
+| Page | Off-white page under white panels | Off-white page (gray/50) under white cards, panels, fields, menus and the composer, with the sidebar on the page's gray and the preview stage one step darker (CJ, 2026-11-25) |
 | Cards | White, lifted by a soft shadow | Soft gray and flat, so the template carries the card |
 | Elevation | A soft shadow on every raised surface | Shadows only on dialogs, menus, toasts and the switch and segment thumbs |
 | Corner radius | 20 on cards and panels, full on chips, tags and tiles | 16 on cards and panels, 10 on chips, 8 on tiles and 6 on tags |
@@ -110,7 +112,7 @@ One pull request per phase into `main`.
 
 ### What Phase E3 left for later phases
 
-- The Platform Chip is 46 on `--radius-chip` everywhere it appears: the library, History's filter bar and the Template Builder's Choose a size dialog (`builder/SizeGallery.tsx`), where the chips now sit beside its 36 Medium search. History's search is the Large square the library uses: 46, as the component (`50:62`) draws it, where the library frames stretch it to 50 (CJ, 2026-11-18). Phase E5 settles Choose a size against its frame (`6072:4848`).
+- The Platform Chip is 46 on `--radius-chip` everywhere it appears: the library, History's filter bar and the Template Builder's Choose a size dialog (`builder/SizeGallery.tsx`), where the chips now sit beside its 36 Medium search. History's search is the Large square the library uses: 46, as the component (`50:62`) draws it, where the library frames stretch it to 50 (CJ, 2026-11-18). Phase E5 settles Choose a size against its frame (`6072:4848`). Since 2026-11-25 every filter bar is 36: the chip on `--radius-sm` beside the Medium search (CJ).
 - Library headers (shelves and result groups) set their titles in Label/XS on `--text-secondary`, 8 in. History's groups still use the earlier header and are Phase E4's.
 - The Public links dialog's date field is the browser's own date input. The frame draws a field with a calendar icon and "Pick a date", which needs a date picker the primitives do not have yet.
 - The filled caption's copy button (frame 06) is Phase E4's, as `BRIDGE.md` section 7 says.
@@ -153,6 +155,7 @@ Phase E9 deleted `legacy-bridge.css`, the `.tu-*` classes, the dead rules and cu
 - White text on `action/danger` measured 3.80 to 1 on red 600. On CJ's word (2026-11-24) the danger ladder moved one step darker in the token JSON: fill red 700 (5.55 to 1), hover red 800, pressed red 950 in Light (the ramp has no 900) and red 800 in Dark, where red 950 nearly vanished against the dialog surfaces. The Figma variables were rebound to match the same day.
 - An empty image field draws its label in the graphic at 35% black, which axe measures under 4.5. It is part of the graphic that `SchemaRenderer` draws, never part of an export, and it stays as drawn.
 - Disabled controls measure under 4.5 by design, which WCAG 1.4.3 allows.
+- A selected Platform Chip is set apart only by its `state/selected` fill, with its edge in that fill: 1.10 to 1 against the page and 1.15 to 1 against a chip at rest in Light, 1.20 and 1.10 to 1 in Dark, under the 3 to 1 WCAG 1.4.11 asks of a state. The chips draw no chevron, since they open no menu, and screen readers get `aria-checked`. CJ kept the gray as the only mark (CJ, 2026-11-26).
 
 CJ's calls at E9 (2026-11-23): the `company_canvas_presets` table and the unread `brand_kits` font columns stay (no drop migrations), and the transparent bevel and glow tokens stay.
 

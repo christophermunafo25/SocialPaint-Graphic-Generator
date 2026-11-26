@@ -22,10 +22,11 @@ Phase E1 points `CLAUDE.md` at this file.
 
 ## 3. Tokens
 
-- Components read semantic tokens from the Color collection: `--surface-*` (page, raised, sunken, field, card, shell, stage, soft, inverse, overlay, scrim, skeleton), `--text-*`, `--border-*` (subtle, strong, field, field-hover, raised, control, focus), `--action-*`, `--state-*`, `--control-*`, `--status-*`, `--feedback-*`, `--editor-selection`, `--plate-dark`, `--plate-light` and `--logo-ink`, the `--accent-*`, `--deep-*`, `--tint-*` and `--wash-*` families, `--shadow-*`, `--bevel-*` and `--glow-accent`. From Scale they read `--space-*`, `--radius-*`, `--size-control-*`, `--size-icon-*`, `--stroke-*`, `--focus-offset`, `--layout-shell-inset` and `--motion-*`. Add the elevation composites and the text style classes and that is everything.
+- Components read semantic tokens from the Color collection: `--surface-*` (page, raised, sunken, field, card, shell, stage, soft, inverse, overlay, scrim, skeleton), `--text-*` (`--text-item` for nav, menu, layer and form rows at rest, CJ, 2026-11-25), `--border-*` (subtle, strong, field, field-hover, raised, control, focus), `--action-*`, `--state-*`, `--control-*`, `--status-*`, `--feedback-*`, `--editor-selection`, `--plate-dark`, `--plate-light` and `--logo-ink`, the `--accent-*`, `--deep-*`, `--tint-*` and `--wash-*` families, `--shadow-*`, `--bevel-*` and `--glow-accent`. From Scale they read `--space-*`, `--radius-*`, `--size-control-*`, `--size-icon-*`, `--stroke-*`, `--focus-offset`, `--layout-shell-inset` and `--motion-*`. Add the elevation composites and the text style classes and that is everything.
 - Never read a primitive (`--gray-900`, `--neutral-0`, `--green-slime`, `--alpha-ink-45`) in a component, and never write a raw color. The `--neutral-*` primitives exist for template content only.
 - New code never reads a name from the earlier systems. `BRIDGE.md` and `docs/design/new-brand/BRIDGE.md` list them. Phase E9 deleted `legacy-bridge.css` (2026-11-23), so no bridged name exists any more.
 - `npm run tokens:check` fails if any stylesheet declares a token-owned name at theme level. Override a token inside a component selector only when a frame shows that component on a different surface.
+- In Light the page is off-white: `--surface-page` is gray/50 and `--surface-stage` gray/100, and cards, panels, fields, menus and the composer stay white so they lift off it. The sidebar's `--surface-shell` shares the page's gray behind its hairline (CJ, 2026-11-25). Dark keeps its values. The composer's two shadow colors, `--shadow-composer-near` (black 5%) and `--shadow-composer-far` (the primitive black 3%), are transparent in Dark (CJ, 2026-11-25).
 - Themes are `[data-theme="light"]` and `[data-theme="dark"]` on `<html>`. A nested `[data-theme]` recomputes every token and composite, which is how the sign-in gate and onboarding stay Light. Logo plates do not need a nested theme any more: `--plate-dark` and `--plate-light` are the same in both themes.
 
 ## 4. Corners, spacing, sizes and elevation
@@ -40,22 +41,23 @@ Radius is a step, and each component names its step. Do not pick a step by neare
 | `--radius-lg` | 12 | Menus, popovers, toasts, message bubbles, card previews |
 | `--radius-xl` | 16 | Cards, dialogs, metrics, panels, the preview stage |
 | `--radius-full` | 999 | Filled icon buttons, Send, avatars, switches, the stepper capsule |
-| `--radius-chip` | 10 | Chips, badges, Platform Chips, the Large Search Field |
-| `--radius-tile` | 8 | The logo tile inside a Platform Chip, icon tiles in option tiles |
+| `--radius-chip` | 10 | Chips, badges, the Large Search Field. Platform Chips are on `--radius-sm` (CJ, 2026-11-25) |
+| `--radius-tile` | 8 | Icon tiles in option tiles. Platform Chips have no logo tile (CJ, 2026-11-25) |
 | `--radius-tag` | 6 | Tags |
 | `--radius-composer` | 27 | The chat composer, so one line reads as a pill |
 | `--radius-shell` | 0 | The sidebar, which runs flush |
 
 Spacing is named by value: `--space-2`, `-4`, `-6`, `-8`, `-12`, `-16`, `-20`, `-24`, `-32`, `-40`, `-48`, `-64`, `-96`. A gap the frames draw off this scale is kept as drawn and noted in the pull request.
 
-Controls share four heights: `--size-control-xs` 24 (badges, tags), `--size-control-sm` 28, `--size-control-md` 36 and `--size-control-lg` 44. The filter bar is the one exception: Platform Chips and the Large Search Field are `--size-control-lg` plus a hairline edge on each side, 46 in all. Give a control its height from the token and center its content. Never build a control's height from padding around its label.
+Controls share four heights: `--size-control-xs` 24 (badges, tags), `--size-control-sm` 28, `--size-control-md` 36 and `--size-control-lg` 44. Every filter bar is 36: Platform Chips and the Medium Search Field are `--size-control-md` with their hairline edge inside, like every other toolbar, with no exception (CJ, 2026-11-25). Give a control its height from the token and center its content. Never build a control's height from padding around its label.
 
-Raised surfaces are flat. A card, panel, metric, the sidebar or the composer draws its edge with a `--border-raised` hairline. Cards on `--surface-card` (the template, builder template, recent and history cards, and Brand Studio's cards) are the exception, and the one resting surface with a shadow: white in Light, with a `--stroke-thin` edge in `--border-card` and `--elevation-card` sitting under the bottom edge (CJ, 2026-11-24). Every other shadow is for something that floats.
+Raised surfaces are flat. A card, panel, metric or the sidebar draws its edge with a `--border-raised` hairline. The composer keeps its hairline and also lifts in Light on `--elevation-composer`, transparent in Dark (CJ, 2026-11-25). Cards on `--surface-card` (the template, builder template, recent and history cards, and Brand Studio's cards) are the exception, and the one resting surface with a shadow: white in Light, with a `--stroke-thin` edge in `--border-card` and `--elevation-card` sitting under the bottom edge (CJ, 2026-11-24). Every other shadow is for something that floats.
 
 | Composite | Figma style | Use |
 |---|---|---|
 | `--elevation-1-raised` | Elevation/1 Raised, every layer transparent | Kept so raised components keep one rule. It draws nothing |
 | `--elevation-card` | Elevation/Card, 0 2 2 -1 and 0 1 3 -1 `--shadow-card` | Cards on `--surface-card`, under their thin `--border-card` edge |
+| `--elevation-composer` | Elevation/Composer, 0 1 6 -1 `--shadow-composer-near` and 0 6 88 2 `--shadow-composer-far` | The chat composer in Light, tuned to CJ's reference (CJ, 2026-11-25) |
 | `--elevation-2-overlay` | Elevation/2 Overlay, 0 4 16 `--shadow-floating` | Menus, popovers, tooltips, toasts |
 | `--elevation-3-floating` | Elevation/3 Floating, 0 8 32 `--shadow-floating` | Dialogs |
 | `--elevation-thumb` | Elevation/Thumb, 0 1 3 `--shadow-thumb` | The switch thumb and the selected segment |
@@ -80,7 +82,7 @@ No menu, popover, toast, dialog or thumb loses part of its shadow to a container
 - A trim needs a block, so put the class on the text's own element.
 - Inter Tight Regular sets reading text and Medium sets controls and titles. Geist Mono Regular sets the mono styles. Nothing is set below 11.
 - Chrome faces are self-hosted under private " Platform" names, so a tenant's font cannot collide with them.
-- Text and icons use `--text-primary`, supporting text `--text-secondary`, and `--text-disabled` is for disabled controls only.
+- Text and icons use `--text-primary`, supporting text `--text-secondary`, and `--text-disabled` is for disabled controls only. Nav Items (the sidebar and the Settings rail), Menu Items and the builder's Layer and Form Rows rest on `--text-item`, icons included, and lift to `--text-primary` on hover and selected. Metadata, labels, placeholders, header titles and footer links stay on `--text-secondary` (CJ, 2026-11-25).
 
 ## 6. Interaction states
 
@@ -88,8 +90,8 @@ Each component's board is the spec for its states in both themes.
 
 - **Hover and pressed** change color. Hover does nothing else, and pressed also shrinks a Button, Icon Button, Send Button, Chip or Platform Chip to 0.97 (`PROMPT.md` section 7.5). Each action has its own tokens (`--action-primary-hover` and `-pressed`, and the same for neutral, accent and danger). Rows, ghost controls, menu items and nav items use `--state-hover` and `--state-pressed`. Three exceptions are drawn and built as drawn: a Switch, Checkbox or Radio hovers with a `--state-pressed` halo 4 larger than the control; a field (Input, Select, Text Area, Upload) hovers by moving its hairline from `--border-field` to `--border-field-hover`; the builder's Element Tile lays `--state-hover` over its fill. A card you click as a whole grows to 1.01 on hover, with its edge unchanged, and a pointer press shrinks it to 0.98 (CJ, 2026-11-24 and 2026-11-25).
 - **Rest** for a field is `--surface-field` with a `--border-field` hairline. Nothing about a field's rest state is a filled gray any more.
-- **Selected** is for things that stay chosen: `--state-selected` on rows, nav items, menu items and ghost icon buttons, `--action-neutral-pressed` on Filled and Outline icon buttons, `--surface-inverse` under `--text-inverse` on a Chip or Platform Chip, and `--control-thumb` with `--elevation-thumb` for a segment in its track. On, a switch, checkbox or radio is `--control-on` with `--control-on-mark`. Off, a checkbox or radio is `--surface-raised` with a `--border-control` edge.
-- **Icons** in a Nav Item and an Outline icon button sit on `--text-secondary` at rest and `--text-primary` on hover and selected. Everywhere else an icon takes the color of the label beside it.
+- **Selected** is for things that stay chosen: `--state-selected` on rows, nav items, menu items and ghost icon buttons, `--action-neutral-pressed` on Filled and Outline icon buttons, `--state-selected` under `--text-primary` on a Chip or Platform Chip (CJ, 2026-11-25: solid ink stays for the one primary action per view), and `--control-thumb` with `--elevation-thumb` for a segment in its track. On, a switch, checkbox or radio is `--control-on` with `--control-on-mark`. Off, a checkbox or radio is `--surface-raised` with a `--border-control` edge.
+- **Icons** in a Nav Item sit on `--text-item` at rest (CJ, 2026-11-25), and in an Outline icon button and the sidebar's Ghost icon buttons on `--text-secondary`, all lifting to `--text-primary` on hover and selected. Everywhere else an icon takes the color of the label beside it.
 - **Open** menus count as selected for the control that opened them.
 - **Disabled** controls take their own colors: `--action-disabled` under `--text-disabled`, with no hover. Never dim with opacity.
 - **Focus** is the keyboard ring on `:focus-visible`: `var(--stroke-focus)` of `--border-focus`, `var(--focus-offset)` outside the element, on every interactive control, text fields included.
@@ -98,7 +100,7 @@ Each component's board is the spec for its states in both themes.
 - **Motion** is for things that open, close or move, with reduced motion setting durations to zero. Hover never animates beyond the color change. Every duration and curve is a motion token. A press, a check and an icon swap follow the pointer and land at once from the keyboard, a toast, a result, an upload and new numbers play for everyone, and nothing animates on first paint. An arrow only ever fades.
 - **The liquid selection.** A Segmented Control's thumb travels to a new choice with a drop trailing it when the pointer picks it (`PROMPT.md` section 7). The keyboard, reduced motion, first paint and a resize place it at once.
 - **The microinteractions.** The Toast eases in and waits while the pointer or focus is on it, icons swap with a drawn check, the checkbox mark draws in, controls shrink while pressed, results and uploads develop in, and Insights numbers roll (`PROMPT.md` sections 7.2 to 7.7, `reference/microinteractions.html`).
-- **The template card** steps through its variations on hover and keyboard focus. With reduced motion on it shows its first variation only.
+- **The template card** steps through its variations on hover and keyboard focus, its size line naming the one showing in place of the count. No variation tag is drawn over the preview, and the card has no go arrow (CJ, 2026-11-25). With reduced motion on it shows its first variation only.
 
 ## 7. Brand color in chrome
 
@@ -130,9 +132,9 @@ Measured from the frames at 1440. Fixed sizes stay fixed and everything marked "
 | Part | Measure |
 |---|---|
 | Viewport | No padding. `--layout-shell-inset` is 0, so the sidebar and Main meet the window and each other. At 1024 and wider the document does not scroll, Main does |
-| Sidebar | 300 wide plus a hairline right edge in `--border-raised`, 76 collapsed, full height, on `--surface-shell`. 20 padding, 24 between its groups. The Logo in a 28 header beside the theme toggle and an Outline collapse button, 8 apart. Collapsed, the lockup's mark above a Ghost Medium Expand. Nav Items 36 tall, 4 apart. The account row at the bottom with an Outline settings button |
-| Main | Fills, on `--surface-page` |
-| Page header | 64 tall plus a hairline bottom edge in `--border-subtle`. A 36 row centered in it, 32 at the sides. The area's icon at 18 on `--text-secondary`, then the page name in Label/M on `--text-secondary` (a top-level page) or the Breadcrumb (one level down). Actions on the right 8 apart |
+| Sidebar | 300 wide plus a hairline right edge in `--border-raised`, 76 collapsed, full height, on `--surface-shell`, the page's own gray in Light. 20 padding, 24 between its groups. The Logo in a 28 header beside the theme toggle and a collapse button, 8 apart. Collapsed, the lockup's mark above Expand. Nav Items 36 tall, 4 apart. The account row at the bottom with a settings button. The theme toggle, Collapse, Expand and Settings are Ghost Small icon buttons (CJ, 2026-11-25) |
+| Main | Fills, on `--surface-page`, off-white in Light (CJ, 2026-11-25) |
+| Page header | 64 tall, with no hairline under it (CJ, 2026-11-25). A 36 row centered in it, 32 at the sides. The area's icon at 18 on `--text-secondary`, then the page name in Label/M on `--text-secondary` (a top-level page) or the Breadcrumb (one level down). Actions on the right 8 apart |
 | Content | 24 at the top, 32 at the sides. Sections 32 apart. The header row, the content and the footer links scroll together inside Main, and nothing sticks (CJ, 2026-11-16) |
 | Footer Links | Centered at the bottom of the content on every page, 16 above Main's foot. A page that scrolls its own region and sets its own links keeps the same 16 under its content (CJ, 2026-11-18). The frames draw none, and decision 14 keeps them |
 
@@ -144,10 +146,10 @@ Each area keeps the new-brand structure (`docs/design/new-brand/RULES.md` sectio
 
 | Area | What changed |
 |---|---|
-| Brand Templates | The filter bar is 46: the Large Search Field, then Platform Chips 8 apart. Template cards are on `--surface-card` with the thin card edge and `--elevation-card`, 8 padding, the preview inset on `--radius-lg` under a `--border-subtle` hairline ring |
-| Fill page | The preview stage on `--surface-stage` at `--radius-xl` with 40 padding. The Details panel is 380 on `--surface-raised` with a `--border-raised` hairline, 20 padding, the Variation picker first, fields 24 apart with each label 12 above its control, Download PNG pinned to the bottom |
+| Brand Templates | The filter bar is 36: the Medium Search Field, then Platform Chips 8 apart, each a 16 mark and its label with no tile (CJ, 2026-11-25). The chips keep their container, `--action-neutral` with a `--border-strong` hairline, and draw no chevron, since they open no menu (CJ, 2026-11-26). Template cards are on `--surface-card` with the thin card edge and `--elevation-card`, 8 padding, the preview inset on `--radius-lg` under a `--border-subtle` hairline ring, then the name over the size line, with no go arrow (CJ, 2026-11-25). Browsing, a library whose every shelf fits in one row shows one grid instead: the Template Builder list's grid in shelf order, with no shelf headers. The shelves return once one overflows (CJ, 2026-11-25). The grid's cards draw their previews in the builder list's square well, the template fitted 12 in, so mixed shapes keep even rows. While the library is empty it shows no search; an admin gets one primary button, Open Template Builder, and a member gets "No templates yet" (CJ, 2026-11-25) |
+| Fill page | The preview stage on `--surface-stage` at `--radius-xl` with 40 padding. The Details panel is 380 on `--surface-raised` with a `--border-raised` hairline, 20 padding, the Variation picker first, fields 24 apart with each label 12 above its control, Download PNG pinned to the bottom, drawn as the enabled primary in every state but exporting, when it is `aria-disabled`. Pressed before a required value is in, it shows the field's error and takes the person there (CJ, 2026-11-25) |
 | Generate | Start has a header row with the Generate title, and its column is one 720 column. The composer is one line on `--radius-composer` between the plus and Send, with the stepper beside Send, and attachments and details stack above the line. Recent cards are on `--surface-card` with the thin card edge and `--elevation-card`. The Result Card's stage is `--surface-stage` |
-| Template Builder | The editor's bar is the 64 header row now, with the breadcrumb, the save status, the mode switch and Publish, where the earlier editor drew its own 44 bar. Rail and inspector are flat panels with `--border-raised` edges. The stage is `--surface-stage`, with the variations bar floating under its top edge. The inspector is 320 |
+| Template Builder | The editor's bar is the 64 header row now, with no hairline under it (CJ, 2026-11-25), with the breadcrumb, the save status, the mode switch and Publish, where the earlier editor drew its own 44 bar. Rail and inspector are flat panels with `--border-raised` edges. The stage is `--surface-stage`, with the variations bar floating under its top edge. The inspector is 320. In the list, a card shows a status Badge only for Draft (CJ, 2026-11-25) |
 | Brand Studio | Logo plates read `--plate-dark` and `--plate-light`. The progress strip, the section cards and the color, logo, image and import cards take the thin card edge and `--elevation-card` |
 | Settings and Insights | Settings Cards and Metrics are flat with `--border-raised` edges |
 | Sign in and Create account | Light only. Fields rest on `--surface-field` with a hairline |
@@ -179,4 +181,5 @@ Migrations stay additive, and Edge Function mirrors stay byte-identical to their
 - Field edges read 1.23:1 in Light (`--border-field` on white) and 1.38:1 in Dark. WCAG 1.4.11 asks 3:1 for the boundary that identifies a control. Every field has a visible label above it, so the ElevenLabs look is kept, and raising the edge is CJ's call.
 - White on `--action-danger` read 3.80:1 on red 600. Since 2026-11-24 the fill is red 700 and reads 5.55:1 (hover red 800; pressed red 950 in Light, red 800 in Dark).
 - Disabled text reads 2.52:1 in Light and 3.72:1 in Dark. Disabled controls are exempt.
-- `--text-secondary` reads 5.33:1 on the page and on cards and 4.63:1 on `--surface-sunken` in Light, and 7.85:1 on the page in Dark. Primary buttons read 19.17:1 in Light and 18.36:1 in Dark.
+- `--text-secondary` reads 5.11:1 on the off-white page, 4.89:1 on `--surface-stage`, 5.33:1 on cards and 4.63:1 on `--surface-sunken` in Light, and 7.85:1 on the page in Dark (CJ, 2026-11-25). `--text-item` reads 12.10:1 on the page and 11.59:1 on the `--state-hover` row in Light, and 12.64:1 on the shell in Dark. Primary buttons read 19.17:1 in Light and 18.36:1 in Dark.
+- The Insights digest draws `--surface-scrim` at its full 50% over its art, where the frame draws 35%. White text there measured 4.56:1 at its lightest spot at 2x, in both themes (CJ, 2026-11-25).

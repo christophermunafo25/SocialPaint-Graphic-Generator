@@ -70,15 +70,14 @@ const THEME_GLYPHS = { light: Sun, dark: Moon };
 /** The light and dark quick toggle. It writes the same colour scheme
  * Settings' System / Light / Dark control does, so the two always agree.
  * The file draws no toggle; CJ kept it beside Collapse (2026-11-15), in the
- * Collapse button's look: Outline Small in the sidebar (PHASE-E2 question
- * 1), Ghost Small in the mobile bar as before. The collapsed rail leaves it
- * out. */
-function SidebarThemeToggle({ variant }: { variant: "outline" | "ghost" }) {
+ * Collapse button's look: Ghost Small in the sidebar and in the mobile bar
+ * (CJ, 2026-11-25). The collapsed rail leaves it out. */
+function SidebarThemeToggle() {
   const { resolved, setScheme } = useColorScheme();
   const next = resolved === "dark" ? "light" : "dark";
   return (
     <IconButton
-      variant={variant}
+      variant="ghost"
       size="sm"
       icon={THEME_GLYPHS}
       label={`Switch to ${next} mode`}
@@ -150,7 +149,7 @@ function SidebarAccount({
         </span>
       </div>
       <IconButton
-        variant="outline"
+        variant="ghost"
         size="sm"
         icon={AREA_ICON.settings}
         label="Settings"
@@ -225,7 +224,7 @@ export function Sidebar() {
               <BrandLockup height={18} />
             </button>
             <div className="sp-mobilebar__end">
-              <SidebarThemeToggle variant="ghost" />
+              <SidebarThemeToggle />
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 aria-expanded={menuOpen}
@@ -271,12 +270,12 @@ export function Sidebar() {
 
   // ── Desktop: the Sidebar ────────────────────────────────────────────────
   const collapsed = sidebarCollapsed;
-  // Collapse is Outline Small (2218:582), and Expand keeps that box under
-  // the mark (CJ, 2026-11-25; the file draws Expand as Ghost Medium,
+  // Collapse and Expand are Ghost Small (CJ, 2026-11-25; the file draws
+  // Collapse as Outline Small, 2218:582, and Expand as Ghost Medium,
   // 2218:635).
   const collapseButton = (
     <IconButton
-      variant="outline"
+      variant="ghost"
       size="sm"
       icon={PanelLeft}
       label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -320,7 +319,7 @@ export function Sidebar() {
                 <BrandLockup height={24} />
               </button>
               <div className="sp-shell-panel__utility">
-                <SidebarThemeToggle variant="outline" />
+                <SidebarThemeToggle />
                 {collapseButton}
               </div>
             </>
