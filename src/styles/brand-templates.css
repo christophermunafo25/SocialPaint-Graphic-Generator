@@ -77,7 +77,12 @@
 
 /* The page under the filter bar: 40 down to the first shelf (16 + 24),
    then 32 between shelves and between a result line and its groups. */
+/* The body names two values its code reads too (useCardsPerRow): the gap
+   between a shelf's cards, and the side gutter its rows take where the
+   page bleeds to the screen's edge. */
 .sp-lib-body {
+  --_shelf-gap: var(--space-16);
+  --_lib-gutter: 0px;
   display: flex;
   flex-direction: column;
   gap: var(--space-32);
@@ -129,7 +134,7 @@
   margin: calc(-1 * var(--space-12)) 0 calc(-1 * var(--space-12)) calc(-1 * var(--space-12));
 }
 .sp-lib-shelf__track {
-  gap: var(--space-16);
+  gap: var(--_shelf-gap);
   padding: var(--space-12);
   scroll-padding-inline: var(--space-12);
   scroll-snap-type: x mandatory;
@@ -138,6 +143,15 @@
   flex: none;
   width: 302px; /* as drawn (2308:4) */
   scroll-snap-align: start;
+}
+
+/* One grid (CJ, 2026-11-25, premium polish D11): when every shelf fits in
+   a row, the library is the Template Builder list's grid in shelf order,
+   with no shelf headers, every card on a square frame. 40 under the bar,
+   like the first shelf's header. */
+.sp-tb-grid.sp-lib-onegrid {
+  margin-top: 0;
+  padding-inline: var(--_lib-gutter);
 }
 
 /* The result line (2308:538): what the page shows in Mono/Eyebrow, and
@@ -317,6 +331,9 @@ button.sp-tcard {
 /* ── Below 768 the library's rails bleed to the screen edge (.sp-page--bleed
    drops the page's side padding); text and grids keep a 16 gutter. ── */
 @media (max-width: 767px) {
+  .sp-page--bleed .sp-lib-body {
+    --_lib-gutter: var(--space-16);
+  }
   .sp-page--bleed .sp-lib-filterbar,
   .sp-page--bleed .sp-lib-resultline,
   .sp-page--bleed .sp-lib-group,

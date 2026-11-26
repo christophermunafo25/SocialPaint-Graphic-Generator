@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -11,6 +11,7 @@ import {
   type PlatformFacet,
   type TemplateGroup,
 } from "@/lib/templates/groups";
+import { libraryLayout } from "@/lib/templates/libraryLayout";
 import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
 import { buildSearchIndex, searchTemplates } from "@/lib/templates/searchIndex";
 import { useRouter } from "../router";
@@ -22,6 +23,7 @@ import { PlatformFilter } from "./templates/PlatformFilter";
 import { PlatformShelf } from "./templates/PlatformShelf";
 import { TemplateCard } from "./templates/TemplateCard";
 import { LibraryShelfSkeleton } from "./templates/TemplateSkeleton";
+import { useCardsPerRow } from "./templates/useCardsPerRow";
 import { AREA_ICON } from "./areas";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -125,6 +127,17 @@ export function Portal() {
 
   const browsing = !query && !platform;
 
+  /** Browsing, a library whose every shelf fits in one row reads as one
+   *  grid in shelf order, with no shelf headers; the shelves come back as
+   *  soon as one overflows (premium polish D11). The body stays mounted
+   *  either way, so the page keeps its scroll position across the switch. */
+  const [body, setBody] = useState<HTMLDivElement | null>(null);
+  const perRow = useCardsPerRow(body);
+  const browseLayout = libraryLayout(
+    allShelves.map((g) => g.templates.length),
+    perRow,
+  );
+
   /** A card opens the fill page (TemplateUsePage), which is form only: the
    *  template filled in by hand, then downloaded (new brand decision 9). */
   const openTemplate = (t: CatalogTemplate) => navigate({ name: "template", templateId: t.id });
@@ -166,8 +179,11 @@ export function Portal() {
       </p>
 
       <div
+        ref={setBody}
         className="sp-lib-body"
-        data-state={browsing ? "shelves" : query ? "search" : "platform"}
+        data-state={
+          browsing ? (browseLayout === "grid" ? "grid" : "shelves") : query ? "search" : "platform"
+        }
       >
         {templatesState.status === "loading" ? (
           <>
@@ -180,6 +196,16 @@ export function Portal() {
             <p className="t-body-m sp-lib-empty__body">
               Published templates appear here for everyone on your team.
             </p>
+          </div>
+        ) : browsing && browseLayout === "grid" ? (
+          // The Template Builder list's grid, every card on the same square
+          // frame so the rows stay even across shapes.
+          <div className="sp-tb-grid sp-lib-onegrid">
+            {allShelves.flatMap((g) =>
+              g.templates.map((t) => (
+                <TemplateCard key={t.id} template={t} frame="1 / 1" onOpen={openTemplate} />
+              )),
+            )}
           </div>
         ) : browsing ? (
           allShelves.map((g) => (
