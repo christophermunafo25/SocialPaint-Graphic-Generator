@@ -1431,8 +1431,8 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
    2026-11-26): action/neutral with a border/strong hairline at rest and
    action/neutral-hover on hover. The mark at 16 with no tile, the label in
    Label/XS, 8 apart, 12 in from the edge. Selected, it takes state/selected
-   under text/primary with its edge in its own fill, and a 14 chevron
-   pointing down, 8 after the label. ── */
+   under text/primary with its edge in its own fill. No chevron, since a
+   chip opens no menu (CJ, 2026-11-26). ── */
 .ui-platform-chip {
   box-sizing: border-box;
   display: inline-flex;
@@ -1453,12 +1453,6 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-platform-chip[data-selected],
 .ui-platform-chip[data-demo-state="selected"] {
   border-color: var(--state-selected);
-}
-.ui-platform-chip__chevron {
-  flex: none;
-  width: 14px; /* as drawn (53:96) */
-  height: 14px;
-  color: inherit;
 }
 
 /* ── Tag (2212:143): a 24 tag at radius/tag in Label/XS. A tag is text and paints its

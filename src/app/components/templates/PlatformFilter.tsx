@@ -13,15 +13,14 @@ import { useEdgeFade } from "./useEdgeFade";
  * Roving tabindex: one stop in the tab order, arrows (and Home and End)
  * move within the group and select as they go, the radio-group contract.
  * The chips scroll horizontally behind the shelves' right-edge fade when
- * they outrun the bar (PHASE-4.md §8). A chip has no menu: only the
- * selected one shows its chevron, pointing down (CJ, 2026-11-25).
+ * they outrun the bar (PHASE-4.md §8). A chip has no menu, so it draws
+ * no chevron (CJ, 2026-11-26).
  */
 export function PlatformFilter({
   facets,
   selected,
   onSelect,
   allLabel = "All",
-  chevron = true,
   className,
 }: {
   facets: PlatformFacet[];
@@ -30,8 +29,6 @@ export function PlatformFilter({
   /** null is the "All" chip. */
   selected: PlatformId | null;
   onSelect(next: PlatformId | null): void;
-  /** Choose a size draws its chips without the chevron (329:2970). */
-  chevron?: boolean;
   /** Choose a size's rail fades to the dialog's surface. */
   className?: string;
 }) {
@@ -90,7 +87,6 @@ export function PlatformFilter({
               }}
               platform={id ?? "all"}
               selected={isSelected}
-              chevron={chevron}
               role="radio"
               aria-checked={isSelected}
               tabIndex={i === activeIndex ? 0 : -1}
