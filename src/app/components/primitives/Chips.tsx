@@ -8,7 +8,7 @@ type ButtonAttrs = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 export interface ChipProps extends ButtonAttrs {
-  /** Chosen: the inverse fill. Pass it, true or false, on a chip that
+  /** Chosen: state/selected under text/primary. Pass it, true or false, on a chip that
    * toggles, and it sets aria-pressed. Leave it off a chip that only acts
    * (a suggestion). */
   selected?: boolean;
@@ -18,7 +18,7 @@ export interface ChipProps extends ButtonAttrs {
 
 /** Chip (Figma 2212:187): a 28 pill on action/neutral with a hairline
  * edge, for a suggestion or one option in a set of choices. Selected takes
- * the inverse fill. The file's chip with a remove button is DetailTag,
+ * state/selected (CJ, 2026-11-25). The file's chip with a remove button is DetailTag,
  * which holds two controls and so cannot be one button. */
 export const Chip = React.forwardRef<HTMLButtonElement, ChipProps>(function Chip(
   { selected, icon: Icon, className, children, type = "button", ...rest },
@@ -59,8 +59,8 @@ export function PlatformLogo({
 
 export interface PlatformChipProps extends ButtonAttrs {
   platform: PlatformId | "all";
-  /** Selected turns the chip inverse, with the tile on action/primary-hover,
-   * and the chevron down. */
+  /** Selected takes state/selected under text/primary, and the chevron
+   * points down (CJ, 2026-11-25). */
   selected?: boolean;
   /** Its menu is open; the chevron points down. */
   expanded?: boolean;

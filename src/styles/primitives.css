@@ -1401,7 +1401,8 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 
 /* ── Chip (2212:187): a 28 chip at radius/chip on action/neutral with a hairline edge.
-   Selected takes the inverse fill and drops the edge. ── */
+   Selected takes state/selected under text/primary and drops the edge
+   (CJ, 2026-11-25: solid ink is kept for the one primary action). ── */
 .ui-chip {
   display: inline-flex;
   align-items: center;
@@ -1413,9 +1414,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   --_fill: var(--action-neutral);
   --_hover: var(--action-neutral-hover);
   --_pressed: var(--action-neutral-pressed);
-  --_selected: var(--surface-inverse);
+  --_selected: var(--state-selected);
   --_fg: var(--text-primary);
-  --_fg-selected: var(--text-inverse);
+  --_fg-selected: var(--text-primary);
 }
 .ui-chip[data-selected],
 .ui-chip[data-demo-state="selected"],
@@ -1428,9 +1429,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
    judgement call 4) at radius/chip, so it lines up with the Large Search
    Field. The mark on a 36 tile at radius/tile on surface/soft, the label in
    Label/XS and a 14 chevron, 8 apart, 4 in from the tile's side and 8 from
-   the chevron's. Flat on action/neutral at rest; selected, it turns
-   surface/inverse with its edge in its own fill, the tile on
-   action/primary-hover and the chevron pointing down. ── */
+   the chevron's. Flat on action/neutral at rest; selected, it takes
+   state/selected under text/primary with its edge in its own fill, and the
+   chevron points down (CJ, 2026-11-25). ── */
 .ui-platform-chip {
   box-sizing: border-box;
   display: inline-flex;
@@ -1444,9 +1445,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   --_fill: var(--action-neutral);
   --_hover: var(--action-neutral-hover);
   --_pressed: var(--action-neutral-pressed);
-  --_selected: var(--surface-inverse);
+  --_selected: var(--state-selected);
   --_fg: var(--text-primary);
-  --_fg-selected: var(--text-inverse);
+  --_fg-selected: var(--text-primary);
   white-space: nowrap;
 }
 .ui-platform-chip__tile {
@@ -1472,12 +1473,7 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 .ui-platform-chip[data-selected],
 .ui-platform-chip[data-demo-state="selected"] {
-  border-color: var(--surface-inverse);
-}
-.ui-platform-chip[data-selected] .ui-platform-chip__tile,
-.ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__tile {
-  background: var(--action-primary-hover);
-  color: var(--text-inverse);
+  border-color: var(--state-selected);
 }
 
 /* ── Tag (2212:143): a 24 tag at radius/tag in Label/XS. A tag is text and paints its
