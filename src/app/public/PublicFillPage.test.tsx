@@ -18,10 +18,17 @@ vi.mock("@/lib/publicLink/client", async (importOriginal) => ({
   recordPublicShare: vi.fn(),
 }));
 // The canvas itself is the renderer's business, and happy-dom has none. Its
-// export answers as a finished download would.
+// export answers as a finished download would, once the gate (when a test
+// sets one) opens.
+const exportGate = vi.hoisted(() => ({ wait: null as Promise<void> | null }));
 vi.mock("../components/SchemaRenderer", () => ({
   SchemaRenderer: React.forwardRef(function Stub(_props, ref) {
-    React.useImperativeHandle(ref, () => ({ exportPng: async () => "downloaded" }));
+    React.useImperativeHandle(ref, () => ({
+      exportPng: async () => {
+        if (exportGate.wait) await exportGate.wait;
+        return "downloaded";
+      },
+    }));
     return <div data-testid="graphic" />;
   }),
 }));
@@ -90,6 +97,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.mocked(fetchPublicTemplate).mockReset();
   vi.unstubAllGlobals();
+  exportGate.wait = null;
 });
 
 describe("PublicFillPage", () => {
@@ -106,18 +114,37 @@ describe("PublicFillPage", () => {
     expect(screen.getByRole("button", { name: /Download PNG/ })).toBeTruthy();
   });
 
-  it("keeps Download PNG looking disabled until the headline is in, and an early press marks it", async () => {
+  it("draws Download PNG as an enabled primary before the headline is in, and an early press marks it", async () => {
     vi.mocked(fetchPublicTemplate).mockResolvedValue(payload());
     render(<PublicFillPage token="tok" />);
     const download = await screen.findByRole("button", { name: /Download PNG/ });
-    expect(download.getAttribute("aria-disabled")).toBe("true");
+    expect(download.getAttribute("data-kind")).toBe("primary");
+    expect(download.getAttribute("aria-disabled")).toBeNull();
     await userEvent.click(download);
     const headline = screen.getByLabelText("Headline");
     expect(headline.getAttribute("aria-invalid")).toBe("true");
     expect(document.activeElement).toBe(headline);
-    await userEvent.type(headline, "Meet Acme Pro");
+    // No file was made, so the button is still Download PNG, still enabled.
+    expect(download.isConnected).toBe(true);
     expect(download.getAttribute("aria-disabled")).toBeNull();
+    await userEvent.type(headline, "Meet Acme Pro");
     expect(headline.getAttribute("aria-invalid")).not.toBe("true");
+  });
+
+  it("marks Download PNG aria-disabled only while the file is being made", async () => {
+    let release!: () => void;
+    exportGate.wait = new Promise<void>((resolve) => (release = resolve));
+    vi.mocked(fetchPublicTemplate).mockResolvedValue(payload());
+    render(<PublicFillPage token="tok" />);
+    await userEvent.type(await screen.findByLabelText("Headline"), "Meet Acme Pro");
+    const download = screen.getByRole("button", { name: /Download PNG/ });
+    expect(download.getAttribute("aria-disabled")).toBeNull();
+    await userEvent.click(download);
+    const busy = screen.getByRole("button", { name: /Generating/ });
+    expect(busy.getAttribute("aria-disabled")).toBe("true");
+    expect(busy.getAttribute("aria-busy")).toBe("true");
+    await act(async () => release());
+    expect(await screen.findByRole("button", { name: "Download again" })).toBeTruthy();
   });
 
   it("swaps Download PNG for Download again and Post to LinkedIn once a file exists", async () => {
