@@ -1425,11 +1425,13 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   border-color: transparent;
 }
 
-/* ── Platform chip (53:96): 36 tall (size/control-md) at radius/sm, so it
-   lines up with the Medium Search Field and every other toolbar (CJ,
-   2026-11-25). The mark at 16 with no tile, the label in Label/XS, 8 apart,
-   12 in from each side. No fill and no edge at rest, state/hover on hover;
-   selected, it takes state/selected under text/primary and a 14 chevron
+/* ── Platform chip (53:96): 36 tall (size/control-md, its hairline edge
+   inside) at radius/sm, so it lines up with the Medium Search Field and
+   every other toolbar (CJ, 2026-11-25). It keeps its container (CJ,
+   2026-11-26): action/neutral with a border/strong hairline at rest and
+   action/neutral-hover on hover. The mark at 16 with no tile, the label in
+   Label/XS, 8 apart, 12 in from the edge. Selected, it takes state/selected
+   under text/primary with its edge in its own fill, and a 14 chevron
    pointing down, 8 after the label. ── */
 .ui-platform-chip {
   box-sizing: border-box;
@@ -1439,11 +1441,18 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   height: var(--size-control-md);
   padding: 0 var(--space-12);
   gap: var(--space-8);
+  border: var(--stroke-hairline) solid var(--border-strong);
   border-radius: var(--radius-sm);
+  --_fill: var(--action-neutral);
+  --_hover: var(--action-neutral-hover);
   --_pressed: var(--action-neutral-pressed);
   --_fg: var(--text-primary);
   --_fg-selected: var(--text-primary);
   white-space: nowrap;
+}
+.ui-platform-chip[data-selected],
+.ui-platform-chip[data-demo-state="selected"] {
+  border-color: var(--state-selected);
 }
 .ui-platform-chip__chevron {
   flex: none;

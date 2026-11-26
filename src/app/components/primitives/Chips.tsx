@@ -67,9 +67,10 @@ export interface PlatformChipProps extends ButtonAttrs {
 }
 
 /** Platform chip (Figma 53:96): 36 tall at radius/sm, hugging its label,
- * with the platform's mark at 16 and no tile, no fill or edge at rest, and
- * a down chevron only while selected (CJ, 2026-11-25). The caller gives it
- * its role (radio in a filter group) and its aria state. */
+ * on action/neutral with its hairline edge (it keeps its container, CJ,
+ * 2026-11-26), the platform's mark at 16 with no tile, and a down chevron
+ * only while selected (CJ, 2026-11-25). The caller gives it its role
+ * (radio in a filter group) and its aria state. */
 export const PlatformChip = React.forwardRef<HTMLButtonElement, PlatformChipProps>(
   function PlatformChip(
     { platform, selected = false, chevron = true, className, children, type = "button", ...rest },
