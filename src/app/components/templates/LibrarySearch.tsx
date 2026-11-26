@@ -21,7 +21,7 @@ export function LibrarySearch({
   value,
   onChange,
   label = "Search templates",
-  placeholder = "Search templates, platforms, sizes, or use cases",
+  placeholder = "Search templates, platforms, or sizes",
   size = "md",
   className,
 }: {
