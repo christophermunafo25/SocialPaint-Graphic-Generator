@@ -155,6 +155,7 @@ Phase E9 deleted `legacy-bridge.css`, the `.tu-*` classes, the dead rules and cu
 - White text on `action/danger` measured 3.80 to 1 on red 600. On CJ's word (2026-11-24) the danger ladder moved one step darker in the token JSON: fill red 700 (5.55 to 1), hover red 800, pressed red 950 in Light (the ramp has no 900) and red 800 in Dark, where red 950 nearly vanished against the dialog surfaces. The Figma variables were rebound to match the same day.
 - An empty image field draws its label in the graphic at 35% black, which axe measures under 4.5. It is part of the graphic that `SchemaRenderer` draws, never part of an export, and it stays as drawn.
 - Disabled controls measure under 4.5 by design, which WCAG 1.4.3 allows.
+- A selected Platform Chip is set apart only by its `state/selected` fill, with its edge in that fill: 1.10 to 1 against the page and 1.15 to 1 against a chip at rest in Light, 1.20 and 1.10 to 1 in Dark, under the 3 to 1 WCAG 1.4.11 asks of a state. The chips draw no chevron, since they open no menu, and screen readers get `aria-checked`. CJ kept the gray as the only mark (CJ, 2026-11-26).
 
 CJ's calls at E9 (2026-11-23): the `company_canvas_presets` table and the unread `brand_kits` font columns stay (no drop migrations), and the transparent bevel and glow tokens stay.
 
