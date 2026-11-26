@@ -305,7 +305,7 @@
         "dark": "#FAFAFA"
       },
       "scopes": ["FRAME_FILL", "SHAPE_FILL"],
-      "description": "The selected Chip and Platform Chip, and other inverted fills."
+      "description": "Inverted fills, such as Primary's ink and the marks drawn on it. Selected Chips and Platform Chips moved to state/selected (CJ, 2026-11-25)."
     },
     "surface/overlay": {
       "css": "--surface-overlay",
@@ -1552,13 +1552,13 @@
       "css": "--radius-chip",
       "type": "FLOAT",
       "value": 10,
-      "description": "Chips, search fields and option tiles."
+      "description": "Chips, the Large Search Field and option tiles. Platform Chips moved to radius/sm (CJ, 2026-11-25)."
     },
     "radius/tile": {
       "css": "--radius-tile",
       "type": "FLOAT",
       "value": 8,
-      "description": "Icon tiles inside chips and option tiles."
+      "description": "Icon tiles inside option tiles. Platform Chips dropped their logo tile (CJ, 2026-11-25)."
     },
     "radius/tag": {
       "css": "--radius-tag",

@@ -47,7 +47,7 @@ Light and Dark name the primitive each token reads.
 | surface/shell | gray/50 | gray/890 | The shell behind the sidebar and Main |
 | surface/stage | gray/100 | gray/890 | The stage behind a template preview, a step under the page in Light (CJ, 2026-11-25) |
 | surface/soft | gray/150 | gray/850 | Icon tiles, segmented tracks, the stepper, progress tracks and pending steps |
-| surface/inverse | gray/900 | gray/50 | The selected Chip and the selected Platform Chip |
+| surface/inverse | gray/900 | gray/50 | Inverted fills. Selected Chips and Platform Chips are on state/selected (CJ, 2026-11-25) |
 | surface/overlay | alpha/ink-72 | alpha/ink-72 | Tags and labels on an image |
 | surface/scrim | alpha/ink-50 | alpha/ink-50 | The dimmer behind a dialog |
 | surface/skeleton | gray/150 | gray/850 | Skeletons |
@@ -144,7 +144,7 @@ The app shell on a 1440 frame. The Layout board on Foundations draws it to scale
 | Footer Links | At the foot of the content on every page. The frames draw none, and decision 14 keeps them |
 | Generate | One 720 column, centered |
 | Fill page | The preview stage on `--surface-stage` with `--radius-xl`, and the 380 Details panel on `--surface-raised`, padding `--space-20`, fields `--space-24` apart |
-| Filter bar | 46 tall, items `--space-8` apart |
+| Filter bar | 36 tall, items `--space-8` apart (CJ, 2026-11-25) |
 | Inspector | 320 wide |
 | Breakpoint | Under 1024 the sidebar folds into the mobile bar |
 
@@ -163,7 +163,7 @@ The type pages hold each component's board with its main component. "Change" is 
 | Text Area | `2207:298` | `6220:305` | `TextArea` | `primitives/Field.tsx` | `.ui-input` | As Input. Filled shows the copy Icon Button for generated captions |
 | Select | `2207:410` | `6220:430` | `Select` | `primitives/Select.tsx` | `.ui-select` | As Input |
 | Search | `2207:455` | `6220:720` | `Search` | `primitives/Search.tsx` | `.ui-input` | As Input. It rests with a `--border-field` hairline and hovers on `--border-field-hover` |
-| Search Field | `50:62` | `6220:840` | `SearchField` | `primitives/SearchField.tsx` | `.ui-search` | New `size`: `lg` 46 on `--radius-chip` beside Platform Chips, `md` 36 on `--radius-sm`. A real clear Icon Button. Hover on `--action-neutral-hover` |
+| Search Field | `50:62` | `6220:840` | `SearchField` | `primitives/SearchField.tsx` | `.ui-search` | New `size`: `md` 36 on `--radius-sm`, the default and every filter bar's (CJ, 2026-11-25), and `lg` 46 on `--radius-chip`. A real clear Icon Button. Hover on `--action-neutral-hover` |
 | Field | `4015:628` | `6220:980` | `Field` | `primitives/Field.tsx` | `.ui-field` | Holds a Medium control. Label `--space-12` above it. Help text stays off |
 | Upload | `2211:278` | `6220:1107` | `Upload` | `primitives/Upload.tsx` | `.ui-upload` | As Input. The empty thumbnail sits on `--surface-soft`. A picked or dropped photo develops in, and a slow upload pulses the tile (section 7.6) |
 | Stepper | `2211:227` | `6220:1214` | `Stepper` | `primitives/IconButton.tsx` | `.ui-stepper` | The capsule sits on `--surface-soft`. Inside the composer it has no capsule at rest, and each button hovers on `--state-hover` (CJ, 2026-11-25) |
@@ -174,7 +174,7 @@ The type pages hold each component's board with its main component. "Change" is 
 | Segmented Control | `2211:213` | `6221:459` | `SegmentedControl` | `primitives/Toggles.tsx` | `.ui-segmented` | The liquid selection (section 7) |
 | Badge | `2212:130` | `6222:3` | `Badge` | `primitives/Chips.tsx` | `.ui-badge` | `--radius-chip` instead of full |
 | Tag | `2212:143` | `6222:156` | `Tag` | `primitives/Chips.tsx` | `.ui-tag` | `--radius-tag` instead of full |
-| Chip | `2212:187` | `6222:216` | `Chip` | `primitives/Chips.tsx` | `.ui-chip` | `--radius-chip` instead of full. Shrinks while pressed (section 7.5) |
+| Chip | `2212:187` | `6222:216` | `Chip` | `primitives/Chips.tsx` | `.ui-chip` | `--radius-chip` instead of full. Selected on `--state-selected` under `--text-primary` (CJ, 2026-11-25). Shrinks while pressed (section 7.5) |
 | Avatar | `2212:214` | `6222:352` | `Avatar` | `primitives/Navigation.tsx` | `.ui-avatar` | Tokens |
 | Tooltip | `2213:206` | `6222:434` | `Tooltip` | `primitives/Overlays.tsx` | `.ui-tooltip` | Tokens |
 | Toast | `2213:213` | `6222:470` | `Toast` | `primitives/Overlays.tsx` | `.ui-toast` | Tokens. Eases in and out, and its timer waits while the pointer or focus is on it (section 7.2) |
@@ -205,7 +205,7 @@ On `4012:1194`, one column per area.
 | Sidebar | `2218:679` | `Sidebar.tsx` | Flush on `--surface-shell`, right edge only. Open, the Logo beside the theme toggle and a collapse button, and a settings button in the account row. Collapsed, the mark above Expand, and the avatar alone. All four are Ghost Small (CJ, 2026-11-25) |
 | Logo, Logo Mark | `54:66`, `61:467` | `BrandMark.tsx` | CJ updated the lockup in the Sidebar (`6243:8529`, its mark in the collapsed rail `6112:44073`), on `logo/ink`, so it is near-black on Light and off-white on Dark. The sign-in gate places the same lockup as instances of CJ's New Logo Dark 1 (`6243:17235`, Default) at 24 tall on `logo/ink` (CJ, 2026-11-17). Logo (`54:66`) still draws the earlier lockup on Create account and the Cover |
 | Platform Logo | `53:73` | `primitives/Chips.tsx` | Artwork |
-| Platform Chip | `53:96` | `primitives/Chips.tsx` | 46 tall, `--radius-chip`, logo tile on `--radius-tile` and `--surface-soft`. Selected on `--surface-inverse` with its tile on `--action-primary-hover` and the glyph on `--text-inverse`. Shrinks while pressed (section 7.5) |
+| Platform Chip | `53:96` | `primitives/Chips.tsx` | 36 tall (`--size-control-md`), `--radius-sm`, the logo at 16 with no tile, no fill or edge at rest, hover on `--state-hover`. Selected on `--state-selected` under `--text-primary` with a down chevron, the only chip that shows one (CJ, 2026-11-25). Shrinks while pressed (section 7.5) |
 | Template Card, Builder Template Card | `4018:129`, `4018:156` | `templates/TemplateCard.tsx`, `admin/BuilderTemplateCard.tsx` | Flat on `--surface-card` |
 | Template Thumbnail | `25:853` | `TemplateThumbnail.tsx` | Artwork with Variation 1, 2 and 3 |
 | Size Covers | `327:1985` and eleven more | `builder/SizeGallery.tsx` | Artwork |
@@ -226,7 +226,7 @@ On `4012:1195`, each in Light and Dark.
 | Pattern | Board | Source | Built from |
 |---|---|---|---|
 | App shell | `6227:1078` | Brand Templates `6010:2064` | Sidebar, Nav Item, Avatar, Icon Button Outline, Breadcrumb |
-| Filter bar | `6227:1610` | `6010:2071` | Search Field Large, Platform Chip, Platform Logo |
+| Filter bar | `6227:1610` | `6010:2071` | Search Field Medium, Platform Chip, Platform Logo (CJ, 2026-11-25) |
 | Composer and recent posts | `6227:1771` | `6023:3101` | Composer, Icon Button, Stepper, Send Button, Recent Card |
 | Result thread | `6227:1950` | `6023:3587` | Message Bubble, Assistant Message, Result Card, Segmented Control, Button |
 | Variations bar | `6227:2171` | `6072:3701` | Segmented Control, Segment, Template Thumbnail |

@@ -41,15 +41,15 @@ Radius is a step, and each component names its step. Do not pick a step by neare
 | `--radius-lg` | 12 | Menus, popovers, toasts, message bubbles, card previews |
 | `--radius-xl` | 16 | Cards, dialogs, metrics, panels, the preview stage |
 | `--radius-full` | 999 | Filled icon buttons, Send, avatars, switches, the stepper capsule |
-| `--radius-chip` | 10 | Chips, badges, Platform Chips, the Large Search Field |
-| `--radius-tile` | 8 | The logo tile inside a Platform Chip, icon tiles in option tiles |
+| `--radius-chip` | 10 | Chips, badges, the Large Search Field. Platform Chips are on `--radius-sm` (CJ, 2026-11-25) |
+| `--radius-tile` | 8 | Icon tiles in option tiles. Platform Chips have no logo tile (CJ, 2026-11-25) |
 | `--radius-tag` | 6 | Tags |
 | `--radius-composer` | 27 | The chat composer, so one line reads as a pill |
 | `--radius-shell` | 0 | The sidebar, which runs flush |
 
 Spacing is named by value: `--space-2`, `-4`, `-6`, `-8`, `-12`, `-16`, `-20`, `-24`, `-32`, `-40`, `-48`, `-64`, `-96`. A gap the frames draw off this scale is kept as drawn and noted in the pull request.
 
-Controls share four heights: `--size-control-xs` 24 (badges, tags), `--size-control-sm` 28, `--size-control-md` 36 and `--size-control-lg` 44. The filter bar is the one exception: Platform Chips and the Large Search Field are `--size-control-lg` plus a hairline edge on each side, 46 in all. Give a control its height from the token and center its content. Never build a control's height from padding around its label.
+Controls share four heights: `--size-control-xs` 24 (badges, tags), `--size-control-sm` 28, `--size-control-md` 36 and `--size-control-lg` 44. Every filter bar is 36: Platform Chips and the Medium Search Field are `--size-control-md` like every other toolbar, with no exception (CJ, 2026-11-25). Give a control its height from the token and center its content. Never build a control's height from padding around its label.
 
 Raised surfaces are flat. A card, panel, metric or the sidebar draws its edge with a `--border-raised` hairline. The composer keeps its hairline and also lifts in Light on `--elevation-composer`, transparent in Dark (CJ, 2026-11-25). Cards on `--surface-card` (the template, builder template, recent and history cards, and Brand Studio's cards) are the exception, and the one resting surface with a shadow: white in Light, with a `--stroke-thin` edge in `--border-card` and `--elevation-card` sitting under the bottom edge (CJ, 2026-11-24). Every other shadow is for something that floats.
 
@@ -90,7 +90,7 @@ Each component's board is the spec for its states in both themes.
 
 - **Hover and pressed** change color. Hover does nothing else, and pressed also shrinks a Button, Icon Button, Send Button, Chip or Platform Chip to 0.97 (`PROMPT.md` section 7.5). Each action has its own tokens (`--action-primary-hover` and `-pressed`, and the same for neutral, accent and danger). Rows, ghost controls, menu items and nav items use `--state-hover` and `--state-pressed`. Three exceptions are drawn and built as drawn: a Switch, Checkbox or Radio hovers with a `--state-pressed` halo 4 larger than the control; a field (Input, Select, Text Area, Upload) hovers by moving its hairline from `--border-field` to `--border-field-hover`; the builder's Element Tile lays `--state-hover` over its fill. A card you click as a whole grows to 1.01 on hover, with its edge unchanged, and a pointer press shrinks it to 0.98 (CJ, 2026-11-24 and 2026-11-25).
 - **Rest** for a field is `--surface-field` with a `--border-field` hairline. Nothing about a field's rest state is a filled gray any more.
-- **Selected** is for things that stay chosen: `--state-selected` on rows, nav items, menu items and ghost icon buttons, `--action-neutral-pressed` on Filled and Outline icon buttons, `--surface-inverse` under `--text-inverse` on a Chip or Platform Chip, and `--control-thumb` with `--elevation-thumb` for a segment in its track. On, a switch, checkbox or radio is `--control-on` with `--control-on-mark`. Off, a checkbox or radio is `--surface-raised` with a `--border-control` edge.
+- **Selected** is for things that stay chosen: `--state-selected` on rows, nav items, menu items and ghost icon buttons, `--action-neutral-pressed` on Filled and Outline icon buttons, `--state-selected` under `--text-primary` on a Chip or Platform Chip (CJ, 2026-11-25: solid ink stays for the one primary action per view), and `--control-thumb` with `--elevation-thumb` for a segment in its track. On, a switch, checkbox or radio is `--control-on` with `--control-on-mark`. Off, a checkbox or radio is `--surface-raised` with a `--border-control` edge.
 - **Icons** in a Nav Item sit on `--text-item` at rest (CJ, 2026-11-25), and in an Outline icon button and the sidebar's Ghost icon buttons on `--text-secondary`, all lifting to `--text-primary` on hover and selected. Everywhere else an icon takes the color of the label beside it.
 - **Open** menus count as selected for the control that opened them.
 - **Disabled** controls take their own colors: `--action-disabled` under `--text-disabled`, with no hover. Never dim with opacity.
@@ -146,7 +146,7 @@ Each area keeps the new-brand structure (`docs/design/new-brand/RULES.md` sectio
 
 | Area | What changed |
 |---|---|
-| Brand Templates | The filter bar is 46: the Large Search Field, then Platform Chips 8 apart. Template cards are on `--surface-card` with the thin card edge and `--elevation-card`, 8 padding, the preview inset on `--radius-lg` under a `--border-subtle` hairline ring |
+| Brand Templates | The filter bar is 36: the Medium Search Field, then Platform Chips 8 apart, each a 16 mark and its label with no tile and no edge at rest, and a down chevron on the selected one only (CJ, 2026-11-25). Template cards are on `--surface-card` with the thin card edge and `--elevation-card`, 8 padding, the preview inset on `--radius-lg` under a `--border-subtle` hairline ring |
 | Fill page | The preview stage on `--surface-stage` at `--radius-xl` with 40 padding. The Details panel is 380 on `--surface-raised` with a `--border-raised` hairline, 20 padding, the Variation picker first, fields 24 apart with each label 12 above its control, Download PNG pinned to the bottom |
 | Generate | Start has a header row with the Generate title, and its column is one 720 column. The composer is one line on `--radius-composer` between the plus and Send, with the stepper beside Send, and attachments and details stack above the line. Recent cards are on `--surface-card` with the thin card edge and `--elevation-card`. The Result Card's stage is `--surface-stage` |
 | Template Builder | The editor's bar is the 64 header row now, with no hairline under it (CJ, 2026-11-25), with the breadcrumb, the save status, the mode switch and Publish, where the earlier editor drew its own 44 bar. Rail and inspector are flat panels with `--border-raised` edges. The stage is `--surface-stage`, with the variations bar floating under its top edge. The inspector is 320 |
