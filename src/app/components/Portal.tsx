@@ -42,7 +42,7 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
  * to a common square, and rows sit even. Platform, shape and ratio all derive
  * from a template's canvas; see lib/templates/platforms.ts. */
 export function Portal() {
-  const { company } = useAuth();
+  const { company, role } = useAuth();
   const { route, navigate } = useRouter();
 
   const templatesState = useAsync(
@@ -126,6 +126,9 @@ export function Portal() {
   );
 
   const browsing = !query && !platform;
+  /** Nothing published yet: no search (there is nothing to search), and
+   *  the empty state speaks to who is looking (premium polish D13). */
+  const empty = templatesState.status === "ready" && catalog.length === 0;
 
   /** Browsing, a library whose every shelf fits in one row reads as one
    *  grid in shelf order, with no shelf headers; the shelves come back as
@@ -162,17 +165,19 @@ export function Portal() {
 
   return (
     <Page bleed header={<PageHeader icon={AREA_ICON.brandTemplates} title="Brand Templates" />}>
-      <div className="sp-lib-filterbar">
-        <LibrarySearch value={query} onChange={(q) => setState({ q }, true)} />
-        {catalog.length > 0 && (
-          <PlatformFilter
-            allLabel="All templates"
-            facets={chipFacets}
-            selected={platform?.id ?? null}
-            onSelect={(next) => setState({ platform: next })}
-          />
-        )}
-      </div>
+      {!empty && (
+        <div className="sp-lib-filterbar">
+          <LibrarySearch value={query} onChange={(q) => setState({ q }, true)} />
+          {catalog.length > 0 && (
+            <PlatformFilter
+              allLabel="All templates"
+              facets={chipFacets}
+              selected={platform?.id ?? null}
+              onSelect={(next) => setState({ platform: next })}
+            />
+          )}
+        </div>
+      )}
 
       <p className="sp-live" role="status" aria-live="polite">
         {announcement}
@@ -191,12 +196,28 @@ export function Portal() {
             <LibraryShelfSkeleton />
           </>
         ) : catalog.length === 0 ? (
-          <div className="sp-lib-empty">
-            <p className="t-title-card">Publish your first template</p>
-            <p className="t-body-m sp-lib-empty__body">
-              Published templates appear here for everyone on your team.
-            </p>
-          </div>
+          // An admin can publish, so the way forward is Template Builder; a
+          // member waits for the team (CJ, 2026-11-25).
+          role === "admin" ? (
+            <div className="sp-lib-empty">
+              <p className="t-title-card">Publish your first template</p>
+              <p className="t-body-m sp-lib-empty__body">
+                Published templates appear here for everyone on your team.
+              </p>
+              <div className="sp-lib-empty__actions">
+                <Button kind="primary" onClick={() => navigate({ name: "adminTemplates" })}>
+                  Open Template Builder
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="sp-lib-empty">
+              <p className="t-title-card">No templates yet</p>
+              <p className="t-body-m sp-lib-empty__body">
+                Templates show up here once your team publishes them.
+              </p>
+            </div>
+          )
         ) : browsing && browseLayout === "grid" ? (
           // The Template Builder list's grid, every card on the same square
           // frame so the rows stay even across shapes.
