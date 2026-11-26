@@ -24,7 +24,8 @@
   gap: var(--space-8);
   margin-left: auto;
 }
-/* The grid, 24 under the bar: four 242 cards across at 1440, 16 apart. */
+/* The grid, 24 under the bar: four 242 cards across at 1440, 16 apart.
+   The library's one grid reuses it (.sp-lib-onegrid, brand-templates.css). */
 .sp-tb-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));

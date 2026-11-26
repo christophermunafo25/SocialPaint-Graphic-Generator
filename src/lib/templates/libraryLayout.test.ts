@@ -16,6 +16,15 @@ describe("cardsPerRow", () => {
     expect(cardsPerRow(954, 24)).toBe(3);
   });
 
+  it("takes a gutter off each side", () => {
+    // A 650 body fits two cards (620 with their gap), but with a 16 gutter
+    // at each side its row is 618, which fits one.
+    expect(cardsPerRow(650, 16)).toBe(2);
+    expect(cardsPerRow(650, 16, 16)).toBe(1);
+    // A 700 body keeps two inside the same gutter: its row is 668.
+    expect(cardsPerRow(700, 16, 16)).toBe(2);
+  });
+
   it("is at least one once the width is known, and zero before", () => {
     expect(cardsPerRow(280, 16)).toBe(1);
     expect(cardsPerRow(0, 16)).toBe(0);
@@ -36,7 +45,8 @@ describe("libraryLayout", () => {
     expect(libraryLayout([2, 1, 1, 1, 1], 1)).toBe("shelves");
   });
 
-  it("keeps the shelves until the width is known", () => {
+  it("keeps the shelves until the width is known, and with no shelves at all", () => {
     expect(libraryLayout([1, 1], 0)).toBe("shelves");
+    expect(libraryLayout([], 3)).toBe("shelves");
   });
 });

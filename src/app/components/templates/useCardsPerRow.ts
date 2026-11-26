@@ -17,7 +17,7 @@ export function useCardsPerRow(body: HTMLElement | null): number {
       const style = getComputedStyle(body);
       const gap = parseFloat(style.getPropertyValue("--_shelf-gap")) || 0;
       const gutter = parseFloat(style.getPropertyValue("--_lib-gutter")) || 0;
-      setPerRow(cardsPerRow(body.clientWidth - 2 * gutter, gap));
+      setPerRow(cardsPerRow(body.clientWidth, gap, gutter));
     };
     measure();
     if (typeof ResizeObserver === "undefined") return;

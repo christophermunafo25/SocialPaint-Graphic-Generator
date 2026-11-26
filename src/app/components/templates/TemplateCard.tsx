@@ -25,6 +25,12 @@ export function cardMeta(template: CatalogTemplate, showing?: string): string {
  *
  * The whole card is one button that opens the fill page, so a screen
  * reader hears one named target per card and the keyboard has one stop.
+ * It carries its template's id, so the library can hand focus back to it
+ * when the layout around it changes.
+ *
+ * In the library's one grid, `fit` draws the preview as the Template
+ * Builder list's well: square and sunken, with the template fitted 12 in
+ * at its own ratio, so a grid of mixed shapes keeps even rows.
  *
  * A template with several variations shows them off while the pointer (or
  * focus) rests on the card: the preview steps through every one, one a
@@ -35,12 +41,15 @@ export function cardMeta(template: CatalogTemplate, showing?: string): string {
 export function TemplateCard({
   template,
   frame,
+  fit = false,
   onOpen,
 }: {
   template: CatalogTemplate;
   /** The group's frame ratio as a CSS aspect-ratio, e.g. "1200 / 627".
    *  Every card in a group shares it, which keeps a row even. */
   frame?: string;
+  /** The square well the one grid draws, the template fitted 12 in. */
+  fit?: boolean;
   onOpen(template: CatalogTemplate): void;
 }) {
   const looks = useMemo(() => template.template.variants ?? [], [template.template.variants]);
@@ -74,6 +83,7 @@ export function TemplateCard({
     <button
       type="button"
       className="ui-reset ui-ring sp-tcard"
+      data-template-id={template.id}
       onClick={() => onOpen(template)}
       onMouseEnter={() => setAttended(true)}
       onMouseLeave={() => setAttended(false)}
@@ -83,24 +93,39 @@ export function TemplateCard({
         multiLook ? `, ${looks.length} variations` : ""
       }`}
     >
-      <span
-        className="sp-tcard__frame"
-        style={frame ? ({ "--frame-ratio": frame } as React.CSSProperties) : undefined}
-      >
-        {/* Contain, never crop, with a 2px overscan the frame clips:
-            sub-pixel contain rounding reads as a hairline seam around the
-            artwork otherwise. */}
-        <span
-          style={{
-            display: "block",
-            aspectRatio: `${template.width} / ${template.height}`,
-            flexShrink: 0,
-            ...(landscape ? { width: "calc(100% + 2px)" } : { height: "calc(100% + 2px)" }),
-          }}
-        >
-          <TemplateThumbnail template={template.template} variantId={shownLook?.id} />
+      {fit ? (
+        <span className="sp-tcard__frame" data-fit>
+          <span
+            className="sp-tcard__art"
+            style={{ "--fit-ratio": template.width / template.height } as React.CSSProperties}
+          >
+            {/* 1px of overscan: the renderer's contain rounds a hair short
+                of the box. */}
+            <span className="sp-tcard__overscan">
+              <TemplateThumbnail template={template.template} variantId={shownLook?.id} />
+            </span>
+          </span>
         </span>
-      </span>
+      ) : (
+        <span
+          className="sp-tcard__frame"
+          style={frame ? ({ "--frame-ratio": frame } as React.CSSProperties) : undefined}
+        >
+          {/* Contain, never crop, with a 2px overscan the frame clips:
+              sub-pixel contain rounding reads as a hairline seam around the
+              artwork otherwise. */}
+          <span
+            style={{
+              display: "block",
+              aspectRatio: `${template.width} / ${template.height}`,
+              flexShrink: 0,
+              ...(landscape ? { width: "calc(100% + 2px)" } : { height: "calc(100% + 2px)" }),
+            }}
+          >
+            <TemplateThumbnail template={template.template} variantId={shownLook?.id} />
+          </span>
+        </span>
+      )}
 
       <span className="sp-tcard__meta">
         <span className="sp-tcard__text">

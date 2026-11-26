@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { stores } from "@/lib/stores";
 import { useAsync } from "@/lib/useAsync";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -28,9 +28,11 @@ import { AREA_ICON } from "./areas";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-/** Member-facing template library. Three views on one surface, all driven by
+/** Member-facing template library. Three views on one surface, driven by
  * the URL: browse (a rail per section), filtered (one chip's grid), and
- * search (matches across every section).
+ * search (matches across every section). Browsing, the width decides too: a
+ * library whose every section fits in one row shows one grid in section
+ * order instead of rails (premium polish D11).
  *
  * Two grains of grouping, on purpose. The FILTER CHIPS are one PLATFORM at
  * every shape ("Instagram") with inclusive membership, so a member filters by
@@ -38,9 +40,11 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
  * while browsing, one platform SET at one shape ("Instagram · Facebook ·
  * LinkedIn Portrait") so every template appears exactly once; under a chip,
  * one shape per section of the chosen platform. Grouping to the shape is what
- * lets every frame in a rail or grid share one ratio — nothing is letterboxed
- * to a common square, and rows sit even. Platform, shape and ratio all derive
- * from a template's canvas; see lib/templates/platforms.ts. */
+ * lets every frame in a rail or result grid share one ratio, so nothing is
+ * letterboxed and rows sit even. The one grid mixes shapes, so it fits each
+ * template into the Template Builder list's square well instead. Platform,
+ * shape and ratio all derive from a template's canvas; see
+ * lib/templates/platforms.ts. */
 export function Portal() {
   const { company, role } = useAuth();
   const { route, navigate } = useRouter();
@@ -141,15 +145,41 @@ export function Portal() {
     perRow,
   );
 
+  /** The card (or the first card of the shelf rail) that last had focus in
+   *  the body. Every card remounts when the layout flips, so focus goes back
+   *  to its card afterwards instead of falling to the page. */
+  const lastFocused = useRef<string | null>(null);
+  const rememberFocus = (e: React.FocusEvent<HTMLDivElement>) => {
+    const el = e.target as HTMLElement;
+    const card =
+      el.closest<HTMLElement>("[data-template-id]") ??
+      el.querySelector<HTMLElement>("[data-template-id]");
+    lastFocused.current = card?.dataset.templateId ?? null;
+  };
+  const forgetFocus = (e: React.FocusEvent<HTMLDivElement>) => {
+    const next = e.relatedTarget as Node | null;
+    if (next && !e.currentTarget.contains(next)) lastFocused.current = null;
+  };
+  useLayoutEffect(() => {
+    const id = lastFocused.current;
+    const active = document.activeElement;
+    if (!id || !body || (active && active !== document.body)) return;
+    const card = Array.from(body.querySelectorAll<HTMLElement>("[data-template-id]")).find(
+      (el) => el.dataset.templateId === id,
+    );
+    card?.focus();
+  }, [browseLayout, body]);
+
   /** A card opens the fill page (TemplateUsePage), which is form only: the
    *  template filled in by hand, then downloaded (new brand decision 9). */
   const openTemplate = (t: CatalogTemplate) => navigate({ name: "template", templateId: t.id });
 
-  const announcement = browsing
-    ? ""
-    : query
-      ? `${plural(results.length, "result")} for “${query}”${platform ? ` · ${platform.label}` : ""}`
-      : `${plural(results.length, "template")}${platform ? ` · ${platform.label}` : ""}`;
+  const announcement =
+    browsing || empty
+      ? ""
+      : query
+        ? `${plural(results.length, "result")} for “${query}”${platform ? ` · ${platform.label}` : ""}`
+        : `${plural(results.length, "template")}${platform ? ` · ${platform.label}` : ""}`;
 
   if (templatesState.status === "error") {
     return (
@@ -185,6 +215,8 @@ export function Portal() {
 
       <div
         ref={setBody}
+        onFocus={rememberFocus}
+        onBlur={forgetFocus}
         className="sp-lib-body"
         data-state={
           browsing ? (browseLayout === "grid" ? "grid" : "shelves") : query ? "search" : "platform"
@@ -219,12 +251,12 @@ export function Portal() {
             </div>
           )
         ) : browsing && browseLayout === "grid" ? (
-          // The Template Builder list's grid, every card on the same square
-          // frame so the rows stay even across shapes.
+          // The Template Builder list's grid, every card's preview its square
+          // well, so the rows stay even across shapes.
           <div className="sp-tb-grid sp-lib-onegrid">
             {allShelves.flatMap((g) =>
               g.templates.map((t) => (
-                <TemplateCard key={t.id} template={t} frame="1 / 1" onOpen={openTemplate} />
+                <TemplateCard key={t.id} template={t} fit onOpen={openTemplate} />
               )),
             )}
           </div>

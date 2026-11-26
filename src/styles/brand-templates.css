@@ -134,21 +134,21 @@
   margin: calc(-1 * var(--space-12)) 0 calc(-1 * var(--space-12)) calc(-1 * var(--space-12));
 }
 .sp-lib-shelf__track {
-  gap: var(--_shelf-gap);
+  gap: var(--_shelf-gap, var(--space-16));
   padding: var(--space-12);
   scroll-padding-inline: var(--space-12);
   scroll-snap-type: x mandatory;
 }
 .sp-lib-shelf__item {
   flex: none;
-  width: 302px; /* as drawn (2308:4) */
+  width: 302px; /* as drawn (2308:4); SHELF_CARD_WIDTH in libraryLayout.ts */
   scroll-snap-align: start;
 }
 
 /* One grid (CJ, 2026-11-25, premium polish D11): when every shelf fits in
    a row, the library is the Template Builder list's grid in shelf order,
-   with no shelf headers, every card on a square frame. 40 under the bar,
-   like the first shelf's header. */
+   with no shelf headers, every card's preview the builder's square well.
+   40 under the bar, like the first shelf's header. */
 .sp-tb-grid.sp-lib-onegrid {
   margin-top: 0;
   padding-inline: var(--_lib-gutter);
@@ -299,6 +299,31 @@ button.sp-tcard {
   border-radius: inherit;
   box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-subtle);
   pointer-events: none;
+}
+/* In the one grid the preview is the Template Builder list's well (the
+   builder card's .sp-tbcard__preview): square and sunken, the template
+   fitted 12 in at its own ratio on radius/xs, so mixed shapes keep even
+   rows. On the sunken well the template's edge shows without the ring. */
+.sp-tcard__frame[data-fit] {
+  box-sizing: border-box;
+  aspect-ratio: 1;
+  padding: var(--space-12);
+  container-type: size;
+}
+.sp-tcard__frame[data-fit]::after {
+  content: none;
+}
+.sp-tcard__art {
+  position: relative;
+  flex-shrink: 0;
+  aspect-ratio: var(--fit-ratio);
+  width: min(100cqw, 100cqh * var(--fit-ratio));
+  overflow: hidden;
+  border-radius: var(--radius-xs);
+}
+.sp-tcard__overscan {
+  position: absolute;
+  inset: -1px;
 }
 /* 16 under the preview, 8 in from the card's sides and foot. */
 .sp-tcard__meta {
