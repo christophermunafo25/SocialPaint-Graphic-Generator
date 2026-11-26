@@ -113,11 +113,15 @@ article.sp-tbcard {
 .sp-tbcard__name {
   margin: 0;
 }
+/* The usage line, with a Draft Badge before it on a draft only (CJ,
+   2026-11-25). The row keeps the Badge's 24 either way, so every card in
+   a row lines up whether or not it says Draft. */
 .sp-tbcard__status {
   display: flex;
   align-items: center;
   gap: var(--space-8);
   min-width: 0;
+  min-height: var(--size-control-xs);
 }
 .sp-tbcard__usage {
   min-width: 0;

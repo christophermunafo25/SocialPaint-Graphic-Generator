@@ -6,9 +6,12 @@ import { Badge, RowMenu, Skeleton, type RowMenuGroup } from "../primitives";
 /**
  * A template in the Template Builder list (new brand, sp-template-card in
  * 328:1944): 8 around a square sunken well that fits the template at its
- * own ratio, then the meta row: the name in Label/M over its status Badge
- * and usage line in Caption/M, and the row menu (Ghost Small) at the end.
- * The well is the Edit button; the menu holds the rest (329:2206).
+ * own ratio, then the meta row: the name in Label/M over its usage line in
+ * Caption/M, and the row menu (Ghost Small) at the end. Only a draft says
+ * so, with a Neutral Badge before the usage line; a published template
+ * needs no label, since the filter above already says Published (CJ,
+ * 2026-11-25). The well is the Edit button; the menu holds the rest
+ * (329:2206).
  */
 export function BuilderTemplateCard({
   template,
@@ -24,7 +27,7 @@ export function BuilderTemplateCard({
 }) {
   const nameId = useId();
   const name = template.name.trim() || "Untitled template";
-  const published = template.status === "published";
+  const draft = template.status !== "published";
   return (
     <article className="sp-tbcard" aria-labelledby={nameId}>
       <button
@@ -55,9 +58,7 @@ export function BuilderTemplateCard({
             {name}
           </h3>
           <div className="sp-tbcard__status">
-            <Badge tone={published ? "positive" : "neutral"}>
-              {published ? "Published" : "Draft"}
-            </Badge>
+            {draft && <Badge tone="neutral">Draft</Badge>}
             {usage && <span className="t-caption-m sp-tbcard__usage">{usage}</span>}
           </div>
         </div>
@@ -67,9 +68,10 @@ export function BuilderTemplateCard({
   );
 }
 
-/** A card while the list loads: the well and the meta row's name, badge and
- * usage as Skeletons, in the card's own boxes, so nothing moves when the
- * templates land. Decoration; the grid says it is busy. */
+/** A card while the list loads: the well and the meta row's name and usage
+ * as Skeletons, in the card's own boxes, so nothing moves when the
+ * templates land (the status row holds a Badge's height either way).
+ * Decoration; the grid says it is busy. */
 export function BuilderTemplateCardSkeleton() {
   return (
     <div className="sp-tbcard" aria-hidden>
@@ -78,7 +80,6 @@ export function BuilderTemplateCardSkeleton() {
         <div className="sp-tbcard__text">
           <Skeleton width={128} height={10} />
           <div className="sp-tbcard__status">
-            <Skeleton width={64} height={24} radius="full" />
             <Skeleton width={84} height={9} />
           </div>
         </div>
