@@ -157,6 +157,19 @@ const ROUTES = [
   ["insights-error", "/insights", { stall: { "usage.*": "fail" } }],
   ["insights-empty", "/insights", { seed: (db) => (db.usageEvents = []) }],
   ["brand-studio-loading", "/brand-studio", { stall: { "brandAssets.*": "hang" } }],
+  // A workspace that has set up nothing: no brand kit and no assets, so
+  // every category's cover but Colors (the starter palette) is the shared
+  // art (premium polish D15).
+  [
+    "brand-studio-empty",
+    "/brand-studio",
+    {
+      seed: (db) => {
+        db.brandKits = [];
+        db.brandAssets = [];
+      },
+    },
+  ],
   ["settings-people-loading", "/settings/people", { stall: { "people.*": "hang" } }],
   ["settings-people-error", "/settings/people", { stall: { "people.*": "fail" } }],
   ["settings-usage-loading", "/settings/usage", { stall: { "usage.*": "hang" } }],

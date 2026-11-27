@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useBrand } from "@/lib/brand/BrandContext";
 import { routeToUrl, useRouter, type BrandCategory } from "../../../router";
 import { Button, PreviewOverlay, Skeleton } from "../../primitives";
+import { CategoryCover, coverFor } from "./CategoryCover";
 import { roleStyle } from "@/lib/brand/fontRoles";
 import { requestAddFlow } from "./addFlow";
 import { CATEGORY_ORDER, CATEGORY_TITLES, categoryCount } from "./categories";
@@ -14,7 +15,9 @@ import coverTypeStyles from "@/assets/socialpaint/brand-studio/brand-studio-cove
 import coverImages from "@/assets/socialpaint/brand-studio/brand-studio-cover-images.webp";
 import coverImport from "@/assets/socialpaint/brand-studio/brand-studio-cover-import.webp";
 
-/** Category art in the SocialPaint brand — identical for every tenant. */
+/** The shared SocialPaint art, identical for every tenant. Since premium
+ * polish D15 only an empty category and Import keep it; a category with
+ * content draws its own cover (CategoryCover). */
 const COVERS: Record<BrandCategory, string> = {
   colors: coverColors,
   logos: coverLogos,
@@ -164,7 +167,7 @@ export function BrandOverview({ brand, companyId }: { brand: BrandDraft; company
           >
             {CATEGORY_ORDER.map((category) => (
               <div key={category} className="sp-bs-cat" aria-hidden>
-                <span className="sp-bs-cat__cover" />
+                <Skeleton className="sp-bs-cat__cover" />
                 <span className="sp-bs-cat__meta">
                   <Skeleton width={64} height={10} />
                   <Skeleton width={48} height={8} />
@@ -185,7 +188,10 @@ export function BrandOverview({ brand, companyId }: { brand: BrandDraft; company
                   className="ui-ring sp-bs-cat"
                 >
                   <PreviewOverlay decorative className="sp-bs-cat__cover">
-                    <img src={COVERS[category]} alt="" />
+                    <CategoryCover
+                      cover={coverFor(category, draft, assets)}
+                      art={COVERS[category]}
+                    />
                   </PreviewOverlay>
                   <span className="sp-bs-cat__meta">
                     <span className="t-label-l sp-bs-cat__title">{CATEGORY_TITLES[category]}</span>
