@@ -81,6 +81,20 @@ describe("Metric", () => {
     expect(container.querySelector(".ui-metric__change")).toBeNull();
   });
 
+  it("draws its series dot before the label, hidden from assistive tech", () => {
+    const { container } = render(<Metric label="Exports" value="1,128" series="green" />);
+    const dot = container.querySelector(".ui-metric__dot") as HTMLElement;
+    expect(dot.dataset.series).toBe("green");
+    expect(dot.getAttribute("aria-hidden")).toBe("true");
+    // The dot comes first, then the label.
+    expect(dot.nextElementSibling?.textContent).toBe("Exports");
+  });
+
+  it("draws no dot without a series", () => {
+    const { container } = render(<Metric label="Active members" value="12" />);
+    expect(container.querySelector(".ui-metric__dot")).toBeNull();
+  });
+
   it("loading keeps the card and shows three shapes", () => {
     const { container } = render(<Metric label="Exports" value="" loading />);
     expect(screen.getByLabelText("Exports").getAttribute("aria-busy")).toBe("true");

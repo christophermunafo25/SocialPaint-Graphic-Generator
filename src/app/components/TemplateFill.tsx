@@ -219,11 +219,11 @@ export function TemplateFill({
     showToast(opened ? "linkedin" : "popup-blocked");
   };
 
-  // Download PNG looks disabled until every required field has a value, as
-  // drawn, but stays a stop in the tab order: pressed early, it says what
-  // is missing and takes the person there. While a file is being made the
-  // button keeps its place in the tab order too, and a press does nothing.
-  const incomplete = missingRequired.length > 0;
+  // Download PNG always draws as the page's enabled primary (CJ,
+  // 2026-11-25): pressed before every required field has a value, it shows
+  // each missing field's error and takes the person to the first. Only
+  // while a file is being made is it aria-disabled; it keeps its place in
+  // the tab order then, and a press does nothing.
   const actions = downloaded ? (
     <>
       <Button
@@ -248,7 +248,7 @@ export function TemplateFill({
       icon={Download}
       className="sp-details__grow"
       onClick={() => void handleDownload()}
-      aria-disabled={incomplete || exporting || undefined}
+      aria-disabled={exporting || undefined}
       aria-busy={exporting || undefined}
     >
       {exporting ? "Generating…" : "Download PNG"}

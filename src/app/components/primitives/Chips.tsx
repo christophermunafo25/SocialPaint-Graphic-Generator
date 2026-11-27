@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronRight, LayoutGrid, X } from "lucide-react";
+import { LayoutGrid, X } from "lucide-react";
 import { platformById, type PlatformId } from "@/lib/templates/platforms";
 import { cx, type DemoStateAttr, type IconComponent } from "./cx";
 
@@ -8,7 +8,7 @@ type ButtonAttrs = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 export interface ChipProps extends ButtonAttrs {
-  /** Chosen: the inverse fill. Pass it, true or false, on a chip that
+  /** Chosen: state/selected under text/primary. Pass it, true or false, on a chip that
    * toggles, and it sets aria-pressed. Leave it off a chip that only acts
    * (a suggestion). */
   selected?: boolean;
@@ -18,7 +18,7 @@ export interface ChipProps extends ButtonAttrs {
 
 /** Chip (Figma 2212:187): a 28 pill on action/neutral with a hairline
  * edge, for a suggestion or one option in a set of choices. Selected takes
- * the inverse fill. The file's chip with a remove button is DetailTag,
+ * state/selected (CJ, 2026-11-25). The file's chip with a remove button is DetailTag,
  * which holds two controls and so cannot be one button. */
 export const Chip = React.forwardRef<HTMLButtonElement, ChipProps>(function Chip(
   { selected, icon: Icon, className, children, type = "button", ...rest },
@@ -59,31 +59,18 @@ export function PlatformLogo({
 
 export interface PlatformChipProps extends ButtonAttrs {
   platform: PlatformId | "all";
-  /** Selected turns the chip inverse, with the tile on action/primary-hover,
-   * and the chevron down. */
+  /** Selected takes state/selected under text/primary (CJ, 2026-11-25). */
   selected?: boolean;
-  /** Its menu is open; the chevron points down. */
-  expanded?: boolean;
-  /** Off where the chip is drawn without it (Choose a size, 329:2970): the
-   * tile and the label, 8 from the end. */
-  chevron?: boolean;
 }
 
-/** Platform chip (Figma 53:96): 46 tall at radius/chip, hugging its label,
- * with the platform's mark on a 36 tile and a chevron, flat at rest. The
- * caller gives it its role (radio in a filter group) and its aria state. */
+/** Platform chip (Figma 53:96): 36 tall at radius/sm, hugging its label,
+ * on action/neutral with its hairline edge (it keeps its container, CJ,
+ * 2026-11-26), with the platform's mark at 16 and no tile (CJ, 2026-11-25).
+ * No chevron: a chip opens no menu (CJ, 2026-11-26). The caller gives it
+ * its role (radio in a filter group) and its aria state. */
 export const PlatformChip = React.forwardRef<HTMLButtonElement, PlatformChipProps>(
   function PlatformChip(
-    {
-      platform,
-      selected = false,
-      expanded = false,
-      chevron = true,
-      className,
-      children,
-      type = "button",
-      ...rest
-    },
+    { platform, selected = false, className, children, type = "button", ...rest },
     ref,
   ) {
     return (
@@ -92,16 +79,10 @@ export const PlatformChip = React.forwardRef<HTMLButtonElement, PlatformChipProp
         type={type}
         className={cx("ui-reset ui-fill ui-ring ui-platform-chip", className)}
         data-selected={selected || undefined}
-        data-expanded={selected || expanded || undefined}
         {...rest}
       >
-        <span className="ui-platform-chip__tile">
-          <PlatformLogo platform={platform} />
-        </span>
+        <PlatformLogo platform={platform} size={16} />
         <span className="t-label-xs">{children}</span>
-        {chevron && (
-          <ChevronRight size={14} className="ui-icon ui-platform-chip__chevron" aria-hidden />
-        )}
       </button>
     );
   },

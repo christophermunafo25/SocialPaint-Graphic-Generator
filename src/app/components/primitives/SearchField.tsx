@@ -16,15 +16,15 @@ export interface SearchFieldProps {
   /** Moves focus into the field when it opens (on by default). */
   focusOnOpen?: boolean;
   clearLabel?: string;
-  /** Large 46 beside Platform Chips (the default), Medium 36 beside other
-   * controls. */
+  /** Medium 36, in every filter bar (the default, CJ, 2026-11-25), or
+   * Large 46. */
   size?: "lg" | "md";
   className?: string;
   "data-demo-state"?: DemoStateAttr;
 }
 
 /** Search field (Figma 50:62), for a filter bar. Collapsed it is a square
- * button, 46 at Large and 36 at Medium; open it is the field (440 or 280),
+ * button, 36 at Medium (every filter bar's, CJ, 2026-11-25) and 46 at Large; open it is the field (440 or 280),
  * with a ghost Small clear button while it holds a query, and the ring sits
  * around the whole field. One box stays mounted in both states, so its
  * width runs open and shut (CJ, 2026-11-25): the query fades in once the
@@ -41,7 +41,7 @@ export function SearchField({
   placeholder,
   focusOnOpen = true,
   clearLabel = "Clear search",
-  size = "lg",
+  size = "md",
   className,
   "data-demo-state": demoState,
 }: SearchFieldProps) {
