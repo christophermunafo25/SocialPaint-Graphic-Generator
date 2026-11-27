@@ -14,6 +14,7 @@
   --alpha-ink-50: rgb(11 11 12 / 0.5);
   --alpha-ink-72: rgb(11 11 12 / 0.72);
   --alpha-white-45: rgb(255 255 255 / 0.45);
+  --alpha-black-3: rgb(0 0 0 / 0.03);
   --alpha-black-5: rgb(0 0 0 / 0.05);
   --alpha-black-10: rgb(0 0 0 / 0.1);
   --alpha-black-30: rgb(0 0 0 / 0.3);
@@ -180,7 +181,7 @@
 }
 
 [data-theme="light"] {
-  --surface-page: var(--gray-0); /* surface/page */
+  --surface-page: var(--gray-50); /* surface/page */
   --surface-raised: var(--gray-0); /* surface/raised */
   --surface-sunken: var(--gray-150); /* surface/sunken */
   --surface-field: var(--gray-0); /* surface/field */
@@ -190,6 +191,7 @@
   --surface-skeleton: var(--gray-150); /* surface/skeleton */
   --text-primary: var(--gray-900); /* text/primary */
   --text-secondary: var(--gray-600); /* text/secondary */
+  --text-item: var(--gray-700); /* text/item */
   --text-disabled: var(--gray-400); /* text/disabled */
   --text-inverse: var(--gray-0); /* text/inverse */
   --text-on-color: var(--gray-0); /* text/on-color */
@@ -254,6 +256,8 @@
   --wash-warm: var(--warm-cream); /* wash/warm */
   --shadow-raised: var(--alpha-transparent); /* shadow/raised */
   --shadow-card: var(--alpha-black-5); /* shadow/card */
+  --shadow-composer-near: var(--alpha-black-5); /* shadow/composer-near */
+  --shadow-composer-far: var(--alpha-black-3); /* shadow/composer-far */
   --shadow-floating: var(--alpha-black-10); /* shadow/floating */
   --shadow-thumb: var(--alpha-black-10); /* shadow/thumb */
   --bevel-top: var(--alpha-transparent); /* bevel/top */
@@ -261,7 +265,7 @@
   --glow-accent: var(--alpha-transparent); /* glow/accent */
   --surface-shell: var(--gray-50); /* surface/shell */
   --surface-card: var(--gray-0); /* surface/card */
-  --surface-stage: var(--gray-50); /* surface/stage */
+  --surface-stage: var(--gray-100); /* surface/stage */
   --surface-soft: var(--gray-150); /* surface/soft */
   --border-field: var(--gray-200); /* border/field */
   --plate-dark: var(--gray-950); /* plate/dark */
@@ -281,6 +285,7 @@
   --surface-skeleton: var(--gray-850); /* surface/skeleton */
   --text-primary: var(--gray-50); /* text/primary */
   --text-secondary: var(--gray-400); /* text/secondary */
+  --text-item: var(--gray-300); /* text/item */
   --text-disabled: var(--gray-600); /* text/disabled */
   --text-inverse: var(--gray-900); /* text/inverse */
   --text-on-color: var(--gray-0); /* text/on-color */
@@ -345,6 +350,8 @@
   --wash-warm: var(--warm-cream); /* wash/warm */
   --shadow-raised: var(--alpha-transparent); /* shadow/raised */
   --shadow-card: var(--alpha-black-30); /* shadow/card */
+  --shadow-composer-near: var(--alpha-transparent); /* shadow/composer-near */
+  --shadow-composer-far: var(--alpha-transparent); /* shadow/composer-far */
   --shadow-floating: var(--alpha-black-30); /* shadow/floating */
   --shadow-thumb: var(--alpha-black-30); /* shadow/thumb */
   --bevel-top: var(--alpha-transparent); /* bevel/top */
@@ -366,6 +373,8 @@
     inset 0 1px 2px 0 var(--bevel-top), inset 0 -1px 1px 0 var(--bevel-bottom),
     0 2px 8px 0 var(--shadow-raised);
   --elevation-card: 0 2px 2px -1px var(--shadow-card), 0 1px 3px -1px var(--shadow-card);
+  --elevation-composer:
+    0 1px 6px -1px var(--shadow-composer-near), 0 6px 88px 2px var(--shadow-composer-far);
   --elevation-2-overlay:
     inset 0 1px 2px 0 var(--bevel-top), inset 0 -1px 1px 0 var(--bevel-bottom),
     0 4px 16px 0 var(--shadow-floating);

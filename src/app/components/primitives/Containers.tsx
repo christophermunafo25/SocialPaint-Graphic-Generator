@@ -5,6 +5,7 @@ import { cx, type IconComponent } from "./cx";
 import { IconButton } from "./IconButton";
 import { RollDigits } from "./RollDigits";
 import { Skeleton } from "./Skeleton";
+import type { SegmentDot } from "./Toggles";
 
 export interface CardProps {
   title: React.ReactNode;
@@ -115,6 +116,10 @@ export function Stat({
 
 export interface MetricProps {
   label: React.ReactNode;
+  /** The chart series the number stands for: an 8 dot in its colour
+   * before the label, the colour its series draws in the chart and on its
+   * segment. Left out, no dot. */
+  series?: SegmentDot;
   value: React.ReactNode;
   /** The change against the period before: a Badge with its arrow. */
   delta?: React.ReactNode;
@@ -135,10 +140,11 @@ export interface MetricProps {
 }
 
 /** Metric (Figma 2215:223): one number on a raised card at radius/xl. The
- * label in Label/M, the value in Title/Metric, then the change: a badge and
- * a caption. */
+ * label in Label/M, after its series dot when it has one, the value in
+ * Title/Metric, then the change: a badge and a caption. */
 export function Metric({
   label,
+  series,
   value,
   delta,
   caption,
@@ -163,7 +169,14 @@ export function Metric({
   }
   return (
     <div className={cx("ui-metric", className)}>
-      <span className="t-label-m">{label}</span>
+      {series ? (
+        <span className="ui-metric__label">
+          <span className="ui-metric__dot" data-series={series} aria-hidden />
+          <span className="t-label-m">{label}</span>
+        </span>
+      ) : (
+        <span className="t-label-m">{label}</span>
+      )}
       <span className="t-title-metric">
         {roll !== undefined && (typeof value === "string" || typeof value === "number") ? (
           <RollDigits text={String(value)} roll={roll} />

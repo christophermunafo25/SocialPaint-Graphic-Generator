@@ -372,7 +372,6 @@ export function SizeGallery({
                 facets={chipEntries}
                 selected={platform}
                 onSelect={setPlatform}
-                chevron={false}
                 className="sp-size__chips"
               />
               <LibrarySearch

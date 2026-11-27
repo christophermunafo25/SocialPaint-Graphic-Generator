@@ -176,7 +176,7 @@ Fixed in the file while this kit was written, so a phase reading it sees the fix
 | `LookTile` becomes `VariationTile` | `2216:315` | `primitives/Previews.tsx`, `.ui-look-tile` to `.ui-variation-tile` (Phase E4, built) |
 | The Sidebar runs flush with the Logo and Outline buttons | `2218:679` | `Sidebar.tsx`, `src/styles/shell.css` (Phase E2, built) |
 | Template, Builder Template, Recent and History Cards on `--surface-card` | `4018:129`, `4018:156`, `4018:183`, `4018:1728` | `.sp-tcard`, `.sp-gen-card`, `.sp-tbcard` (Phase E1, so no card vanishes on the white page). Since 2026-11-24, on CJ's word, they and Brand Studio's cards are white in Light with a thin `--border-card` edge and `--elevation-card`, and the ones you click as a whole grow to 1.01 on hover (since 2026-11-25; the edge no longer changes) and press to 0.98. The four components in the file do not draw them yet |
-| Platform Chip is 46 on `--radius-chip` with a `--radius-tile` logo tile | `53:96` | `.ui-platform-chip` (Phase E3, built) |
+| Platform Chip is 46 on `--radius-chip` with a `--radius-tile` logo tile (since 2026-11-25 it is 36 on `--radius-sm` with no tile, and keeps its fill and hairline edge, CJ) | `53:96` | `.ui-platform-chip` (Phase E3, built) |
 | Logo Card grounds on the plates | `4018:1794` | `admin/brand/LogosDetail.tsx` reads `--plate-*`, and the card moves to `--surface-card` (Phase E6, built) |
 | Segmented Control gains the liquid selection | `2211:213`, Foundations › Interactions `6262:353` | `.ui-segmented` and `SegmentedControl` in `primitives/Toggles.tsx`, after `reference/liquid-selection.html` (Phase E1, built) |
 | The lockup is CJ's update, on `--logo-ink` | `6243:8529` | `BrandMark.tsx` (Phase E2, built) |

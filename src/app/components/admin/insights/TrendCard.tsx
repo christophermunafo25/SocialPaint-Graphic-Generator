@@ -9,8 +9,9 @@ const METRIC_TAB: Record<InsightsMetric, string> = {
 };
 
 /** Each metric's series colour (D6): its segment's dot and the highlighted
- * bar. The same families as the headline chips. */
-const METRIC_DOT = { exports: "green", opens: "blue", posted: "purple" } as const;
+ * bar, and the dot beside its headline number (premium polish D14), so a
+ * number and its chart share one colour. */
+export const METRIC_DOT = { exports: "green", opens: "blue", posted: "purple" } as const;
 const METRIC_COLOUR: Record<InsightsMetric, string> = {
   exports: "var(--accent-green)",
   opens: "var(--accent-blue)",

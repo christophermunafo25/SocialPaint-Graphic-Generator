@@ -373,7 +373,8 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 
 /* ── Stepper (2211:227): two ghost Small icon buttons around the value, in
-   a capsule on surface/soft. ── */
+   a capsule on surface/soft. Inside the composer the capsule has no ground
+   at rest, and each button keeps its own state/hover (CJ, 2026-11-25). ── */
 .ui-stepper {
   display: inline-flex;
   flex: none;
@@ -384,6 +385,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   background: var(--surface-soft);
   color: var(--text-primary);
   white-space: nowrap;
+}
+.ui-composer .ui-stepper {
+  background: transparent;
 }
 .ui-stepper__value {
   display: inline-flex;
@@ -936,7 +940,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   padding: 0 var(--space-12);
   gap: var(--space-8);
   border-radius: var(--radius-sm);
-  color: var(--text-primary);
+  /* At rest on text/item, lifting to text/primary under the pointer and
+     when selected (CJ, 2026-11-25). */
+  color: var(--text-item);
   cursor: pointer;
   outline: none;
   user-select: none;
@@ -945,10 +951,12 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 .ui-menu-item[data-highlighted],
 .ui-menu-item[data-demo-state="hover"] {
   background: var(--state-hover);
+  color: var(--text-primary);
 }
 .ui-menu-item[data-selected],
 .ui-menu-item[data-demo-state="selected"] {
   background: var(--state-selected);
+  color: var(--text-primary);
 }
 /* The keyboard's item: a Radix item has focus itself; a Select's option is
    the list's active descendant, so the ring follows the list's focus. A
@@ -1393,7 +1401,8 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
 }
 
 /* ── Chip (2212:187): a 28 chip at radius/chip on action/neutral with a hairline edge.
-   Selected takes the inverse fill and drops the edge. ── */
+   Selected takes state/selected under text/primary and drops the edge
+   (CJ, 2026-11-25: solid ink is kept for the one primary action). ── */
 .ui-chip {
   display: inline-flex;
   align-items: center;
@@ -1405,9 +1414,9 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   --_fill: var(--action-neutral);
   --_hover: var(--action-neutral-hover);
   --_pressed: var(--action-neutral-pressed);
-  --_selected: var(--surface-inverse);
+  --_selected: var(--state-selected);
   --_fg: var(--text-primary);
-  --_fg-selected: var(--text-inverse);
+  --_fg-selected: var(--text-primary);
 }
 .ui-chip[data-selected],
 .ui-chip[data-demo-state="selected"],
@@ -1416,60 +1425,34 @@ button.ui-reset:not(:disabled, [aria-disabled="true"]) {
   border-color: transparent;
 }
 
-/* ── Platform chip (53:96): 46 tall (size/control-lg plus its hairline edge,
-   judgement call 4) at radius/chip, so it lines up with the Large Search
-   Field. The mark on a 36 tile at radius/tile on surface/soft, the label in
-   Label/XS and a 14 chevron, 8 apart, 4 in from the tile's side and 8 from
-   the chevron's. Flat on action/neutral at rest; selected, it turns
-   surface/inverse with its edge in its own fill, the tile on
-   action/primary-hover and the chevron pointing down. ── */
+/* ── Platform chip (53:96): 36 tall (size/control-md, its hairline edge
+   inside) at radius/sm, so it lines up with the Medium Search Field and
+   every other toolbar (CJ, 2026-11-25). It keeps its container (CJ,
+   2026-11-26): action/neutral with a border/strong hairline at rest and
+   action/neutral-hover on hover. The mark at 16 with no tile, the label in
+   Label/XS, 8 apart, 12 in from the edge. Selected, it takes state/selected
+   under text/primary with its edge in its own fill. No chevron, since a
+   chip opens no menu (CJ, 2026-11-26). ── */
 .ui-platform-chip {
   box-sizing: border-box;
   display: inline-flex;
   flex: none;
   align-items: center;
-  height: calc(var(--size-control-lg) + 2 * var(--stroke-hairline));
-  padding: var(--space-4) var(--space-8) var(--space-4) var(--space-4);
+  height: var(--size-control-md);
+  padding: 0 var(--space-12);
   gap: var(--space-8);
   border: var(--stroke-hairline) solid var(--border-strong);
-  border-radius: var(--radius-chip);
+  border-radius: var(--radius-sm);
   --_fill: var(--action-neutral);
   --_hover: var(--action-neutral-hover);
   --_pressed: var(--action-neutral-pressed);
-  --_selected: var(--surface-inverse);
   --_fg: var(--text-primary);
-  --_fg-selected: var(--text-inverse);
+  --_fg-selected: var(--text-primary);
   white-space: nowrap;
-}
-.ui-platform-chip__tile {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: var(--size-control-md);
-  height: var(--size-control-md);
-  border-radius: var(--radius-tile);
-  background: var(--surface-soft);
-  color: var(--text-primary);
-}
-.ui-platform-chip__chevron {
-  flex: none;
-  width: 14px; /* as drawn (53:96) */
-  height: 14px;
-  color: inherit;
-}
-.ui-platform-chip[data-expanded] .ui-platform-chip__chevron,
-.ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__chevron {
-  transform: rotate(90deg);
 }
 .ui-platform-chip[data-selected],
 .ui-platform-chip[data-demo-state="selected"] {
-  border-color: var(--surface-inverse);
-}
-.ui-platform-chip[data-selected] .ui-platform-chip__tile,
-.ui-platform-chip[data-demo-state="selected"] .ui-platform-chip__tile {
-  background: var(--action-primary-hover);
-  color: var(--text-inverse);
+  border-color: var(--state-selected);
 }
 
 /* ── Tag (2212:143): a 24 tag at radius/tag in Label/XS. A tag is text and paints its
@@ -1592,7 +1575,7 @@ button.ui-detail-tag__value {
 }
 
 /* ── Nav item (2213:109): a 36 row at radius/sm, the icon and label on
-   text/secondary. Hover lifts them to text/primary over state/hover, and
+   text/item (CJ, 2026-11-25). Hover lifts them to text/primary over state/hover, and
    Selected holds them there over state/selected. The Settings rail uses the
    same item. ── */
 .ui-nav-item {
@@ -1604,7 +1587,7 @@ button.ui-detail-tag__value {
   gap: var(--space-12);
   border-radius: var(--radius-sm);
   --_disabled: transparent;
-  --_fg: var(--text-secondary);
+  --_fg: var(--text-item);
   --_fg-hover: var(--text-primary);
   text-align: left;
 }
@@ -2125,6 +2108,39 @@ button.ui-detail-tag__value {
   box-shadow: var(--elevation-1-raised);
   color: var(--text-primary);
 }
+/* The label after an 8 dot in its chart series' colour, where the number
+   stands for a series (CJ, 2026-11-25). The families match the segment's
+   dot and the chart. The dot sits on the label's first line, centred on
+   its capitals (the label trims to cap height), so a label that wraps in
+   a narrow card keeps its dot beside its first word. */
+.ui-metric__label {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+}
+.ui-metric__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  font: var(--type-label-m); /* only so 1cap is the label's */
+  margin-top: calc((1cap - 8px) / 2);
+}
+.ui-metric__dot[data-series="green"] {
+  background: var(--accent-green);
+}
+.ui-metric__dot[data-series="blue"] {
+  background: var(--accent-blue);
+}
+.ui-metric__dot[data-series="purple"] {
+  background: var(--accent-purple);
+}
+.ui-metric__dot[data-series="pink"] {
+  background: var(--accent-pink);
+}
+.ui-metric__dot[data-series="warm"] {
+  background: var(--accent-warm);
+}
 .ui-metric__change {
   display: flex;
   align-items: center;
@@ -2494,8 +2510,8 @@ button.ui-detail-tag__value {
    border/raised hairline on surface/raised. The line holds the plus, the
    message, the count stepper and Send, bottom-aligned so a longer message
    grows upward past them. Attachments and details stack above the line,
-   8 in, 12 apart, 8 over it. Flat, as raised surfaces are (RULES.md
-   section 4). */
+   8 in, 12 apart, 8 over it. The hairline stays, and in Light it lifts on
+   Elevation/Composer (RULES.md section 4). */
 .ui-composer {
   box-sizing: border-box;
   display: flex;
@@ -2506,6 +2522,9 @@ button.ui-detail-tag__value {
   border: var(--stroke-hairline) solid var(--border-raised);
   border-radius: var(--radius-composer);
   background: var(--surface-raised);
+  /* It lifts off the page in Light (CJ, 2026-11-25). Dark's layers are
+     transparent, since the composer lifts there by value. */
+  box-shadow: var(--elevation-composer);
   color: var(--text-primary);
 }
 /* The text area's focus rings the whole box, as a field's does. */
@@ -2517,7 +2536,9 @@ button.ui-detail-tag__value {
   outline: none;
 }
 .ui-composer[data-drag-active] {
-  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--editor-selection);
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--editor-selection),
+    var(--elevation-composer);
 }
 .ui-composer__top {
   display: flex;

@@ -11,15 +11,16 @@
    2308:739) ───────────────────────────────────────────────────────────────── */
 
 /* The filter bar scrolls with the page (CJ, 2026-11-16: nothing sticks).
-   The search button, then the chips, 8 apart. */
+   The search button, then the chips, 8 apart, in a 36 row like every other
+   toolbar (CJ, 2026-11-25). */
 .sp-lib-filterbar {
   display: flex;
   align-items: center;
   gap: var(--space-8);
-  min-height: 56px;
+  min-height: var(--size-control-md);
 }
-/* The search (50:62) at Large: a 46 square at radius/chip that opens into
-   the 440 field (6010:2436), beside the 46 chips. */
+/* The search (50:62) at Medium: a 36 square at radius/sm that opens into
+   the 280 field, beside the 36 chips (CJ, 2026-11-25). */
 .sp-lib-search {
   flex: none;
   display: flex;
@@ -76,7 +77,12 @@
 
 /* The page under the filter bar: 40 down to the first shelf (16 + 24),
    then 32 between shelves and between a result line and its groups. */
+/* The body names two values its code reads too (useCardsPerRow): the gap
+   between a shelf's cards, and the side gutter its rows take where the
+   page bleeds to the screen's edge. */
 .sp-lib-body {
+  --_shelf-gap: var(--space-16);
+  --_lib-gutter: 0px;
   display: flex;
   flex-direction: column;
   gap: var(--space-32);
@@ -128,15 +134,24 @@
   margin: calc(-1 * var(--space-12)) 0 calc(-1 * var(--space-12)) calc(-1 * var(--space-12));
 }
 .sp-lib-shelf__track {
-  gap: var(--space-16);
+  gap: var(--_shelf-gap, var(--space-16));
   padding: var(--space-12);
   scroll-padding-inline: var(--space-12);
   scroll-snap-type: x mandatory;
 }
 .sp-lib-shelf__item {
   flex: none;
-  width: 302px; /* as drawn (2308:4) */
+  width: 302px; /* as drawn (2308:4); SHELF_CARD_WIDTH in libraryLayout.ts */
   scroll-snap-align: start;
+}
+
+/* One grid (CJ, 2026-11-25, premium polish D11): when every shelf fits in
+   a row, the library is the Template Builder list's grid in shelf order,
+   with no shelf headers, every card's preview the builder's square well.
+   40 under the bar, like the first shelf's header. */
+.sp-tb-grid.sp-lib-onegrid {
+  margin-top: 0;
+  padding-inline: var(--_lib-gutter);
 }
 
 /* The result line (2308:538): what the page shows in Mono/Eyebrow, and
@@ -228,10 +243,11 @@
 }
 
 /* ── Template card (2308:4): 8 around the preview (radius/lg), then the
-   name in Label/M over its size and variations in Caption/M, 8 apart,
-   beside the go arrow, on surface/card at radius/xl.
+   name in Label/M over its size and variations in Caption/M, 8 apart, on
+   surface/card at radius/xl. Nothing sits on the preview and there is no
+   go arrow (CJ, 2026-11-25).
    One button with the keyboard ring. Hover and focus step through its
-   variations (judgement call 4) and fill the arrow with the primary pair;
+   variations (judgement call 4), the size line naming the one showing;
    hover grows it to 1.01 and a pointer press shrinks it
    to 0.98 (RULES.md section 6), so nothing travels and the rail's 12 of
    room holds the edge and Elevation/Card. ── */
@@ -263,26 +279,6 @@ button.sp-tcard {
 :root[data-input="pointer"] button.sp-tcard:active {
   scale: 0.98;
 }
-.sp-tcard__go {
-  flex: none;
-  transition:
-    background-color var(--motion-duration-fast) var(--motion-easing-standard),
-    color var(--motion-duration-fast) var(--motion-easing-standard);
-}
-.sp-tcard:hover .sp-tcard__go,
-.sp-tcard:focus-visible .sp-tcard__go {
-  background: var(--action-primary);
-  color: var(--action-on-primary);
-}
-/* The arrow nudges 2 forward with the fill (CJ, 2026-11-25); reduced
-   motion zeroes the duration, so it still lands without the slide. */
-.sp-tcard__go .ui-icon {
-  transition: translate var(--motion-duration-base) var(--motion-easing-standard);
-}
-.sp-tcard:hover .sp-tcard__go .ui-icon,
-.sp-tcard:focus-visible .sp-tcard__go .ui-icon {
-  translate: var(--space-2) 0;
-}
 .sp-tcard__frame {
   position: relative;
   display: flex;
@@ -304,34 +300,32 @@ button.sp-tcard {
   box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-subtle);
   pointer-events: none;
 }
-/* The variations a card steps through: dots, and the name while stepping,
-   on the Overlay tag, 8 in from the preview's bottom left. */
-.sp-tcard__looks {
+/* In the one grid the preview is the Template Builder list's well (the
+   builder card's .sp-tbcard__preview): square and sunken, the template
+   fitted 12 in at its own ratio on radius/xs, so mixed shapes keep even
+   rows. On the sunken well the template's edge shows without the ring. */
+.sp-tcard__frame[data-fit] {
+  box-sizing: border-box;
+  aspect-ratio: 1;
+  padding: var(--space-12);
+  container-type: size;
+}
+.sp-tcard__frame[data-fit]::after {
+  content: none;
+}
+.sp-tcard__art {
+  position: relative;
+  flex-shrink: 0;
+  aspect-ratio: var(--fit-ratio);
+  width: min(100cqw, 100cqh * var(--fit-ratio));
+  overflow: hidden;
+  border-radius: var(--radius-xs);
+}
+.sp-tcard__overscan {
   position: absolute;
-  left: var(--space-8);
-  bottom: var(--space-8);
-  pointer-events: none;
+  inset: -1px;
 }
-.sp-tcard__dots {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-.sp-tcard__dots:not(:last-child) {
-  margin-right: var(--space-6);
-}
-.sp-tcard__dot {
-  width: 5px;
-  height: 5px;
-  border-radius: var(--radius-full);
-  background: currentColor;
-  opacity: 0.45;
-}
-.sp-tcard__dot[data-on] {
-  opacity: 1;
-}
-/* 16 under the preview, 8 in from the card's sides and foot; the arrow is
-   the 36 Filled Icon Button. */
+/* 16 under the preview, 8 in from the card's sides and foot. */
 .sp-tcard__meta {
   display: flex;
   align-items: center;
@@ -362,6 +356,9 @@ button.sp-tcard {
 /* ── Below 768 the library's rails bleed to the screen edge (.sp-page--bleed
    drops the page's side padding); text and grids keep a 16 gutter. ── */
 @media (max-width: 767px) {
+  .sp-page--bleed .sp-lib-body {
+    --_lib-gutter: var(--space-16);
+  }
   .sp-page--bleed .sp-lib-filterbar,
   .sp-page--bleed .sp-lib-resultline,
   .sp-page--bleed .sp-lib-group,
@@ -379,9 +376,10 @@ button.sp-tcard {
   .sp-page--bleed .sp-lib-chips {
     margin-right: 0;
   }
-  /* The open search (440) is wider than a phone's bar: it takes a row of
-     its own and the chips wrap under it, 12 apart, so the chips' rail and
-     its 12 of focus-ring room meet the field without covering it. */
+  /* The open search (280) leaves a phone's bar no room for the chips: it
+     takes a row of its own and the chips wrap under it, 12 apart, so the
+     chips' rail and its 12 of focus-ring room meet the field without
+     covering it. */
   .sp-lib-filterbar {
     flex-wrap: wrap;
     row-gap: var(--space-12);

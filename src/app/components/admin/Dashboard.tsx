@@ -14,7 +14,6 @@ import {
   platformsInUse,
   PUBLIC_MEMBER,
   RANGE_LABEL,
-  type Insights,
   type InsightsFilters,
   type InsightsMetric,
   type InsightsRange,
@@ -26,7 +25,8 @@ import { Page } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
 import { Button, Metric, PageHeader, Skeleton } from "../primitives";
 import { useLinkClick } from "./brand/useLinkClick";
-import { ChangeBadge, changeCopy, type KpiFamily } from "./insights/ChangeBadge";
+import { ChangeBadge, changeCopy } from "./insights/ChangeBadge";
+import { KPIS } from "./insights/kpis";
 import { TrendCard } from "./insights/TrendCard";
 import { TopTemplatesCard } from "./insights/TopTemplatesCard";
 import { PublicLinksCard } from "./insights/PublicLinksCard";
@@ -46,14 +46,6 @@ const METRIC_NAME: Record<InsightsMetric, string> = {
   opens: "Opens",
   posted: "Posts to LinkedIn",
 };
-
-/** The four headline numbers, each in its colour family (D7). */
-const KPIS: { key: keyof Insights["kpis"]; label: string; family: KpiFamily }[] = [
-  { key: "exports", label: "Exports", family: "green" },
-  { key: "opens", label: "Opens", family: "blue" },
-  { key: "posted", label: "Posted to LinkedIn", family: "purple" },
-  { key: "activeMembers", label: "Active members", family: "pink" },
-];
 
 type DashboardRoute = Extract<Route, { name: "dashboard" }>;
 
@@ -343,14 +335,15 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
           {filterRow}
 
           <div className="sp-in-kpis">
-            {KPIS.map(({ key, label, family }) => (
+            {KPIS.map(({ key, label, series }) => (
               <Metric
                 key={key}
                 className="sp-in-metric"
                 label={label}
+                series={series}
                 value={insights.kpis[key].current.toLocaleString("en-US")}
                 roll={roll && !refreshing}
-                delta={<ChangeBadge change={insights.kpis[key].change} family={family} />}
+                delta={<ChangeBadge change={insights.kpis[key].change} />}
                 caption={`vs previous ${rangeLabel}`}
                 captionStyle="body"
               />

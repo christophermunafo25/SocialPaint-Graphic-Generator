@@ -453,7 +453,6 @@ export function AdminTemplates() {
                 onSelect={setSort}
               />
               <LibrarySearch
-                size="md"
                 value={query}
                 onChange={setQuery}
                 label="Search templates"
