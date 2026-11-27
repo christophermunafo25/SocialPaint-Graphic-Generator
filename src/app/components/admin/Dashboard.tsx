@@ -24,10 +24,10 @@ import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
 import { routeToUrl, useRouter, type Route } from "../../router";
 import { Page } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
-import { Button, Metric, PageHeader, Skeleton } from "../primitives";
+import { Button, Metric, PageHeader, Skeleton, type SegmentDot } from "../primitives";
 import { useLinkClick } from "./brand/useLinkClick";
-import { ChangeBadge, changeCopy, type KpiFamily } from "./insights/ChangeBadge";
-import { TrendCard } from "./insights/TrendCard";
+import { ChangeBadge, changeCopy } from "./insights/ChangeBadge";
+import { METRIC_DOT, TrendCard } from "./insights/TrendCard";
 import { TopTemplatesCard } from "./insights/TopTemplatesCard";
 import { PublicLinksCard } from "./insights/PublicLinksCard";
 import { FilterMenu, type FilterOption } from "./insights/FilterMenu";
@@ -47,12 +47,14 @@ const METRIC_NAME: Record<InsightsMetric, string> = {
   posted: "Posts to LinkedIn",
 };
 
-/** The four headline numbers, each in its colour family (D7). */
-const KPIS: { key: keyof Insights["kpis"]; label: string; family: KpiFamily }[] = [
-  { key: "exports", label: "Exports", family: "green" },
-  { key: "opens", label: "Opens", family: "blue" },
-  { key: "posted", label: "Posted to LinkedIn", family: "purple" },
-  { key: "activeMembers", label: "Active members", family: "pink" },
+/** The four headline numbers. Exports, Opens and Posted carry their
+ * chart series' dot; Active members has no series, so no dot (premium
+ * polish D14). */
+const KPIS: { key: keyof Insights["kpis"]; label: string; series?: SegmentDot }[] = [
+  { key: "exports", label: "Exports", series: METRIC_DOT.exports },
+  { key: "opens", label: "Opens", series: METRIC_DOT.opens },
+  { key: "posted", label: "Posted to LinkedIn", series: METRIC_DOT.posted },
+  { key: "activeMembers", label: "Active members" },
 ];
 
 type DashboardRoute = Extract<Route, { name: "dashboard" }>;
@@ -343,14 +345,15 @@ export function Dashboard(route: Omit<DashboardRoute, "name">) {
           {filterRow}
 
           <div className="sp-in-kpis">
-            {KPIS.map(({ key, label, family }) => (
+            {KPIS.map(({ key, label, series }) => (
               <Metric
                 key={key}
                 className="sp-in-metric"
                 label={label}
+                series={series}
                 value={insights.kpis[key].current.toLocaleString("en-US")}
                 roll={roll && !refreshing}
-                delta={<ChangeBadge change={insights.kpis[key].change} family={family} />}
+                delta={<ChangeBadge change={insights.kpis[key].change} />}
                 caption={`vs previous ${rangeLabel}`}
                 captionStyle="body"
               />

@@ -2108,6 +2108,35 @@ button.ui-detail-tag__value {
   box-shadow: var(--elevation-1-raised);
   color: var(--text-primary);
 }
+/* The label after an 8 dot in its chart series' colour, where the number
+   stands for a series (CJ, 2026-11-25). The families match the segment's
+   dot and the chart. */
+.ui-metric__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+.ui-metric__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+}
+.ui-metric__dot[data-series="green"] {
+  background: var(--accent-green);
+}
+.ui-metric__dot[data-series="blue"] {
+  background: var(--accent-blue);
+}
+.ui-metric__dot[data-series="purple"] {
+  background: var(--accent-purple);
+}
+.ui-metric__dot[data-series="pink"] {
+  background: var(--accent-pink);
+}
+.ui-metric__dot[data-series="warm"] {
+  background: var(--accent-warm);
+}
 .ui-metric__change {
   display: flex;
   align-items: center;

@@ -33,23 +33,13 @@ export function chipText(change: InsightChange): string {
   }
 }
 
-/** A card's colour family: its identity, the same in every state (D7). */
-export type KpiFamily = "green" | "blue" | "purple" | "pink";
-
-/** Each family's Badge tone (6095:1053): green reads status/positive,
- * the others their deep colour with its accent (purple on its tint). */
-const TONE: Record<KpiFamily, "positive" | "blue" | "purple" | "pink"> = {
-  green: "positive",
-  blue: "blue",
-  purple: "purple",
-  pink: "pink",
-};
-
-/** A headline number's change: a Badge in the card's family colour, the
- * arrow and words carrying the direction, read out in words. */
-export function ChangeBadge({ change, family }: { change: InsightChange; family: KpiFamily }) {
+/** A headline number's change: a Neutral Badge for every metric, the
+ * arrow and words carrying the direction, read out in words. The colour
+ * that ties a number to its chart is the Metric's series dot, not the
+ * badge (CJ, 2026-11-25: chrome colour comes from content). */
+export function ChangeBadge({ change }: { change: InsightChange }) {
   return (
-    <Badge tone={TONE[family]}>
+    <Badge tone="neutral">
       <span aria-hidden>{chipText(change)}</span>
       <span className="sr-only">{changeCopy(change)}</span>
     </Badge>
