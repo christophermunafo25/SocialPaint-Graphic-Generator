@@ -16,7 +16,7 @@ Phase E1 points `CLAUDE.md` at this file.
 - The frames show sample content: workspace names, people, templates, brand colors, logos, numbers and chart data. Build the interface and leave the content to each account.
 - Never seed SocialPaint's brand (colors, fonts, logos, templates, copy or imagery) into an account. New accounts start the way they start today.
 - Tenant brand kits style the graphics members make. They never restyle the platform chrome, and the chrome reads only `tokens.css`.
-- Shared platform art (the Brand Studio covers, the size covers, the sign-in panel art) is the same in every account and is committed as static assets.
+- Shared platform art (the size covers, the sign-in panel art, and the Brand Studio covers of an empty category and of Import) is the same in every account and is committed as static assets. A Brand Studio category with content draws its cover from the workspace's own colors, logo, faces and photos instead, on a plate that never inverts with the theme. The faces sit on the cover's specimen alone and never reach chrome text (CJ, 2026-11-25).
 - Interface labels in the frames are copy to use. Anything that names or counts tenant data is sample data.
 - The artboard, a preview and an export are a tenant's graphic. They are never themed and never read a platform token.
 
@@ -104,7 +104,7 @@ Each component's board is the spec for its states in both themes.
 
 ## 7. Brand color in chrome
 
-The interface is gray. The primary action is ink (`--action-primary` under `--action-on-primary`), and Send is the same (`--action-accent`). Use one Primary button per view. Brand color appears only where a frame draws it, through the semantic token that frame uses: the Positive and Active badges (`--status-*`), the logo, chart series, the Brand Studio covers. It never carries meaning on its own. On Insights a change badge is Neutral whatever its metric, and the color that ties a headline number to its chart is the series' own: an 8 dot before the Metric's label for Exports, Opens and Posted, and none for Active members (CJ, 2026-11-25). Error red, warning amber and the editor's selection blue are functional signals and keep their meaning.
+The interface is gray. The primary action is ink (`--action-primary` under `--action-on-primary`), and Send is the same (`--action-accent`). Use one Primary button per view. Brand color appears only where a frame draws it, through the semantic token that frame uses: the Positive and Active badges (`--status-*`), the logo, chart series, the Brand Studio covers (the workspace's own content once a category has some, CJ, 2026-11-25). It never carries meaning on its own. On Insights a change badge is Neutral whatever its metric, and the color that ties a headline number to its chart is the series' own: an 8 dot before the Metric's label for Exports, Opens and Posted, and none for Active members (CJ, 2026-11-25). Error red, warning amber and the editor's selection blue are functional signals and keep their meaning.
 
 ## 8. Icons and hit areas
 
