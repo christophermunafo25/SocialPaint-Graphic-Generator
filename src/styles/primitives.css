@@ -2110,10 +2110,12 @@ button.ui-detail-tag__value {
 }
 /* The label after an 8 dot in its chart series' colour, where the number
    stands for a series (CJ, 2026-11-25). The families match the segment's
-   dot and the chart. */
+   dot and the chart. The dot sits on the label's first line, centred on
+   its capitals (the label trims to cap height), so a label that wraps in
+   a narrow card keeps its dot beside its first word. */
 .ui-metric__label {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-8);
 }
 .ui-metric__dot {
@@ -2121,6 +2123,8 @@ button.ui-detail-tag__value {
   width: 8px;
   height: 8px;
   border-radius: var(--radius-full);
+  font: var(--type-label-m); /* only so 1cap is the label's */
+  margin-top: calc((1cap - 8px) / 2);
 }
 .ui-metric__dot[data-series="green"] {
   background: var(--accent-green);
