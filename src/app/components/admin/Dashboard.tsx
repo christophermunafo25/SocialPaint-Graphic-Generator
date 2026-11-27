@@ -14,7 +14,6 @@ import {
   platformsInUse,
   PUBLIC_MEMBER,
   RANGE_LABEL,
-  type Insights,
   type InsightsFilters,
   type InsightsMetric,
   type InsightsRange,
@@ -24,10 +23,11 @@ import { PLATFORMS, type PlatformId } from "@/lib/templates/platforms";
 import { routeToUrl, useRouter, type Route } from "../../router";
 import { Page } from "../layout/Page";
 import { ErrorState } from "../ErrorState";
-import { Button, Metric, PageHeader, Skeleton, type SegmentDot } from "../primitives";
+import { Button, Metric, PageHeader, Skeleton } from "../primitives";
 import { useLinkClick } from "./brand/useLinkClick";
 import { ChangeBadge, changeCopy } from "./insights/ChangeBadge";
-import { METRIC_DOT, TrendCard } from "./insights/TrendCard";
+import { KPIS } from "./insights/kpis";
+import { TrendCard } from "./insights/TrendCard";
 import { TopTemplatesCard } from "./insights/TopTemplatesCard";
 import { PublicLinksCard } from "./insights/PublicLinksCard";
 import { FilterMenu, type FilterOption } from "./insights/FilterMenu";
@@ -46,16 +46,6 @@ const METRIC_NAME: Record<InsightsMetric, string> = {
   opens: "Opens",
   posted: "Posts to LinkedIn",
 };
-
-/** The four headline numbers. Exports, Opens and Posted carry their
- * chart series' dot; Active members has no series, so no dot (premium
- * polish D14). */
-const KPIS: { key: keyof Insights["kpis"]; label: string; series?: SegmentDot }[] = [
-  { key: "exports", label: "Exports", series: METRIC_DOT.exports },
-  { key: "opens", label: "Opens", series: METRIC_DOT.opens },
-  { key: "posted", label: "Posted to LinkedIn", series: METRIC_DOT.posted },
-  { key: "activeMembers", label: "Active members" },
-];
 
 type DashboardRoute = Extract<Route, { name: "dashboard" }>;
 

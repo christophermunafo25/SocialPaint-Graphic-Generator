@@ -2,7 +2,7 @@ import React from "react";
 import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
 import type { InsightChange } from "@/lib/insights/buildInsights";
-import { ChangeBadge, changeCopy } from "./ChangeBadge";
+import { ChangeBadge } from "./ChangeBadge";
 
 const CHANGES: InsightChange[] = [
   { direction: "up", percent: 18 },
@@ -13,7 +13,7 @@ const CHANGES: InsightChange[] = [
 ];
 
 describe("ChangeBadge", () => {
-  it("is Neutral for every change, whatever the metric", () => {
+  it("is Neutral for every change, whatever the direction", () => {
     for (const change of CHANGES) {
       const { container, unmount } = render(<ChangeBadge change={change} />);
       const badge = container.querySelector(".ui-badge") as HTMLElement;
@@ -28,7 +28,6 @@ describe("ChangeBadge", () => {
     expect(chip.textContent).toBe("↗ 18%");
     expect(chip.getAttribute("aria-hidden")).toBe("true");
     expect(words.className).toBe("sr-only");
-    expect(words.textContent).toBe(changeCopy({ direction: "up", percent: 18 }));
     expect(words.textContent).toBe("Up 18%");
   });
 });
