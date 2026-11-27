@@ -193,7 +193,7 @@ The type pages hold each component's board with its main component. "Change" is 
 | Footer Links | `4015:750` | `6221:1160` | `FooterLinks` | `primitives/PageHeader.tsx` | `.ui-footer-links` | Tokens |
 | Card | `2215:141` | `6222:835` | `Card` | `primitives/Containers.tsx` | `.ui-card` | Flat on `--surface-raised` with a `--border-raised` hairline and `--radius-xl` 16 |
 | Dialog | `2215:203` | `6222:915` | `Modal` | `primitives/Containers.tsx` | `.ui-modal-scrim` | `--surface-raised`, a `--border-raised` hairline, `--elevation-3-floating`, `--radius-xl` 16 |
-| Metric | `2215:223` | `6222:1093` | `Metric` | `primitives/Containers.tsx` | `.ui-metric` | Flat, as Card. The value rolls when the member changes the range (section 7.7) |
+| Metric | `2215:223` | `6222:1093` | `Metric` | `primitives/Containers.tsx` | `.ui-metric` | Flat, as Card. The value rolls when the member changes the range (section 7.7). An optional `series` draws an 8 dot in the chart series' color before the label, and the change Badge is Neutral (CJ, 2026-11-25) |
 | Table Row | `2215:270` | `6222:1166` | `TableRow` | `primitives/TableRow.tsx` | `.ui-table` | Tokens |
 
 ### 5.2 Product components

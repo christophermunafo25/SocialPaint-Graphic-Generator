@@ -104,7 +104,7 @@ Each component's board is the spec for its states in both themes.
 
 ## 7. Brand color in chrome
 
-The interface is gray. The primary action is ink (`--action-primary` under `--action-on-primary`), and Send is the same (`--action-accent`). Use one Primary button per view. Brand color appears only where a frame draws it, through the semantic token that frame uses: the Positive and Active badges (`--status-*`), the logo, chart series, the Brand Studio covers. It never carries meaning on its own. Error red, warning amber and the editor's selection blue are functional signals and keep their meaning.
+The interface is gray. The primary action is ink (`--action-primary` under `--action-on-primary`), and Send is the same (`--action-accent`). Use one Primary button per view. Brand color appears only where a frame draws it, through the semantic token that frame uses: the Positive and Active badges (`--status-*`), the logo, chart series, the Brand Studio covers. It never carries meaning on its own. On Insights a change badge is Neutral whatever its metric, and the color that ties a headline number to its chart is the series' own: an 8 dot before the Metric's label for Exports, Opens and Posted, and none for Active members (CJ, 2026-11-25). Error red, warning amber and the editor's selection blue are functional signals and keep their meaning.
 
 ## 8. Icons and hit areas
 
