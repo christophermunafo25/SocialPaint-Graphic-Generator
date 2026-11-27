@@ -9,7 +9,8 @@ vi.mock("../../SignedImg", () => ({
   SignedImg: ({ src }: { src: string }) => <img src={src} alt="" />,
 }));
 
-const { CategoryCover, COVER_LIMIT, coverFor } = await import("./CategoryCover");
+const { CategoryCover, coverFor } = await import("./CategoryCover");
+const { categoryCount } = await import("./categories");
 
 const T0 = "2026-11-25T10:00:00.000Z";
 const asset = (
@@ -56,7 +57,6 @@ describe("coverFor: a category with content draws its own cover", () => {
   it("Colors shows up to six swatches, in palette order", () => {
     const cover = coverFor("colors", kit({ colors: COLORS }), []);
     expect(cover).toEqual({ kind: "colors", hexes: COLORS.slice(0, 6).map((c) => c.hex) });
-    expect(COVER_LIMIT.colors).toBe(6);
   });
 
   it("Logos shows the light primary on the light plate", () => {
@@ -94,6 +94,10 @@ describe("coverFor: a category with content draws its own cover", () => {
       kind: "font",
       family: "Acme Sans",
     });
+    // A file with no family read from it goes by its name, as the Fonts page does.
+    expect(
+      coverFor("typography", kit({ typeStyles: [faceless] }), [asset("Acme Serif.otf", "font")]),
+    ).toEqual({ kind: "font", family: "Acme Serif.otf" });
   });
 
   it("Fonts keeps the art until a font file is uploaded, whatever the styles use", () => {
@@ -152,5 +156,26 @@ describe("CategoryCover", () => {
   it("draws the shared art as an image", () => {
     const { container } = render(<CategoryCover cover={{ kind: "art" }} art="/art.webp" />);
     expect(container.querySelector("img")?.getAttribute("src")).toBe("/art.webp");
+  });
+});
+
+describe("coverFor agrees with the count line", () => {
+  it("draws the art exactly when the card says Empty", () => {
+    const faceless = { ...style("heading", "X", { useFor: "heading" }), font: undefined };
+    const states: Array<[KitShape, BrandAsset[]]> = [
+      [kit(), []],
+      [kit({ colors: COLORS, typeStyles: [style("heading", "A")] }), []],
+      [kit({ typeStyles: [faceless] }), [asset("legacy.ttf", "font")]],
+      [
+        kit({ colors: COLORS.slice(0, 1) }),
+        [asset("l1", "logo"), asset("f1", "font", { family: "Acme Sans" }), asset("i1", "image")],
+      ],
+    ];
+    for (const [draft, assets] of states) {
+      for (const category of ["colors", "logos", "typography", "type-styles", "images"] as const) {
+        const empty = categoryCount(category, draft, assets) === "Empty";
+        expect(coverFor(category, draft, assets).kind === "art").toBe(empty);
+      }
+    }
   });
 });

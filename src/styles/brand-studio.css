@@ -168,13 +168,26 @@
    read as they will in a graphic. The specimens' ink is the dark plate. */
 .sp-bs-cover {
   box-sizing: border-box;
+  position: relative;
   display: flex;
   width: 100%;
   height: 100%;
   overflow: hidden;
+  border-radius: inherit;
   background: var(--plate-light);
   color: var(--plate-dark);
   container-type: size;
+}
+/* The plate's hairline edge, as every plate and swatch in Brand Studio
+   draws it, laid over the content: the light plate on the white card, or a
+   pale swatch at its edge, would lose its edge otherwise. */
+.sp-bs-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--border-subtle);
+  pointer-events: none;
 }
 /* Colors: up to six swatches, edge to edge. */
 .sp-bs-cover__swatch {
@@ -191,12 +204,12 @@
 .sp-bs-cover[data-kind="logo"] img {
   width: auto;
   height: auto;
-  max-width: 60%;
-  max-height: 50%;
+  max-width: 70%; /* as the Logos page's plates (.sp-bs-plate__half img) */
+  max-height: 60%;
   object-fit: contain;
 }
-/* Fonts: "Aa" in the heading's face, centred. Sized to the cover, as the
-   Fonts page sizes its own specimen. */
+/* Fonts: "Aa" in the heading's face, centred, at 40% of the cover's
+   height. */
 .sp-bs-cover[data-kind="font"] {
   align-items: center;
   justify-content: center;
@@ -206,19 +219,23 @@
   line-height: 1;
 }
 /* Type styles: two lines, each in its style's face, weight, italic, width
-   and case, 10% in from the sides. (The cover's own padding and gap can't
+   and case, 24 in from the sides. (The cover's own padding and gap can't
    use its container units, which measure an outer container.) */
 .sp-bs-cover[data-kind="styles"] {
   flex-direction: column;
   justify-content: center;
   gap: var(--space-8);
-  padding: 0 10%;
+  padding: 0 var(--space-24);
 }
+/* One line each; the clip box reaches past the ascenders and descenders
+   without moving the line, as the card's title does. */
 .sp-bs-cover__line {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.15;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
 }
 .sp-bs-cover__line[data-line="first"] {
   font-size: 18cqh;

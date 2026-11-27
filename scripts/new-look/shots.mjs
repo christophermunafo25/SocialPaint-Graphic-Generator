@@ -170,6 +170,58 @@ const ROUTES = [
       },
     },
   ],
+  // A workspace with a logo, an uploaded font set on its Heading style, and
+  // three photos, so every content cover draws (premium polish D15). The
+  // logo is a neutral wordmark, never SocialPaint's own (RULES.md
+  // section 2); the font and photos are repo files the dev server serves.
+  [
+    "brand-studio-filled",
+    "/brand-studio",
+    {
+      seed: (db) => {
+        const companyId = db.companies[0].id;
+        const createdAt = "2026-11-25T10:00:00.000Z";
+        const asset = (id, kind, url, metadata = {}) => ({
+          id,
+          companyId,
+          kind,
+          name: id,
+          url,
+          metadata,
+          createdAt,
+        });
+        const wordmark =
+          '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="64" viewBox="0 0 240 64">' +
+          '<rect x="4" y="12" width="40" height="40" rx="10" fill="#2F3B4C"/>' +
+          '<text x="56" y="45" font-family="Georgia, serif" font-size="36" fill="#2F3B4C">Acme</text></svg>';
+        db.brandAssets = [
+          asset("shots-logo", "logo", `data:image/svg+xml;utf8,${encodeURIComponent(wordmark)}`),
+          asset(
+            "shots-font",
+            "font",
+            "/test/fidelity/fixtures/feature-highlight/BricolageGrotesqueHeadline-SemiBold.ttf",
+            {
+              family: "Bricolage Grotesque Headline",
+              weight: 600,
+              style: "normal",
+              format: "truetype",
+            },
+          ),
+          asset("shots-photo-1", "image", "/src/assets/socialpaint/brand-preview-photo.webp"),
+          asset("shots-photo-2", "image", "/src/assets/socialpaint/photo-placeholder.jpg"),
+          asset("shots-photo-3", "image", "/test/fidelity/fixtures/effects-matrix/photo.png"),
+        ];
+        const kit = db.brandKits[0];
+        kit.primaryLogoLightAssetId = "shots-logo";
+        kit.primaryLogoAssetId = "shots-logo";
+        kit.typeStyles[0] = {
+          ...kit.typeStyles[0],
+          font: { source: "custom", family: "Bricolage Grotesque Headline", assetId: "shots-font" },
+          weight: 600,
+        };
+      },
+    },
+  ],
   ["settings-people-loading", "/settings/people", { stall: { "people.*": "hang" } }],
   ["settings-people-error", "/settings/people", { stall: { "people.*": "fail" } }],
   ["settings-usage-loading", "/settings/usage", { stall: { "usage.*": "hang" } }],

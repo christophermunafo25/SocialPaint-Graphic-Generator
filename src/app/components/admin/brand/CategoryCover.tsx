@@ -57,10 +57,11 @@ export function coverFor(category: BrandCategory, draft: KitShape, assets: Brand
       // heading's face, else in the first file's family.
       const fonts = ofKind("font");
       if (!fonts.length) return { kind: "art" };
+      // The first file's family reads as the Fonts page reads it: its
+      // metadata, else its name.
       const family =
-        roleStyle(draft, "heading")?.font?.family ??
-        fonts.find((f) => f.metadata.family)?.metadata.family;
-      return family ? { kind: "font", family } : { kind: "art" };
+        roleStyle(draft, "heading")?.font?.family ?? fonts[0].metadata.family ?? fonts[0].name;
+      return { kind: "font", family };
     }
     case "type-styles":
       return draft.typeStyles.length
@@ -98,14 +99,15 @@ function specimenFace(style: BrandTypeStyle): React.CSSProperties {
 }
 
 /** The cover's content: the shared art, or the workspace's own. Decoration
- * (the card's link names the category), so nothing in it is announced. */
+ * (the card's link names the category), so it is hidden from assistive
+ * tech. */
 export function CategoryCover({ cover, art }: { cover: Cover; art: string }) {
   switch (cover.kind) {
     case "art":
       return <img src={art} alt="" />;
     case "colors":
       return (
-        <span className="sp-bs-cover" data-kind="colors">
+        <span className="sp-bs-cover" data-kind="colors" aria-hidden>
           {cover.hexes.map((hex, i) => (
             <span key={i} className="sp-bs-cover__swatch" style={{ background: hex }} />
           ))}
@@ -113,13 +115,13 @@ export function CategoryCover({ cover, art }: { cover: Cover; art: string }) {
       );
     case "logo":
       return (
-        <span className="sp-bs-cover" data-kind="logo" data-plate={cover.plate}>
+        <span className="sp-bs-cover" data-kind="logo" data-plate={cover.plate} aria-hidden>
           <SignedImg src={cover.asset.url} alt="" />
         </span>
       );
     case "font":
       return (
-        <span className="sp-bs-cover" data-kind="font">
+        <span className="sp-bs-cover" data-kind="font" aria-hidden>
           <span className="sp-bs-cover__aa" style={familyFace(cover.family)}>
             Aa
           </span>
@@ -127,7 +129,7 @@ export function CategoryCover({ cover, art }: { cover: Cover; art: string }) {
       );
     case "styles":
       return (
-        <span className="sp-bs-cover" data-kind="styles">
+        <span className="sp-bs-cover" data-kind="styles" aria-hidden>
           {cover.styles.map((style, i) => (
             <span
               key={style.key}
@@ -142,7 +144,7 @@ export function CategoryCover({ cover, art }: { cover: Cover; art: string }) {
       );
     case "images":
       return (
-        <span className="sp-bs-cover" data-kind="images" data-count={cover.assets.length}>
+        <span className="sp-bs-cover" data-kind="images" aria-hidden>
           {cover.assets.map((asset) => (
             <SignedImg key={asset.id} src={asset.url} alt="" />
           ))}

@@ -167,7 +167,7 @@ export function BrandOverview({ brand, companyId }: { brand: BrandDraft; company
           >
             {CATEGORY_ORDER.map((category) => (
               <div key={category} className="sp-bs-cat" aria-hidden>
-                <Skeleton className="sp-bs-cat__cover" />
+                <Skeleton shape="block" className="sp-bs-cat__cover" />
                 <span className="sp-bs-cat__meta">
                   <Skeleton width={64} height={10} />
                   <Skeleton width={48} height={8} />
